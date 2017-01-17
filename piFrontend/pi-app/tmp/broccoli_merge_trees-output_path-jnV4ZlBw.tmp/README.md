@@ -1,1 +1,0 @@
-/home/pi/scripts/piWebserver/pi-app/node_modules/qunitjs/README.md

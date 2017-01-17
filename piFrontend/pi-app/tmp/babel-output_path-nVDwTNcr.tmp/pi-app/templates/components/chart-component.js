@@ -1,3 +1,0 @@
-define("pi-app/templates/components/chart-component", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template({ "id": "jSL3l6TW", "block": "{\"statements\":[[\"open-element\",\"svg\",[]],[\"dynamic-attr\",\"width\",[\"unknown\",[\"outerWidth\"]],null],[\"dynamic-attr\",\"height\",[\"unknown\",[\"outerHeight\"]],null],[\"flush-element\"],[\"text\",\"\\n  \"],[\"open-element\",\"g\",[]],[\"static-attr\",\"class\",\"chart-viewport\"],[\"dynamic-attr\",\"transform\",[\"unknown\",[\"transformViewport\"]],null],[\"flush-element\"],[\"close-element\"],[\"text\",\"\\n\"],[\"close-element\"]],\"locals\":[],\"named\":[],\"yields\":[],\"blocks\":[],\"hasPartials\":false}", "meta": { "moduleName": "pi-app/templates/components/chart-component.hbs" } });
-});
