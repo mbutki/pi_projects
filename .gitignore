@@ -1,1 +1,17 @@
 db.config
+
+# compiled output
+piFrontend/pi-app/dist
+piFrontend/pi-app/tmp
+
+# dependencies
+piFrontend/pi-app/node_modules
+piFrontend/pi-app/bower_components
+
+# misc
+piFrontend/pi-app/.sass-cache
+piFrontend/pi-app/connect.lock
+piFrontend/pi-app/coverage/*
+piFrontend/pi-app/libpeerconnection.log
+piFrontend/pi-app/npm-debug.log*
+piFrontend/pi-app/testem.log
