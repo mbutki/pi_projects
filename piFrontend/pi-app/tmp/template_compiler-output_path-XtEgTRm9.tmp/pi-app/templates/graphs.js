@@ -1,0 +1,1 @@
+export default Ember.HTMLBars.template({"id":"E/WJ32Qe","block":"{\"statements\":[[\"text\",\"Graphs Page\\n\\n\"],[\"append\",[\"helper\",[\"time-series-chart\"],null,[[\"data\"],[[\"get\",[\"tempData\"]]]]],false],[\"text\",\"\\n\"]],\"locals\":[],\"named\":[],\"yields\":[],\"blocks\":[],\"hasPartials\":false}","meta":{"moduleName":"pi-app/templates/graphs.hbs"}});
