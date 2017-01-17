@@ -1,9 +1,18 @@
-/node_modules
-npm-debug.log
+# compiled output
+/dist
 /tmp
-/common-tmp
-*.tgz
-/docs/build
-.deps-tmp
-/coverage
-*.pem
+/docs
+
+# dependencies
+/node_modules
+/vendor/*
+!/vendor/ember-shim.js
+!/vendor/qunit-shim.js
+
+# misc
+/.sass-cache
+/connect.lock
+/libpeerconnection.log
+.DS_Store
+Thumbs.db
+/coverage/*
