@@ -1,4 +1,6 @@
 db.config
+pi.config
+temperatureRead/nohup.out
 
 # compiled output
 piFrontend/pi-app/dist
