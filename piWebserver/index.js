@@ -42,7 +42,6 @@ app.get('/graphs', function (req, res) {
 
     let data = {"data":[]};
     let query = 'select * from temperature where temperature.time between date_sub(now(),INTERVAL 1 WEEK) and now() order by temperature.time';
-    console.log(query);
     con.query(query, function(err, rows) {
         if (err) throw err;
         
@@ -70,7 +69,6 @@ app.get('/graphs', function (req, res) {
             });
             i += 1;
         }      
-        console.log(data);
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify(data));
     });
