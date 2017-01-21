@@ -2,10 +2,12 @@ db.config
 pi.config
 temperatureRead/nohup.out
 
+piWebserver/assets
+piWebserver/npm-debug.log
+
 # compiled output
 piFrontend/pi-app/dist
 piFrontend/pi-app/tmp
-piWebserver/assets
 
 # dependencies
 piFrontend/pi-app/node_modules

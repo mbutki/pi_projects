@@ -1,11 +1,13 @@
 "use strict"
 var express = require('express')
-var app = express()
+var mongoose = require('mongoose');
 var mysql = require("mysql");
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var httpsRedirect = require('express-https-redirect');
+
+var app = express()
 
 var db_config = JSON.parse(fs.readFileSync('/home/mbutki/pi_projects/db.config'));
 var key = fs.readFileSync('/etc/letsencrypt/live/www.mbutki.com/privkey.pem');
@@ -20,6 +22,7 @@ var HTTP_PORT = 8080
 
 // First you need to create a connection to the db
 var con = mysql.createConnection(db_config);
+mongoose.connect('mongodb://localhost/piData');
 
 con.connect(function(err) {
   if(err) {
