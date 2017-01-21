@@ -17,6 +17,7 @@ db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 
 LOCATION = pi_config['location']
+TEMP_CORRECTION = pi_config['temperature_correction']
 
 parser = argparse.ArgumentParser(description='Read temperature')
 parser.add_argument('-v', default=False, action='store_true',
@@ -32,7 +33,7 @@ while True:
 
     millivolts = value * (3300.0 / 1024.0)
     temp_C = (millivolts - 500.0) / 10.0
-    temp_F = ((temp_C + 1.3) * 9.0 / 5.0) + 32
+    temp_F = ((temp_C + TEMP_CORRECTION) * 9.0 / 5.0) + 32
     if len(data) < WRITE_FREQ_SECS:
         data.append(temp_F)
         if args.v:
