@@ -5,6 +5,7 @@ import numpy
 import MySQLdb
 import json
 import os
+import argparse
 
 SPI_PORT   = 0
 SPI_DEVICE = 0
@@ -17,6 +18,14 @@ pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 
 LOCATION = pi_config['location']
 
+parser = argparse.ArgumentParser(description='Read temperature')
+parser.add_argument('-v', default=False, action='store_true',
+                    help='verbose mode')
+args = parser.parse_args()
+
+if args.v:
+    print 'location:{0} db_host:{1} db_name:{2} db_user:{3}'.format(LOCATION, db_config['host'], db_config['database'], db_config['user'])
+
 data = []
 while True:
     value = mcp.read_adc(7)
@@ -26,6 +35,8 @@ while True:
     temp_F = ((temp_C + 1.3) * 9.0 / 5.0) + 32
     if len(data) < WRITE_FREQ_SECS:
         data.append(temp_F)
+        if args.v:
+            print temp_F
     else:
         median = numpy.median(numpy.array(data))
         temp = int(round(median))
@@ -39,6 +50,8 @@ while True:
         cur = db.cursor()
         try:
             cmd = 'insert into temperature values(NOW(), {0}, {1});'.format(LOCATION, temp)
+            if args.v:
+                print cmd
             cur.execute(cmd)
             db.commit()
         except Exception as e:
