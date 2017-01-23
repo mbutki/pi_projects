@@ -2,7 +2,6 @@ import time
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
 import numpy
-import MySQLdb
 import json
 import os
 import argparse
@@ -13,7 +12,8 @@ SPI_PORT   = 0
 SPI_DEVICE = 0
 mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
 READ_FREQ_SECS = 1
-WRITE_FREQ_SECS = 1 * 60 * 10
+WRITE_FREQ_SECS = 1 * 5
+#WRITE_FREQ_SECS = 1 * 60 * 10
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
@@ -44,23 +44,6 @@ while True:
         median = numpy.median(numpy.array(data))
         temp = int(round(median))
         data = []
-
-        db = MySQLdb.connect(host=db_config['host'],
-                             user=db_config['user'],
-                             passwd=db_config['password'],
-                             db=db_config['database'])
-
-        cur = db.cursor()
-        try:
-            cmd = 'insert into temperature values(NOW(), {0}, {1});'.format(LOCATION, temp)
-            if args.v:
-                print cmd
-            cur.execute(cmd)
-            db.commit()
-        except Exception as e:
-            print 'had error:{0}'.format(e)
-            db.rollback()
-        db.close()
 
         client = MongoClient(db_config['host'])
         db = client.piData
