@@ -12,8 +12,7 @@ SPI_PORT   = 0
 SPI_DEVICE = 0
 mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
 READ_FREQ_SECS = 1
-WRITE_FREQ_SECS = 1 * 5
-#WRITE_FREQ_SECS = 1 * 60 * 10
+WRITE_FREQ_SECS = 1 * 60 * 10
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
