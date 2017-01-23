@@ -6,6 +6,8 @@ import MySQLdb
 import json
 import os
 import argparse
+from pymongo import MongoClient
+import datetime
 
 SPI_PORT   = 0
 SPI_DEVICE = 0
@@ -59,4 +61,12 @@ while True:
             print 'had error:{0}'.format(e)
             db.rollback()
         db.close()
+
+        client = MongoClient(db_config['host'])
+        db = client.piData
+
+        doc = {'time': datetime.datetime.now(), 'location': LOCATION, 'value': temp_F}
+        db.temperatures.insert_one(doc)
+        client.close()
+
     time.sleep(READ_FREQ_SECS)
