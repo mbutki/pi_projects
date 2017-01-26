@@ -18,6 +18,7 @@ db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 
 LOCATION = pi_config['location']
+INPUT_PIN = pi_config['temperature_MCP3008_pin']
 TEMP_CORRECTION = pi_config['temperature_correction']
 
 parser = argparse.ArgumentParser(description='Read temperature')
@@ -30,7 +31,7 @@ if args.v:
 
 data = []
 while True:
-    value = mcp.read_adc(7)
+    value = mcp.read_adc(INPUT_PIN)
 
     millivolts = value * (3300.0 / 1024.0)
     temp_C = (millivolts - 500.0) / 10.0
@@ -41,13 +42,13 @@ while True:
             print temp_F
     else:
         median = numpy.median(numpy.array(data))
-        temp = int(round(median))
+        median = int(round(median))
         data = []
 
         client = MongoClient(db_config['host'])
         db = client.piData
 
-        doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_F}
+        doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': median}
         db.temperatures.insert_one(doc)
         client.close()
 

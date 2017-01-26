@@ -143,7 +143,18 @@ app.get('/api/graphs', loggedIn, function (req, res) {
                     location2data[doc.location].values.push(doc.value);
                 }
             }
-            let data = {"data":[]};
+            let data = {"graphs":[]};
+            let i=0;
+            for (let location in location2data) {
+                data['graphs'].push({
+                    "id": i.toString(),
+                    "location": location,
+                    "times": location2data[location].times,
+                    "values": location2data[location].values
+                });
+                i += 1;
+            }
+            /*let data = {"data":[]};
             let i=0;
             for (let location in location2data) {
                 data['data'].push({
@@ -156,7 +167,7 @@ app.get('/api/graphs', loggedIn, function (req, res) {
                     }
                 });
                 i += 1;
-            }
+            }*/
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data));
         })
