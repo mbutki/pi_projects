@@ -4,6 +4,7 @@ temperatureRead/nohup.out
 
 piWebserver/assets
 piWebserver/npm-debug.log
+piWebserver/node_modules
 
 # compiled output
 piFrontend/pi-app/dist
