@@ -154,29 +154,54 @@ app.get('/api/graphs', loggedIn, function (req, res) {
                 });
                 i += 1;
             }
-            /*let data = {"data":[]};
-            let i=0;
-            for (let location in location2data) {
-                data['data'].push({
-                    "id": i.toString(),
-                    "type": "graph",
-                    "attributes": {
-                        "location": location,
-                        "times": location2data[location].times,
-                        "values": location2data[location].values
-                    }
-                });
-                i += 1;
-            }*/
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data));
         })
     });
 })
 
-/*app.get('*',function (req, res) {
+app.get('/api/lights', loggedIn, function (req, res) {
+    MongoClient.connect(mongo_url, function(err, db) {
+        assert.equal(null, err);
+        let location2data = {};
+
+        let past_week = {"time": {$gte: new Date(new Date()- 1000*60*60*24*7)}};
+        var docs = db.collection('light').find(past_week).toArray(function(err,docs){
+            for (let i=0; i<docs.length; i++) {
+                let doc = docs[i];
+                assert.equal(err, null);
+                if (doc === null) {
+                    return;
+                }
+                if (doc !== null) {
+                    if (!(doc.location in location2data)) {
+                        location2data[doc.location] = {times:[], values:[]};
+                    }
+                    
+                    location2data[doc.location].times.push(doc.time);
+                    location2data[doc.location].values.push(doc.value);
+                }
+            }
+            let data = {"lights":[]};
+            let i=0;
+            for (let location in location2data) {
+                data['lights'].push({
+                    "id": i.toString(),
+                    "location": location,
+                    "times": location2data[location].times,
+                    "values": location2data[location].values
+                });
+                i += 1;
+            }
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data));
+        })
+    });
+})
+
+app.get('*', loggedIn, function (req, res) {
   res.sendFile(__dirname + '/index.html');
-});*/
+});
 
 
 var server = https.createServer(https_options, app).listen(HTTPS_PORT);
