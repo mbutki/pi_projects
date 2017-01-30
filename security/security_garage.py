@@ -24,7 +24,7 @@ BUTTON_PIN = 13
 GREEN_LED_PIN = 5
 RED_LED_PIN = 6
 
-flash_time_sec = 5
+flash_time_sec = 30
 flash_per_sec = 4
 
 
