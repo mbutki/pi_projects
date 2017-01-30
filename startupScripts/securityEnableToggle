@@ -15,12 +15,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 case "$1" in
   start)
     log_begin_msg "mbutki: light start"
-    nohup python /home/mbutki/pi_projects/sensorRead/readLight.py &
+    nohup python /home/mbutki/pi_projects/security/securityEnableToggle.py &
     log_end_msg $?
     exit 0
     ;;
   stop)
-    pkill -f /home/mbutki/pi_projects/sensorRead/readLight.py
+    pkill -f /home/mbutki/pi_projects/security/securityEnableToggle.py
     log_begin_msg "mbutki: light stop"
     log_end_msg $?
     exit 0
