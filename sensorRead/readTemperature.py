@@ -42,7 +42,7 @@ while True:
             print temp_F
     else:
         median = numpy.median(numpy.array(data))
-        median = int(round(median))
+        #median = int(round(median))
         data = []
 
         client = MongoClient(db_config['host'])
