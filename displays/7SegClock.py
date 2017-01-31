@@ -41,7 +41,9 @@ while(True):
 
   # Write the display buffer to the hardware.  This must be called to
   # update the actual display LEDs.
-  segment.write_display()
-
+  try:
+    segment.write_display()
+  except:
+    print 'Display write error'
   # Wait a quarter second (less than 1 second to prevent colon blinking getting$
   time.sleep(0.25)
