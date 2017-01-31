@@ -33,7 +33,7 @@ data = []
 while True:
     value = mcp.read_adc(INPUT_PIN)
 
-    millivolts = value * (3300.0 / 1024.0)
+    millivolts = (value + TEMP_CORRECTION) * (3300.0 / 1024.0)
     temp_C = (millivolts - 500.0) / 10.0
     temp_F = ((temp_C + TEMP_CORRECTION) * 9.0 / 5.0) + 32
     if len(data) < WRITE_FREQ_SECS:

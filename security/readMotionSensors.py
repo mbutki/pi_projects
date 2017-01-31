@@ -28,51 +28,49 @@ def fetchSecurityStatus():
     db = client.piData
 
     rows = db.security_enable_status.find({}).sort('time', -1).limit(1)
-    status =  rows[0]['value']
-        
+    enabled =  rows[0]['enabled']
+    triggered =  rows[0]['triggered']
+    
     client.close()
-    return status
+    return enabled, triggered
 
-def blink():
-    log.debug('Waiting period for Activation')
-    for i in range(flash_time_sec * flash_per_sec):
-        # Wax on (o.o)
-        gpio.output(RED_LED_PIN, 1)
-        time.sleep(float(1) / flash_per_sec / 2)
+def checkMotionSensors():
+    for location, pin in MOTION_SENSORS.iteritems():
+        value = gpio.input(pin)
+        if value == 1:
+            return location
+    return None
 
-        # Wax off (^.^)
-        gpio.output(RED_LED_PIN, 0)
-        time.sleep(float(1) / flash_per_sec / 2)
-    writeEnabled(True)
-    gpio.output(RED_LED_PIN, 1)
+def updateDB():
+    client = MongoClient(db_config['host'])
+    db = client.piData
 
-def toggleButton(pin):
-    global enabled
-    global blink_process
+    doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'enabled': True, 'triggered': True}
+    log.debug('writing to db:{0}'.format(doc))
 
-    enabled = not enabled
-    log.debug('Enabled:{0}'.format(enabled))
+    db.security_enable_status.insert_one(doc)
+    client.close()
 
-    if not enabled:
-        if blink_process != None and blink_process.is_alive():
-            log.debug('Activation Aborted from main thread')
-            blink_process.terminate()
-        else:
-            writeEnabled(enabled)
-        gpio.output(RED_LED_PIN, 0)
-        gpio.output(GREEN_LED_PIN, 1)
-    else:
-        gpio.output(GREEN_LED_PIN, 0)
-        blink_process = Process(target = blink, args=())
-        blink_process.start()
+def sendAlert(location):
+    pass
 
+def triggerAlert(location):
+    updateDB()
+    sendAlert(location)
 
 def main():
     gpio.setmode(gpio.BCM)
 
+    for location, pin in MOTION_SENSORS.iteritems():
+        gpio.setup(pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
+
     try:
         while True:
-            security_status = fetchSecurityStatus()
+            enabled, triggered = fetchSecurityStatus()
+            if enabled and not triggered:
+                location = checkMotionSensors()
+                if location != None:
+                    triggerAlert(location)
             time.sleep(1)
     except KeyboardInterrupt:
         log.info('\nExiting')
