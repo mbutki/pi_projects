@@ -1,6 +1,6 @@
 db.config
 pi.config
-temperatureRead/nohup.out
+client_secret.json
 
 piWebserver/assets
 piWebserver/npm-debug.log

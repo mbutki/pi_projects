@@ -7,6 +7,7 @@ from multiprocessing import Process
 import json
 import datetime
 import logging as log
+import gmail_utils
 
 parser = argparse.ArgumentParser(description='Read temperature')
 parser.add_argument('-v', default=False, action='store_true',
@@ -19,6 +20,7 @@ log.basicConfig(level=log_level)
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 LOCATION = pi_config['location']
+EMAIL_LIST = pi_config['email_list']
 MOTION_SENSORS = pi_config.get('motion_sensors', {})
 #    "motion_sensors" : [
 #        "family_room_left_pin" : 4,
@@ -53,7 +55,9 @@ def updateDB():
     client.close()
 
 def sendAlert(location):
-    pass
+    if args.v:
+        log.debug('sending email')
+    gmail_utils.send_message(EMAIL_LIST[0], EMAIL_LIST, 'security alert', 'motion sensor triggered:{0}'.format(location))
 
 def triggerAlert(location):
     updateDB()
