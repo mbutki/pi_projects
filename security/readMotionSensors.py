@@ -25,6 +25,8 @@ MOTION_SENSORS = pi_config.get('motion_sensors', {})
 #    "motion_sensors" : [
 #        "family_room_left_pin" : 4,
 
+ALERT_WRITE_DELAY = 30
+
 def fetchSecurityStatus():
     client = MongoClient(db_config['host'])
     db = client.piData
@@ -48,22 +50,29 @@ def updateDB():
     db = client.piData
 
     doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'enabled': True, 'triggered': True}
-    if args.v:
-        log.debug('writing to db:{0}'.format(doc))
+    log.debug('writing to db:{0}'.format(doc))
 
     db.security_enable_status.insert_one(doc)
     client.close()
 
 def sendAlert(location):
-    if args.v:
-        log.debug('sending email')
+    log.debug('sending email')
     gmail_utils.send_message(EMAIL_LIST[0], EMAIL_LIST, 'security alert', 'motion sensor triggered:{0}'.format(location))
 
 def triggerAlert(location):
     updateDB()
     sendAlert(location)
-    if args.v:
-        log.debug('triggered:{0}'.format(location))
+    log.debug('triggered:{0}'.format(location))
+
+def alertAfterWait(location):
+    log.debug('waiting for valid deactivation before sending alert')
+    time.sleep(ALERT_WRITE_DELAY)
+    enabled, triggered = fetchSecurityStatus()
+    if enabled and not triggered:
+        log.debug('still activated, sending alert')
+        triggerAlert(location)
+    else:
+        log.debug('deactivated, aborting alert')
 
 def main():
     gpio.setmode(gpio.BCM)
@@ -74,14 +83,12 @@ def main():
     try:
         while True:
             enabled, triggered = fetchSecurityStatus()
-            if args.v:
-                log.debug('DB READ: enabled:{0} triggered:{1}'.format(enabled, triggered))
+            log.debug('DB READ: enabled:{0} triggered:{1}'.format(enabled, triggered))
             if enabled and not triggered:
                 location = checkMotionSensors()
-                if args.v:
-                    log.debug('sensor location value:{0}'.format(location))
+                log.debug('sensor location value:{0}'.format(location))
                 if location != None:
-                    triggerAlert(location)
+                    alertAfterWait(location)
             time.sleep(1)
     except KeyboardInterrupt:
         log.info('\nExiting')
