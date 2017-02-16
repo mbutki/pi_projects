@@ -11,7 +11,6 @@ import gmail_utils
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
-parser.add_argument('-a', default=False, action='store_true', help='read values even if not enabled')
 args = parser.parse_args()
 
 log_level = log.DEBUG if args.v else log.INFO
@@ -47,11 +46,6 @@ def checkMotionSensors():
         if value == 1:
             locations.append(location)
     return locations
-
-def checkMotionSensorsReadAll():
-    for location, pin in MOTION_SENSORS.iteritems():
-        value = gpio.input(pin)
-        log.debug('Read All - Location:{}\tValue:{}'.format(location, value))
 
 def updateDB(locations):
     client = MongoClient(db_config['host'])
@@ -98,15 +92,13 @@ def main():
             #if enabled:
                 locations = checkMotionSensors()
                 log.debug('sensor location value:{0}'.format(locations))
-                if len(locations) > 1:
+                if len(locations) > 0:
                     trigger_count += 1
                     log.debug('trigger at:{0} of {1}'.format(trigger_count, TRIGGER_THRESHOLD))
                     if trigger_count >= TRIGGER_THRESHOLD:
                         alertAfterWait(locations)
                 else:
                     trigger_count = 0
-            if args.a:
-                checkMotionSensorsReadAll()
                 
             time.sleep(READ_DELAY)
     except KeyboardInterrupt:

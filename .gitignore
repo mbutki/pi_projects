@@ -1,6 +1,7 @@
 db.config
 pi.config
 client_secret.json
+*.pyc
 
 piWebserver/assets
 piWebserver/npm-debug.log
