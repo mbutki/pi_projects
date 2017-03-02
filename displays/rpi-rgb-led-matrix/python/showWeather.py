@@ -1,4 +1,5 @@
 import Image
+import ImageDraw
 import os
 import time
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
@@ -9,6 +10,9 @@ from multiprocessing import Process
 import json
 import datetime
 import logging as log
+
+#from pi_projects.security import readMotionSensors
+#import  pi_projects
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -23,11 +27,32 @@ pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 RAIN = None
 SUN = None
 CLOUD = None
+MOSTLY_CLOUD = None
+MOSTLY_SUN = None
+UNKNOWN = None
+TEXT_ICON_PAIRS = None
 
 HIGH_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
 #CURRENT_TEMP_COLOR = graphics.Color(249, 207, 0)
-CURRENT_TEMP_COLOR = graphics.Color(164, 213, 85)
+CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
+
+#NOON_BAR_COLOR = graphics.Color(100, 21, 0)
+#MIDNIGHT_BAR_COLOR = graphics.Color(100, 21, 0)
+
+NOON_BAR_COLOR = graphics.Color(10, 10, 10)
+#MIDNIGHT_BAR_COLOR = NOON_BAR_COLOR
+MIDNIGHT_BAR_COLOR = graphics.Color(60, 60, 60)
+
+TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
+POP_LINE_COLOR = graphics.Color(40, 110, 206)
+TEMP_INCREMENT_LINE_COLOR = graphics.Color(10, 10, 10)
+
+RUNNER_DOT_COLOR = graphics.Color(130, 0, 0)
+
+BAR_CHART_BOTTOM = 31
+BAR_MIN_TEMP = 30
+CURRENT_BOTTOM = 28
 
 def processImage(path):
     im = Image.open(path)
@@ -59,47 +84,54 @@ def fetchWeather():
 
     rows = db.weather.find({}).sort('time', -1).limit(1)
     weather =  rows[0]['weather']
-
     client.close()
     return weather
 
-def parseWeather(weather):
-    days = []
-    numbers = []
+def fetchIndoorTemps():
+    client = MongoClient(db_config['host'])
+    db = client.piData
+
+    rows = db.temperatures.find({"location" : "shelf"}).sort('time', -1).limit(1)
+    temp =  rows[0]['value']
+
+    client.close()
+    return temp
+
+def getDailyIcons(weather):
+    global UNKNOWN
+    global TEXT_ICON_PAIRS
+
+    daily_icons = []
     for epoch in sorted(weather['days']):
         day = weather['days'][epoch]
         condition = day['condition']
-        print day['pretty'], condition
-        if 'Rain' in condition or 'Showers' in condition:
-            days.append(RAIN)
-        elif 'Clear' in condition or 'Sunny' in condition:
-            days.append(SUN)
-        elif 'Cloudy' in condition or 'Overcast' in condition or 'Clouds' in condition:
-            days.append(CLOUD)
-        else:
-            days.append(SUN)
+        found = False
+        for conditions, icon in TEXT_ICON_PAIRS:
+            if condition in conditions:
+                daily_icons.append(icon)
+                found = True
+                break
+        if not found:
+            daily_icons.append(UNKNOWN)
 
-        numbers.append({
-            'pop': day['pop'],
-            'high': day['high'],
-            'low': day['low']
-        })
-    return days, numbers
+    return daily_icons
 
-def dailyIcons(days, new_frame, day_index):
-    for j, day in enumerate(days):
+def dailyIcons(daily_icons, new_frame, tick):
+    for j, day in enumerate(daily_icons):
         offset = 0
         if j > 0:
-            offset = 1+(j*13)
+            offset = j * 13
         else:
-            offset = 1
-        new_frame.paste(day[day_index], (offset,0))
+            offset = 0
+        this_day_frame_index = (tick + j*4) % len(day)
+        new_frame.paste(day[this_day_frame_index], (offset,0))
 
-def dailyText(numbers, offscreen_canvas, medium_font, small_font):
+def dailyText(weather, offscreen_canvas, medium_font, small_font):
     global HIGH_TEMP_COLOR
     global POP_COLOR
 
-    for j, number in enumerate(numbers):
+    for j, epoch in enumerate(sorted(weather['days'])):
+        day = weather['days'][epoch]
         offset = 0
         if j > 0:
             offset = 1+(j*13)
@@ -108,17 +140,17 @@ def dailyText(numbers, offscreen_canvas, medium_font, small_font):
 
         display_num = 0
         display_color = None
-        if number['pop'] == 100:
+        if day['pop'] == 100:
             display_color = POP_COLOR
-            display_num = number['pop']
+            display_num = day['pop']
             font = small_font
-        elif number['pop'] > 20:
+        elif day['pop'] > 20:
             display_color = POP_COLOR
-            display_num = number['pop']
+            display_num = day['pop']
             font = medium_font
         else:
             display_color = HIGH_TEMP_COLOR
-            display_num = number['high']
+            display_num = day['high']
             font = medium_font
         
         number_str = str(display_num)
@@ -135,21 +167,86 @@ def dailyText(numbers, offscreen_canvas, medium_font, small_font):
 def current(current, offscreen_canvas, medium_font):
     global CURRENT_TEMP_COLOR
 
-    graphics.DrawText(offscreen_canvas, medium_font, 0, 30, CURRENT_TEMP_COLOR, str(int(current['temp'])))
+    graphics.DrawText(offscreen_canvas, medium_font, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current['temp']))))
+
+def indoor(current, offscreen_canvas, medium_font):
+    global CURRENT_TEMP_COLOR
+
+    graphics.DrawText(offscreen_canvas, medium_font, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
+
+def bars(weather, offscreen_canvas, tick):
+    i = -1
+    TEMP_DIV = 5
+    POP_DIV = 7.0
+    CHART_WIDTH = 44
+    BAR_LEFT = 10
+
+    horizontal_temps = [40, 60, 80, 100]
+    for h_temp in horizontal_temps:
+        y = BAR_CHART_BOTTOM - ((h_temp - BAR_MIN_TEMP) / TEMP_DIV)
+        graphics.DrawLine(offscreen_canvas, BAR_LEFT, y, BAR_LEFT + CHART_WIDTH - 1, y, TEMP_INCREMENT_LINE_COLOR)
+
+    for epoch in sorted(weather['hours'].keys())[:CHART_WIDTH]:
+        i+= 1
+        hour = weather['hours'][epoch]
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+
+        temp = (hour['temp']-BAR_MIN_TEMP) / TEMP_DIV
+        pop = hour['pop']
+        #if  pop > 80:
+        #    pop = 80
+        pop = int(round(pop / POP_DIV)) - 1
+        column = BAR_LEFT + i
+        temp_y2 = BAR_CHART_BOTTOM - temp
+        pop_y2 = BAR_CHART_BOTTOM - pop
+        
+
+        if dt.hour == 12:
+            graphics.DrawLine(offscreen_canvas, column+1, BAR_CHART_BOTTOM, column+1, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
+        if dt.hour == 0:
+            graphics.DrawLine(offscreen_canvas, column+1, BAR_CHART_BOTTOM, column+1, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
+
+        if i != tick % CHART_WIDTH:
+            offscreen_canvas.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
+
+        if pop > 1:
+            offscreen_canvas.SetPixel(column, pop_y2, POP_LINE_COLOR.red, POP_LINE_COLOR.green, POP_LINE_COLOR.blue)
+
+        if i == tick % CHART_WIDTH:
+            offscreen_canvas.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
+
 
 def main():
-    global RAIN
-    global SUN
-    global CLOUD
     global Adafruit_RGBmatrix
     global graphics
+    global RAIN
+    global SUN 
+    global CLOUD
+    global MOSTLY_CLOUD
+    global MOSTLY_SUN 
+    global UNKNOWN
+    global TEXT_ICON_PAIRS
 
     RAIN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/rain.gif')
     SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/sun.gif')
     CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/cloud.gif')
+    MOSTLY_CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/mostly_cloud.gif')
+    MOSTLY_SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/mostly_sun2.gif')
+    UNKNOWN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/unknown.gif')
+
+    TEXT_ICON_PAIRS = (
+        (set(['Clear', 'Sunny']), SUN),
+        (set(['Cloudy', 'Overcast']), CLOUD),
+        #(set(['Scattered Clouds', 'Partly Cloudy', 'Mostly Sunny']), MOSTLY_CLOUD),
+        (set(['Scattered Clouds', 'Partly Cloudy', 'Mostly Sunny']), MOSTLY_SUN),
+        (set(['Mostly Cloudy', 'Partly Sunny']), MOSTLY_CLOUD),
+        (set(['Chance of Rain', 'Rain']), RAIN),
+    )
     
     weather = fetchWeather()
-    days, numbers = parseWeather(weather)
+    daily_icons= getDailyIcons(weather)
+
+    indoor_temp = fetchIndoorTemps()
 
     # Configuration for the matrix
     options = RGBMatrixOptions()
@@ -159,7 +256,7 @@ def main():
     options.pwm_lsb_nanoseconds = 100
     options.brightness = 65
     #options.show_refresh_rate = 1
-    options.hardware_mapping = 'adafruit-hat'  # If you have an Adafruit HAT: 'adafruit-hat'
+    options.hardware_mapping = 'adafruit-hat-pwm'  # If you have an Adafruit HAT: 'adafruit-hat'
 
     matrix = RGBMatrix(options = options)
     offscreen_canvas = matrix.CreateFrameCanvas()
@@ -170,27 +267,32 @@ def main():
     #medium_font.LoadFont('fonts/5x7_mike_square.bdf')
     small_font.LoadFont('fonts/4x6_mike_bigger.bdf')
 
-    i = 0
+    tick = 1
     while True:
-        if i == 60 * 5:
-            i = 0
+        if (tick % 60 * 5 * 2) == 0:
             weather = fetchWeather()
-            days, numbers = parseWeather(weather)
+            daily_icons = getDailyIcons(weather)
+
+            indoor_temp = fetchIndoorTemps()
             
-        for day_index, frame in enumerate(days[0]):
-            new_frame = Image.new('RGBA', (64,32))
+        new_frame = Image.new('RGBA', (64,32))
+        dailyIcons(daily_icons, new_frame, tick)
 
-            dailyIcons(days, new_frame, day_index)
+        new_frame = new_frame.convert('RGB')
+        offscreen_canvas.SetImage(new_frame, 0, 0)
 
-            new_frame = new_frame.convert('RGB')
-            offscreen_canvas.SetImage(new_frame, 0, 0)
+        dailyText(weather, offscreen_canvas, medium_font, small_font)
+        current(weather['current'], offscreen_canvas, medium_font)
 
-            dailyText(numbers, offscreen_canvas, medium_font, small_font)
-            current(weather['current'], offscreen_canvas, medium_font)
+        indoor(indoor_temp, offscreen_canvas, medium_font)
 
-            offscreen_canvas = matrix.SwapOnVSync(offscreen_canvas)
-            time.sleep(1)
-        i += 1
+        bars(weather, offscreen_canvas, tick)
+
+        offscreen_canvas = matrix.SwapOnVSync(offscreen_canvas)
+        time.sleep(0.5)
+        tick += 1
+        if tick == sys.maxint:
+            tick = 0
 
 if __name__ == "__main__":
     main()

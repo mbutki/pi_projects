@@ -35,7 +35,7 @@ def fetchSecurityStatus():
     rows = db.security_enable_status.find({}).sort('time', -1).limit(1)
     enabled =  rows[0]['enabled']
     triggered =  rows[0]['triggered']
-    
+
     client.close()
     return enabled, triggered
 
