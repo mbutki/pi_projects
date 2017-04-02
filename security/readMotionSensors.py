@@ -9,6 +9,7 @@ import datetime
 import logging as log
 import gmail_utils
 import traceback
+import os
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -120,7 +121,7 @@ def main():
                                              'security crashed', 
                                              'Main loop of motion sensor read crashed\n{}'.format(traceback.format_exc()))
 
-           time.sleep(READ_DELAY)
+            time.sleep(READ_DELAY)
     except KeyboardInterrupt:
         log.info('\nExiting')
     finally:
