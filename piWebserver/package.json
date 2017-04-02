@@ -13,6 +13,7 @@
     "express": "^4.14.0",
     "express-https-redirect": "^1.0.0",
     "express-session": "^1.15.0",
+    "greenlock-express": "^2.0.9",
     "le-challenge-fs": "^2.0.8",
     "le-store-certbot": "^2.0.3",
     "letsencrypt-express": "^2.0.5",
@@ -22,6 +23,8 @@
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "q": "^1.4.1",
-    "redirect-https": "^1.1.1"
+    "redirect-https": "^1.1.1",
+    "serve-favicon": "^2.4.1",
+    "spdy": "^3.4.4"
   }
 }

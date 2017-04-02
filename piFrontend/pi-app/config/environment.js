@@ -46,5 +46,14 @@ module.exports = function(environment) {
 
   }
 
+    ENV.serviceWorker = {
+      enabled: false,
+      /*debug: true,
+      includeRegistration: true,
+      serviceWorkerFile: "service-worker.js",
+      skipWaiting: true,
+      excludePaths: ['/', 'index.html', new RegExp(/.\.map$/), 'test.*', 'robots.txt', 'assets/failed.png', 'assets/passed.png', 'assets/test-support.css', 'assets/test-support.js', 'assets/tests.js', 'testem.js'],*/
+    };
+
   return ENV;
 };
