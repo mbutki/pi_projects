@@ -7,17 +7,26 @@ import datetime
 import logging as log
 import pickle 
 import requests
+import os
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
 
-log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level)
+PI_DIR = '/home/mbutki/pi_projects'
+LOG_NAME = 'fetch_weather.log'
 
-db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
-pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
+db_config = json.load(open('{}/db.config'.format(PI_DIR)))
+pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
 LOCATION = pi_config['location']
+LOG_DIR = pi_config['log_dir']
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+log_level = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=log_level, filename='{}/{}'.format(LOG_DIR, LOG_NAME))
+log.getLogger("requests").setLevel(logging.WARNING)
+log.getLogger("urllib3").setLevel(logging.WARNING)
 
 API_KEY = '867b5828c1e4ef22'
 STATE = 'CA'

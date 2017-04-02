@@ -8,16 +8,27 @@ import json
 import datetime
 import logging as log
 import gmail_utils
+import traceback
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
 
-log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level)
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
+
+LOG_NAME = 'readMotionSensors.log'
+LOG_DIR = pi_config['log_dir']
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+log_level = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=log_level,
+                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+                format='%(asctime)s %(levelname)s %(message)s',
+                filemode='w')
+
 LOCATION = pi_config['location']
 EMAIL_LIST = pi_config['email_list']
 MOTION_SENSORS = pi_config.get('motion_sensors', {})
@@ -80,27 +91,36 @@ def alertAfterWait(locations):
 def main():
     gpio.setmode(gpio.BCM)
     trigger_count = 0
+    crashed = False
 
     for location, pin in MOTION_SENSORS.iteritems():
         gpio.setup(pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
 
     try:
         while True:
-            enabled, triggered = fetchSecurityStatus()
-            log.debug('DB READ: enabled:{0} triggered:{1}'.format(enabled, triggered))
-            if enabled and not triggered:
-            #if enabled:
-                locations = checkMotionSensors()
-                log.debug('sensor location value:{0}'.format(locations))
-                if len(locations) > 0:
-                    trigger_count += 1
-                    log.debug('trigger at:{0} of {1}'.format(trigger_count, TRIGGER_THRESHOLD))
-                    if trigger_count >= TRIGGER_THRESHOLD:
-                        alertAfterWait(locations)
-                else:
-                    trigger_count = 0
-                
-            time.sleep(READ_DELAY)
+            try:
+                enabled, triggered = fetchSecurityStatus()
+                log.debug('DB READ: enabled:{0} triggered:{1}'.format(enabled, triggered))
+                if enabled and not triggered:
+                #if enabled:
+                    locations = checkMotionSensors()
+                    log.debug('sensor location value:{0}'.format(locations))
+                    if len(locations) > 0:
+                        trigger_count += 1
+                        log.debug('trigger at:{0} of {1}'.format(trigger_count, TRIGGER_THRESHOLD))
+                        if trigger_count >= TRIGGER_THRESHOLD:
+                            alertAfterWait(locations)
+                    else:
+                        trigger_count = 0
+            except Exception as e:
+                log.error('main loop exception: {}'.format(traceback.format_exc()))
+                if not crashed:
+                    crashed = True
+                    gmail_utils.send_message(EMAIL_LIST[0], EMAIL_LIST, 
+                                             'security crashed', 
+                                             'Main loop of motion sensor read crashed\n{}'.format(traceback.format_exc()))
+
+           time.sleep(READ_DELAY)
     except KeyboardInterrupt:
         log.info('\nExiting')
     finally:

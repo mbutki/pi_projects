@@ -8,21 +8,35 @@ import argparse
 from pymongo import MongoClient
 import datetime
 from Adafruit_SHT31 import *
+import logging as log
+import traceback
 
-SPI_PORT   = 0
-SPI_DEVICE = 0
-mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
+parser = argparse.ArgumentParser(description='Display Weather')
+parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
+args = parser.parse_args()
+
+
 READ_FREQ_SECS = 1
 WRITE_FREQ_SECS = 1 * 60 * 10
 
+
+
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
-
+LOG_DIR = pi_config['log_dir']
 LOCATION = pi_config['location']
-INPUT_PIN = pi_config['temperature_MCP3008_pin']
-TEMP_CORRECTION = pi_config['temperature_correction']
 
-parser = argparse.ArgumentParser(description='Read temperature')
+LOG_NAME = 'readTemperature_SHT31-D_log.txt'
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+log_level = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=log_level,
+                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+                format='%(asctime)s %(levelname)s %(message)s',
+                filemode='w')
+
+
+parser = argparse.ArgumentParser(description='Read temperature and humidity')
 parser.add_argument('-v', default=False, action='store_true',
                     help='verbose mode')
 args = parser.parse_args()
@@ -33,34 +47,40 @@ def main():
     if args.v:
         print 'location:{0} db_host:{1} db_name:{2} db_user:{3}'.format(LOCATION, db_config['host'], db_config['database'], db_config['user'])
 
-    data = []
+    temp_data = []
+    humid_data = []
     while True:
-        degrees = sensor.read_temperature()
-        humidity = sensor.read_humidity()
+        try: 
+            temp = sensor.read_temperature()
+            humidity = sensor.read_humidity()
 
-        #value = mcp.read_adc(INPUT_PIN)
+            temp_F = (temp * 9.0 / 5.0) + 32
+            if len(temp_data) < WRITE_FREQ_SECS:
+                temp_data.append(temp_F)
+                humid_data.append(humidity)
+                if args.v:
+                    print temp_F, humidity
+            else:
+                temp_median = numpy.median(numpy.array(temp_data))
+                humid_median = numpy.median(numpy.array(humid_data))
+                temp_data = []
 
-        #millivolts = (value + TEMP_CORRECTION) * (3300.0 / 1024.0)
-        #temp_C = (millivolts - 500.0) / 10.0
-        temp_F = (degrees * 9.0 / 5.0) + 32
-        if len(data) < WRITE_FREQ_SECS:
-            data.append(temp_F)
-            if args.v:
-                print temp_F
-        else:
-            median = numpy.median(numpy.array(data))
-            data = []
+                client = MongoClient(db_config['host'])
+                db = client.piData
 
-            client = MongoClient(db_config['host'])
-            db = client.piData
+                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_median}
+                db.temperatures.insert_one(doc)
 
-            doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': median}
-            db.temperatures.insert_one(doc)
-            client.close()
-            if args.v:
-                print 'write to db:{0}'.format(median)
+                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': humid_median}
+                db.humidities.insert_one(doc) 
 
-        time.sleep(READ_FREQ_SECS)
+                client.close()
+                if args.v:
+                    print 'write to db:{0} {1}'.format(temp_median, humid_median)
+
+            time.sleep(READ_FREQ_SECS)
+        except Exception as e:
+            log.error('main() exception: {}'.format(traceback.format_exc()))
 
 if __name__ == '__main__':
     main()
