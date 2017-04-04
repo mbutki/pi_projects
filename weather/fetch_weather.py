@@ -25,8 +25,8 @@ if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 log_level = log.DEBUG if args.v else log.INFO
 log.basicConfig(level=log_level, filename='{}/{}'.format(LOG_DIR, LOG_NAME))
-log.getLogger("requests").setLevel(logging.WARNING)
-log.getLogger("urllib3").setLevel(logging.WARNING)
+log.getLogger("requests").setLevel(log.WARNING)
+log.getLogger("urllib3").setLevel(log.WARNING)
 
 API_KEY = '867b5828c1e4ef22'
 STATE = 'CA'
