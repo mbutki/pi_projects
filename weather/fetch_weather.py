@@ -33,7 +33,7 @@ STATE = 'CA'
 CITY = 'Palo_Alto'
 
 def fetchWeather():
-    data = requests.get('http://api.wunderground.com/api/{0}/forecast10day/hourly10day/conditions/q/{1}/{2}.json'.format(API_KEY, STATE, CITY)).json()
+    data = requests.get('http://api.wunderground.com/api/{0}/forecast10day/hourly10day/conditions/astronomy/q/{1}/{2}.json'.format(API_KEY, STATE, CITY)).json()
     #pickle.dump(data, open('weather.pkl', 'w'))
     #data = pickle.load(open('weather.pkl', 'r'))
     return data
@@ -52,6 +52,17 @@ def parseWeather(raw_weather):
             'pop': int(item['pop'])
         }
     weather['hours'] = hours
+
+    rise_hour = int(raw_weather['sun_phase']['sunrise']['hour'])
+    if (int(raw_weather['sun_phase']['sunrise']['minute']) >=30):
+        rise_hour += 1
+
+    set_hour = int(raw_weather['sun_phase']['sunset']['hour'])
+    if (int(raw_weather['sun_phase']['sunset']['minute']) >=30):
+        set_hour += 1
+
+    weather['rise'] = rise_hour
+    weather['set'] = set_hour
 
     current = {
         'weather': str(raw_weather['current_observation']['weather']),

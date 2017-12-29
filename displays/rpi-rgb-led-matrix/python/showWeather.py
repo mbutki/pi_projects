@@ -44,21 +44,20 @@ TEXT_ICON_PAIRS = None
 
 HIGH_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
-#CURRENT_TEMP_COLOR = graphics.Color(249, 207, 0)
 CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
 
-#NOON_BAR_COLOR = graphics.Color(100, 21, 0)
-#MIDNIGHT_BAR_COLOR = graphics.Color(100, 21, 0)
-
-NOON_BAR_COLOR = graphics.Color(10, 10, 10)
-#MIDNIGHT_BAR_COLOR = NOON_BAR_COLOR
-MIDNIGHT_BAR_COLOR = graphics.Color(60, 60, 60)
+DAYLIGHT_BAR_COLOR = graphics.Color(25, 25, 05)
+NOON_BAR_COLOR = graphics.Color(80, 80, 80)
+MIDNIGHT_BAR_COLOR = graphics.Color(50, 50, 50)
 
 TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
-POP_LINE_COLOR = graphics.Color(40, 110, 206)
-TEMP_INCREMENT_LINE_COLOR = graphics.Color(10, 10, 10)
+POP_LINE_COLOR = graphics.Color(0, 130, 255)
+TEMP_INCREMENT_LINE_COLOR = graphics.Color(40, 40, 40)
 
-RUNNER_DOT_COLOR = graphics.Color(130, 0, 0)
+HIGH_TEMP_LINE_COLOR = graphics.Color(130, 0, 0)
+LOW_TEMP_LINE_COLOR = graphics.Color(0, 100, 200)
+
+RUNNER_DOT_COLOR = graphics.Color(150, 0, 0)
 
 BAR_CHART_BOTTOM = 31
 BAR_MIN_TEMP = 30
@@ -104,7 +103,7 @@ def fetchIndoorTemps():
     db = client.piData
 
     rows = db.temperatures.find({"location" : "shelf"}).sort('time', -1).limit(1)
-    temp =  rows[0]['value']
+    temp = rows[0]['value']
 
     client.close()
     return temp
@@ -216,6 +215,15 @@ def bars(weather, offscreen_canvas, tick):
     BAR_LEFT = 10
 
     horizontal_temps = [40, 60, 80, 100]
+
+    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
+    for i, epoch in enumerate(epochs):
+        hour = weather['hours'][epoch]
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+        column = BAR_LEFT + i
+        if dt.hour >= weather['rise'] and dt.hour <= weather['set']:
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
+
     for h_temp in horizontal_temps:
         y = BAR_CHART_BOTTOM - ((h_temp - BAR_MIN_TEMP) / TEMP_DIV)
         y = int(y)
@@ -246,30 +254,29 @@ def bars(weather, offscreen_canvas, tick):
         prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_temp else None
 
         if dt.hour == 12:
-            graphics.DrawLine(offscreen_canvas, column+1, BAR_CHART_BOTTOM, column+1, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
         if dt.hour == 0:
-            graphics.DrawLine(offscreen_canvas, column+1, BAR_CHART_BOTTOM, column+1, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
         
         # temp
         if i != tick % CHART_WIDTH:
-            offscreen_canvas.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
+            base_temp = 80
+            low_temp = 50
+            if hour['temp'] >= base_temp:
+                offscreen_canvas.SetPixel(column, temp_y2, HIGH_TEMP_LINE_COLOR.red, HIGH_TEMP_LINE_COLOR.green, HIGH_TEMP_LINE_COLOR.blue)
+            elif hour['temp'] <= low_temp:
+                offscreen_canvas.SetPixel(column, temp_y2, LOW_TEMP_LINE_COLOR.red, LOW_TEMP_LINE_COLOR.green, LOW_TEMP_LINE_COLOR.blue)
+            else:
+                offscreen_canvas.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
+
             if prev_temp:
                 drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, offscreen_canvas, column, TEMP_LINE_COLOR)
-                #if prev_temp < temp - 1: # draw up on current column
-                #    graphics.DrawLine(offscreen_canvas, column, prev_temp_y2 + 1, column, temp_y2, TEMP_LINE_COLOR)
-                #elif prev_temp > temp + 1: #draw down on previous column
-                #    graphics.DrawLine(offscreen_canvas, column - 1, prev_temp_y2, column - 1, temp_y2 + 1, TEMP_LINE_COLOR)
         
         # rain
-        #if pop > 1:
         if True:
             offscreen_canvas.SetPixel(column, pop_y2, POP_LINE_COLOR.red, POP_LINE_COLOR.green, POP_LINE_COLOR.blue)
             if prev_pop:
                 drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, offscreen_canvas, column, POP_LINE_COLOR)
-                #if prev_pop > pop + 1:
-                #    graphics.DrawLine(offscreen_canvas, column - 1, prev_pop_y2 , column - 1, pop_y2 - 1,     POP_LINE_COLOR)
-                #elif prev_pop < pop - 1:
-                #    graphics.DrawLine(offscreen_canvas, column,     pop_y2,     column,     prev_pop_y2 - 1, POP_LINE_COLOR)
             
         # animated dot
         if i == tick % CHART_WIDTH:
@@ -338,14 +345,14 @@ def main():
             if (tick % 60 * 5 * 2) == 0:
                 try:
                     weather = fetchWeather()
+                    indoor_temp = fetchIndoorTemps()
                 except Exception as e:
+                    print e
                     log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
                 daily_icons = getDailyIcons(weather)
 
-                indoor_temp = fetchIndoorTemps()
                 
             new_frame = Image.new('RGBA', (64,32))
-
 
             dailyIcons(daily_icons, new_frame, tick)
 
