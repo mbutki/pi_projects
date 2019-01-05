@@ -110,6 +110,7 @@ def fetchIndoorTemps():
 
 def getDailyIcons(weather):
     global UNKNOWN
+    global RAIN
     global TEXT_ICON_PAIRS
 
     daily_icons = []
@@ -123,7 +124,9 @@ def getDailyIcons(weather):
                 found = True
                 break
         if not found:
-            daily_icons.append(UNKNOWN)
+            #daily_icons.append(UNKNOWN)
+            daily_icons.append(RAIN)
+            #log.error('No icon for {}'.format(condition))
 
     return daily_icons
 
@@ -215,8 +218,10 @@ def bars(weather, offscreen_canvas, tick):
     BAR_LEFT = 10
 
     horizontal_temps = [40, 60, 80, 100]
-
     epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
+    #log.error('epochs:{0}'.format(epochs));
+    #log.error('weather[hours]:{0}'.format(weather['hours']));
+    #log.error('weather:{0}'.format(weather));
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
         dt =  datetime.datetime.fromtimestamp(float(epoch))
@@ -347,11 +352,9 @@ def main():
                     weather = fetchWeather()
                     indoor_temp = fetchIndoorTemps()
                 except Exception as e:
-                    print e
                     log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
                 daily_icons = getDailyIcons(weather)
 
-                
             new_frame = Image.new('RGBA', (64,32))
 
             dailyIcons(daily_icons, new_frame, tick)
@@ -360,7 +363,6 @@ def main():
             offscreen_canvas.SetImage(new_frame, 0, 0)
 
             #drawWeekendLines(offscreen_canvas, weather, tick)
-
             dailyText(weather, offscreen_canvas, medium_font, small_font)
             current(weather['current'], offscreen_canvas, medium_font)
 

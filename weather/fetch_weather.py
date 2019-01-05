@@ -24,7 +24,10 @@ LOG_DIR = pi_config['log_dir']
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level, filename='{}/{}'.format(LOG_DIR, LOG_NAME))
+log.basicConfig(level=log_level,
+                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+                format='%(asctime)s %(levelname)s %(message)s',
+                filemode='a')
 log.getLogger("requests").setLevel(log.WARNING)
 log.getLogger("urllib3").setLevel(log.WARNING)
 
@@ -33,9 +36,12 @@ STATE = 'CA'
 CITY = 'Palo_Alto'
 
 def fetchWeather():
-    data = requests.get('http://api.wunderground.com/api/{0}/forecast10day/hourly10day/conditions/astronomy/q/{1}/{2}.json'.format(API_KEY, STATE, CITY)).json()
+    url = 'http://api.wunderground.com/api/{0}/pws:0/forecast10day/hourly10day/conditions/astronomy/q/{1}/{2}.json'.format(API_KEY, STATE, CITY)
+    print url
+    data = requests.get(url).json()
     #pickle.dump(data, open('weather.pkl', 'w'))
     #data = pickle.load(open('weather.pkl', 'r'))
+    #print data
     return data
 
 def parseWeather(raw_weather):    
@@ -47,11 +53,13 @@ def parseWeather(raw_weather):
         #w_time = datetime.datetime.fromtimestamp(int(epoc))
         #hours[w_time] = {
         hours[epoch] = {
-            'temp': int(item['temp']['english']),
+            'temp': int(float(item['temp']['english'])),
             'condition': str(item['condition']),
             'pop': int(item['pop'])
         }
     weather['hours'] = hours
+    if not weather['hours']:
+        log.error("hours was empty: {0}".format(raw_weather))
 
     rise_hour = int(raw_weather['sun_phase']['sunrise']['hour'])
     if (int(raw_weather['sun_phase']['sunrise']['minute']) >=30):
@@ -100,11 +108,14 @@ def storeWeather(weather):
     client.close()
 
 def main():
-    raw_weather = fetchWeather()
-    weather = parseWeather(raw_weather)
-    for time, day in sorted(weather['days'].iteritems()):
-        print time, day
-    storeWeather(weather)
+    try:
+        raw_weather = fetchWeather()
+        weather = parseWeather(raw_weather)
+        for time, day in sorted(weather['days'].iteritems()):
+            print time, day
+        storeWeather(weather)
+    except Error as err:
+        log.error("main error: {0}".format(err))
 
 if __name__ == '__main__':
     main()
