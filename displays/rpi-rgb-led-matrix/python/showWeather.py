@@ -52,10 +52,11 @@ MIDNIGHT_BAR_COLOR = graphics.Color(50, 50, 50)
 
 TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
 POP_LINE_COLOR = graphics.Color(0, 130, 255)
+PERCIP_INTENSITY_LINE_COLOR = graphics.Color(134, 36, 214)
 TEMP_INCREMENT_LINE_COLOR = graphics.Color(40, 40, 40)
 
 HIGH_TEMP_LINE_COLOR = graphics.Color(130, 0, 0)
-LOW_TEMP_LINE_COLOR = graphics.Color(0, 100, 200)
+LOW_TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
 
 RUNNER_DOT_COLOR = graphics.Color(150, 0, 0)
 
@@ -130,23 +131,7 @@ def getDailyIcons(weather):
 
     return daily_icons
 
-def drawWeekendLines(offscreen_canvas, weather, tick):
-    for j, epoch in enumerate(sorted(weather['days'])[:5]):
-        offset = 0
-        if j > 0:
-            offset = j * 13
-        else:
-            offset = 0
-
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-        if dt.weekday() == 5 or dt.weekday() == 0:
-            #graphics.DrawLine(offscreen_canvas, offset-1, 0, offset-1 , 15, HIGH_TEMP_COLOR)
-            for k in range(5):
-                #offscreen_canvas.SetPixel(offset-1, i, random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                offscreen_canvas.SetPixel(offset-1, (tick%7)+3+k, random.randint(0, 200), random.randint(0, 200), random.randint(0, 200))
-                offscreen_canvas.SetPixel(offset-2, (tick%7)+3+k, random.randint(0, 200), random.randint(0, 200), random.randint(0, 200))
-
-def dailyIcons(daily_icons, new_frame, tick):
+def drawDailyIcons(daily_icons, new_frame, tick):
     for j, day in enumerate(daily_icons):
         offset = 0
         if j > 0:
@@ -156,7 +141,7 @@ def dailyIcons(daily_icons, new_frame, tick):
         this_day_frame_index = (tick + j*4) % len(day)
         new_frame.paste(day[this_day_frame_index], (offset,0))
 
-def dailyText(weather, offscreen_canvas, medium_font, small_font):
+def drawDailyText(weather, offscreen_canvas, medium_font, small_font):
     global HIGH_TEMP_COLOR
     global POP_COLOR
 
@@ -201,27 +186,18 @@ def dailyText(weather, offscreen_canvas, medium_font, small_font):
         if dt.weekday() == 0:
             graphics.DrawLine(offscreen_canvas, offset-3, 12, offset-3 , 15, CURRENT_TEMP_COLOR)
 
-def current(current, offscreen_canvas, medium_font):
+def drawCurrent(current, offscreen_canvas, medium_font):
     global CURRENT_TEMP_COLOR
 
     graphics.DrawText(offscreen_canvas, medium_font, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current['temp']))))
 
-def indoor(current, offscreen_canvas, medium_font):
+def drawIndoor(current, offscreen_canvas, medium_font):
     global CURRENT_TEMP_COLOR
 
     graphics.DrawText(offscreen_canvas, medium_font, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
 
-def bars(weather, offscreen_canvas, tick):
-    TEMP_DIV = 5.0
-    POP_DIV = 7.0
-    CHART_WIDTH = 44
-    BAR_LEFT = 10
 
-    horizontal_temps = [40, 60, 80, 100]
-    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
-    #log.error('epochs:{0}'.format(epochs));
-    #log.error('weather[hours]:{0}'.format(weather['hours']));
-    #log.error('weather:{0}'.format(weather));
+def drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT):
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
         dt =  datetime.datetime.fromtimestamp(float(epoch))
@@ -229,12 +205,23 @@ def bars(weather, offscreen_canvas, tick):
         if dt.hour >= weather['rise'] and dt.hour <= weather['set']:
             graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
 
+def drawHorBars(offscreen_canvas, horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH):
     for h_temp in horizontal_temps:
         y = BAR_CHART_BOTTOM - ((h_temp - BAR_MIN_TEMP) / TEMP_DIV)
         y = int(y)
         graphics.DrawLine(offscreen_canvas, BAR_LEFT, y, BAR_LEFT + CHART_WIDTH - 1, y, TEMP_INCREMENT_LINE_COLOR)
 
-    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
+def drawVertBars(epochs, weather, offscreen_canvas, BAR_LEFT):
+    for i, epoch in enumerate(epochs):
+        column = BAR_LEFT + i
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+
+        if dt.hour == 12:
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
+        if dt.hour == 0:
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
+
+def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, offscreen_canvas, tick):
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
 
@@ -243,27 +230,15 @@ def bars(weather, offscreen_canvas, tick):
 
         temp = int(round( (hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
 
-        pop = int(round(hour['pop'] / POP_DIV)) - 1
-
         prev_temp = None
         if prev_hour:
             prev_temp = int(round( (prev_hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
 
-        prev_pop = int(round( prev_hour['pop'] / POP_DIV )) - 1 if prev_hour else None
-
         column = BAR_LEFT + i
         temp_y2 = BAR_CHART_BOTTOM - temp
-        pop_y2 = BAR_CHART_BOTTOM - pop
-
         prev_temp_y2 = BAR_CHART_BOTTOM - prev_temp if prev_temp else None
-        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_temp else None
 
-        if dt.hour == 12:
-            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
-        if dt.hour == 0:
-            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
-        
-        # temp
+        # Temperature Line
         if i != tick % CHART_WIDTH:
             base_temp = 80
             low_temp = 50
@@ -276,22 +251,95 @@ def bars(weather, offscreen_canvas, tick):
 
             if prev_temp:
                 drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, offscreen_canvas, column, TEMP_LINE_COLOR)
-        
-        # rain
+
+        # Animated Dot
+        if i == tick % CHART_WIDTH:
+            offscreen_canvas.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
+
+def drawPopLine(epochs, weather, POP_DIV, BAR_LEFT, offscreen_canvas):
+    for i, epoch in enumerate(epochs):
+        hour = weather['hours'][epoch]
+
+        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+
+        pop = int(round(hour['pop'] / POP_DIV)) - 1
+        prev_pop = int(round( prev_hour['pop'] / POP_DIV )) - 1 if prev_hour else None
+
+        column = BAR_LEFT + i
+        pop_y2 = BAR_CHART_BOTTOM - pop
+        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
+
         if True:
             offscreen_canvas.SetPixel(column, pop_y2, POP_LINE_COLOR.red, POP_LINE_COLOR.green, POP_LINE_COLOR.blue)
             if prev_pop:
                 drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, offscreen_canvas, column, POP_LINE_COLOR)
-            
-        # animated dot
-        if i == tick % CHART_WIDTH:
-            offscreen_canvas.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
+
+def drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, offscreen_canvas, MAX_PERCIP_INTENSITY):
+    for i, epoch in enumerate(epochs):
+        hour = weather['hours'][epoch]
+
+        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+
+        # cap intensity to MAX_PERCIP_INTENSITY
+        hour['precipIntensity'] = MAX_PERCIP_INTENSITY if hour['precipIntensity'] > MAX_PERCIP_INTENSITY else hour['precipIntensity'] 
+
+        pop = int(round(hour['precipIntensity'] / PERCIP_INTENSITY_DIV)) - 1
+        prev_pop = int(round( prev_hour['precipIntensity'] / PERCIP_INTENSITY_DIV )) - 1 if prev_hour else None
+
+        column = BAR_LEFT + i
+        pop_y2 = BAR_CHART_BOTTOM - pop
+        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
+
+        if True:
+            offscreen_canvas.SetPixel(column, pop_y2, PERCIP_INTENSITY_LINE_COLOR.red, PERCIP_INTENSITY_LINE_COLOR.green, PERCIP_INTENSITY_LINE_COLOR.blue)
+            if prev_pop:
+                drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, offscreen_canvas, column, PERCIP_INTENSITY_LINE_COLOR)
+
+def drawBars(weather, offscreen_canvas, tick):
+    TEMP_DIV = 5.0
+    POP_DIV = 7.0
+    PERCIP_INTENSITY_DIV = 0.02
+    MAX_PERCIP_INTENSITY = 0.3
+    CHART_WIDTH = 44
+    BAR_LEFT = 10
+
+    horizontal_temps = [40, 60, 80, 100]
+    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
+
+    drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT)
+    drawHorBars(offscreen_canvas, horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH)
+    drawVertBars(epochs, weather, offscreen_canvas, BAR_LEFT)
+    drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, offscreen_canvas, tick)
+    drawPopLine(epochs, weather, POP_DIV, BAR_LEFT, offscreen_canvas)
+    drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, offscreen_canvas, MAX_PERCIP_INTENSITY)
 
 def drawConnectingLine(prev, cur, prev_y2, y2, offscreen_canvas, column, color):
     if prev > cur + 1:
         graphics.DrawLine(offscreen_canvas, column - 1, prev_y2 , column - 1, y2 - 1, color)
     elif prev < cur - 1:
         graphics.DrawLine(offscreen_canvas, column,     y2,     column,     prev_y2 - 1, color)
+
+def fetchData():
+    weather = fetchWeather()
+    daily_icons = getDailyIcons(weather)
+    indoor_temp = fetchIndoorTemps()
+    return weather, daily_icons, indoor_temp
+
+def createMatrix():
+    # Configuration for the matrix
+    options = RGBMatrixOptions()
+    options.rows = 32
+    options.chain_length = 2
+    options.gpio_slowdown = 2
+    options.pwm_lsb_nanoseconds = 100
+    options.brightness = 65
+    # options.show_refresh_rate = 1
+    options.hardware_mapping = 'adafruit-hat-pwm'  # If you have an Adafruit HAT: 'adafruit-hat'
+
+    matrix = RGBMatrix(options = options)
+    return matrix
 
 def main():
     global Adafruit_RGBmatrix
@@ -312,63 +360,39 @@ def main():
     UNKNOWN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/unknown.gif')
 
     TEXT_ICON_PAIRS = (
-        (set(['Clear', 'Sunny']), SUN),
-        (set(['Cloudy', 'Overcast']), CLOUD),
-        #(set(['Scattered Clouds', 'Partly Cloudy', 'Mostly Sunny']), MOSTLY_CLOUD),
-        (set(['Scattered Clouds', 'Partly Cloudy', 'Mostly Sunny']), MOSTLY_SUN),
-        (set(['Mostly Cloudy', 'Partly Sunny']), MOSTLY_CLOUD),
-        (set(['Chance of Rain', 'Rain']), RAIN),
+        (set(['clear-day', 'clear-night', 'wind', ]), SUN),
+        (set(['fog', 'cloudy']), CLOUD),
+        (set(['partly-cloudy-day', 'partly-cloudy-night']), MOSTLY_SUN),
+        (set(['rain', 'snow', 'sleet', ]), RAIN),
     )
-    
+
     try:
-        weather = fetchWeather()
-        daily_icons= getDailyIcons(weather)
-
-        indoor_temp = fetchIndoorTemps()
-
-        # Configuration for the matrix
-        options = RGBMatrixOptions()
-        options.rows = 32
-        options.chain_length = 2
-        options.gpio_slowdown = 2
-        options.pwm_lsb_nanoseconds = 100
-        options.brightness = 65
-        #options.show_refresh_rate = 1
-        options.hardware_mapping = 'adafruit-hat-pwm'  # If you have an Adafruit HAT: 'adafruit-hat'
-
-        matrix = RGBMatrix(options = options)
+        weather, daily_icons, indoor_temp = fetchData()
+        matrix = createMatrix()
         offscreen_canvas = matrix.CreateFrameCanvas()
 
         medium_font = graphics.Font()
         small_font = graphics.Font()
         medium_font.LoadFont('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/fonts/5x7_mike.bdf')
-        #medium_font.LoadFont('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/fonts/5x7_mike_square.bdf')
         small_font.LoadFont('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/fonts/4x6_mike_bigger.bdf')
 
         tick = 1
         while True:
             if (tick % 60 * 5 * 2) == 0:
                 try:
-                    weather = fetchWeather()
-                    indoor_temp = fetchIndoorTemps()
+                    weather, daily_icons, indoor_temp = fetchData()
                 except Exception as e:
                     log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
-                daily_icons = getDailyIcons(weather)
 
             new_frame = Image.new('RGBA', (64,32))
-
-            dailyIcons(daily_icons, new_frame, tick)
-
+            drawDailyIcons(daily_icons, new_frame, tick)
             new_frame = new_frame.convert('RGB')
             offscreen_canvas.SetImage(new_frame, 0, 0)
 
-            #drawWeekendLines(offscreen_canvas, weather, tick)
-            dailyText(weather, offscreen_canvas, medium_font, small_font)
-            current(weather['current'], offscreen_canvas, medium_font)
-
-            indoor(indoor_temp, offscreen_canvas, medium_font)
-
-            bars(weather, offscreen_canvas, tick)
+            drawDailyText(weather, offscreen_canvas, medium_font, small_font)
+            drawCurrent(weather['current'], offscreen_canvas, medium_font)
+            drawIndoor(indoor_temp, offscreen_canvas, medium_font)
+            drawBars(weather, offscreen_canvas, tick)
 
             offscreen_canvas = matrix.SwapOnVSync(offscreen_canvas)
             time.sleep(0.5)

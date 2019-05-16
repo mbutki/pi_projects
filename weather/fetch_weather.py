@@ -31,67 +31,59 @@ log.basicConfig(level=log_level,
 log.getLogger("requests").setLevel(log.WARNING)
 log.getLogger("urllib3").setLevel(log.WARNING)
 
-API_KEY = '867b5828c1e4ef22'
+API_KEY = 'd8b5db7e7af3eea207bbc4766e5e1ac3'
 STATE = 'CA'
 CITY = 'Palo_Alto'
+LAT = '37.441607'
+LON = '-122.125530'
 
 def fetchWeather():
-    url = 'http://api.wunderground.com/api/{0}/pws:0/forecast10day/hourly10day/conditions/astronomy/q/{1}/{2}.json'.format(API_KEY, STATE, CITY)
-    print url
+    url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)
     data = requests.get(url).json()
-    #pickle.dump(data, open('weather.pkl', 'w'))
-    #data = pickle.load(open('weather.pkl', 'r'))
-    #print data
     return data
 
-def parseWeather(raw_weather):    
+def parseHours(raw_weather):
+    hours = {}
+    for item in raw_weather['hourly']['data']:
+        epoch = str(item['time'])
+        hours[epoch] = {
+            'temp': int(item['temperature']),
+            'condition': item['icon'],
+            'pop': int(item['precipProbability'] * 100),
+            'precipIntensity': float(item['precipIntensity']),
+        }
+    return hours
+
+def parseCurrent(raw_weather):
+    current = {
+        'weather': raw_weather['currently']['icon'],
+        'temp': raw_weather['currently']['temperature'],
+        'relative_humidity': raw_weather['currently']['humidity']
+    }
+    return current
+
+def parseDays(raw_weather):
+    days = {}
+    for item in raw_weather['daily']['data']:
+        epoch = str(item['time'])
+        days[epoch] = {
+            'high': int(item['temperatureHigh']),
+            'low': int(item['temperatureLow']),
+            'condition': item['icon'],
+            'pop': int(item['precipProbability'] * 100),
+            'pretty': item['summary'],
+            'precipIntensity': float(item['precipIntensity']),
+        }
+    return days
+
+def parseWeather(raw_weather):
     weather = {}
 
-    hours = {}
-    for item in raw_weather['hourly_forecast']:
-        epoch = item['FCTTIME']['epoch']
-        #w_time = datetime.datetime.fromtimestamp(int(epoc))
-        #hours[w_time] = {
-        hours[epoch] = {
-            'temp': int(float(item['temp']['english'])),
-            'condition': str(item['condition']),
-            'pop': int(item['pop'])
-        }
-    weather['hours'] = hours
-    if not weather['hours']:
-        log.error("hours was empty: {0}".format(raw_weather))
-
-    rise_hour = int(raw_weather['sun_phase']['sunrise']['hour'])
-    if (int(raw_weather['sun_phase']['sunrise']['minute']) >=30):
-        rise_hour += 1
-
-    set_hour = int(raw_weather['sun_phase']['sunset']['hour'])
-    if (int(raw_weather['sun_phase']['sunset']['minute']) >=30):
-        set_hour += 1
-
-    weather['rise'] = rise_hour
-    weather['set'] = set_hour
-
-    current = {
-        'weather': str(raw_weather['current_observation']['weather']),
-        'temp': raw_weather['current_observation']['temp_f'],
-        'relative_humidity': int(raw_weather['current_observation']['relative_humidity'][:-1])
-    }
-    weather['current'] = current
-
-    days = {}
-    for item in raw_weather['forecast']['simpleforecast']['forecastday']:
-        epoch = item['date']['epoch']
-        #w_time = datetime.datetime.fromtimestamp(int(epoch))
-        #days[w_time] = {
-        days[epoch] = {
-            'high': int(item['high']['fahrenheit']),
-            'low': int(item['low']['fahrenheit']),
-            'condition': str(item['conditions']),
-            'pop': int(item['pop']),
-            'pretty': item['date']['pretty']
-        }
-    weather['days'] = days
+    weather['hours'] = parseHours(raw_weather)
+    weather['current'] = parseCurrent(raw_weather)
+    weather['days'] = parseDays(raw_weather)
+    weather['rise'] = datetime.datetime.fromtimestamp(raw_weather['daily']['data'][0]['sunriseTime']).hour
+    weather['set'] = datetime.datetime.fromtimestamp(raw_weather['daily']['data'][0]['sunsetTime']).hour
 
     return weather
 
@@ -108,14 +100,14 @@ def storeWeather(weather):
     client.close()
 
 def main():
-    try:
+    #try:
         raw_weather = fetchWeather()
         weather = parseWeather(raw_weather)
-        for time, day in sorted(weather['days'].iteritems()):
-            print time, day
+        #for time, day in sorted(weather['days'].iteritems()):
+        #    print time, day
         storeWeather(weather)
-    except Error as err:
-        log.error("main error: {0}".format(err))
+    #except Exception as err:
+    #    log.error("main error: {0}".format(err))
 
 if __name__ == '__main__':
     main()
