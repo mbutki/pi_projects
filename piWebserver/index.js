@@ -227,13 +227,13 @@ function stdDataFetch(req, res, collection_name, api_name) {
     });
 }
 
-function stdDataFetch2(req, res, collection_name, api_name) {
+function securityStatusDataFetch(req, res, collection_name, api_name) {
     MongoClient.connect(mongo_url, function(err, db) {
         assert.equal(null, err);
         let location2data = {};
 
         let past_week = {"time": {$gte: new Date(new Date()- 1000*60*60*24*7)}};
-        var docs = db.collection(collection_name).find(past_week).toArray(function(err,docs){
+        var docs = db.collection(collection_name).find(past_week, {'sort': 'time'}).toArray(function(err,docs){
             for (let i=0; i<docs.length; i++) {
                 let doc = docs[i];
                 assert.equal(err, null);
@@ -246,7 +246,14 @@ function stdDataFetch2(req, res, collection_name, api_name) {
                     }
                     
                     location2data[doc.location].times.push(doc.time);
-                    location2data[doc.location].values.push(doc.value);
+                    let value = 0;
+                    if (doc.enabled) {
+                        value = 1;
+                    }
+                    if (doc.triggered) {
+                        value = 2;
+                    }
+                    location2data[doc.location].values.push(value);
                 }
             }
             let data = {};
@@ -281,6 +288,10 @@ app.get('/api/lights', loggedIn, function (req, res) {
 
 app.get('/api/humidities', loggedIn, function (req, res) {
     stdDataFetch(req, res, 'humidities', 'humidities');
+})
+
+app.get('/api/securityStatuses', loggedIn, function (req, res) {
+    securityStatusDataFetch(req, res, 'security_enable_status', 'securityStatuses');
 })
 
 //app.get('*', function (req, res) {

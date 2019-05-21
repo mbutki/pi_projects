@@ -1,23 +1,18 @@
 #!/usr/bin/python
-
 import time
 import datetime
-
 from Adafruit_LED_Backpack import SevenSegment
 
-# ===========================================================================
-# Clock Example
-# ===========================================================================
-segment = SevenSegment.SevenSegment(address=0x70)
-
+#segment = SevenSegment.SevenSegment(address=0x70)
 # Initialize the display. Must be called once before using the display.
-segment.begin()
+#segment.begin()
 
-segment.set_brightness(15)
-print "Press CTRL+Z to exit"
-
-# Continually update the time on a 4 char, 7-segment display
 while(True):
+  segment = SevenSegment.SevenSegment(address=0x70)
+  # Initialize the display. Must be called once before using the display.
+  segment.begin()
+
+  segment.set_brightness(15)
   now = datetime.datetime.now()
   hour = now.hour
   minute = now.minute

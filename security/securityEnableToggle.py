@@ -13,12 +13,22 @@ parser.add_argument('-v', default=False, action='store_true',
                     help='verbose mode')
 args = parser.parse_args()
 
-log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level)
-
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
+
 LOCATION = pi_config['location']
+EMAIL_LIST = pi_config['email_list']
+LOG_DIR = pi_config['log_dir']
+
+LOG_NAME = 'readMotionSensors.log'
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+log_level = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=log_level,
+                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+                format='%(asctime)s %(levelname)s %(message)s',
+                filemode='w')
 
 BUTTON_PIN = 13
 GREEN_LED_PIN = 5
