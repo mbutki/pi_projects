@@ -31,7 +31,7 @@ log.basicConfig(level=log_level,
 log.getLogger("requests").setLevel(log.WARNING)
 log.getLogger("urllib3").setLevel(log.WARNING)
 
-API_KEY = 'd8b5db7e7af3eea207bbc4766e5e1ac3'
+API_KEY = pi_config['weather_API_key']
 STATE = 'CA'
 CITY = 'Palo_Alto'
 LAT = '37.441607'
@@ -66,11 +66,12 @@ def parseDays(raw_weather):
     days = {}
     for item in raw_weather['daily']['data']:
         epoch = str(item['time'])
+        pop = int(round(item['precipProbability'] * 10) * 10)
         days[epoch] = {
             'high': int(item['temperatureHigh']),
             'low': int(item['temperatureLow']),
-            'condition': item['icon'],
-            'pop': int(item['precipProbability'] * 100),
+            'condition': 'rain' if pop > 20 else item['icon'],
+            'pop': pop,
             'pretty': item['summary'],
             'precipIntensity': float(item['precipIntensity']),
         }

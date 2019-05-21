@@ -131,7 +131,7 @@ def getDailyIcons(weather):
 
     return daily_icons
 
-def drawDailyIcons(daily_icons, new_frame, tick):
+def drawDailyIcons(daily_icons, new_frame, tick, weather):
     for j, day in enumerate(daily_icons):
         offset = 0
         if j > 0:
@@ -385,7 +385,7 @@ def main():
                     log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
             new_frame = Image.new('RGBA', (64,32))
-            drawDailyIcons(daily_icons, new_frame, tick)
+            drawDailyIcons(daily_icons, new_frame, tick, weather)
             new_frame = new_frame.convert('RGB')
             offscreen_canvas.SetImage(new_frame, 0, 0)
 
