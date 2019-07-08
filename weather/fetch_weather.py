@@ -74,7 +74,11 @@ def parseDays(raw_weather):
             'pop': pop,
             'pretty': item['summary'],
             'precipIntensity': float(item['precipIntensity']),
+            'moonPhase': float(item['moonPhase']),
+            'rise': int(item['sunriseTime']),
+            'set': int(item['sunsetTime'])
         }
+        print item['moonPhase'], float(item['moonPhase']), datetime.datetime.fromtimestamp(item['time'])
     return days
 
 def parseWeather(raw_weather):
@@ -83,8 +87,6 @@ def parseWeather(raw_weather):
     weather['hours'] = parseHours(raw_weather)
     weather['current'] = parseCurrent(raw_weather)
     weather['days'] = parseDays(raw_weather)
-    weather['rise'] = datetime.datetime.fromtimestamp(raw_weather['daily']['data'][0]['sunriseTime']).hour
-    weather['set'] = datetime.datetime.fromtimestamp(raw_weather['daily']['data'][0]['sunsetTime']).hour
 
     return weather
 

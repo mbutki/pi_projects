@@ -34,14 +34,6 @@ log.basicConfig(level=log_level,
                 format='%(asctime)s %(levelname)s %(message)s',
                 filemode='w')
 
-RAIN = None
-SUN = None
-CLOUD = None
-MOSTLY_CLOUD = None
-MOSTLY_SUN = None
-UNKNOWN = None
-TEXT_ICON_PAIRS = None
-
 HIGH_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
 CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
@@ -69,7 +61,6 @@ def processImage(path):
 
     frames = []
     p = im.getpalette()
-    last_frame = im.convert('RGBA')
     
     try:
         while True:            
@@ -77,11 +68,8 @@ def processImage(path):
                 im.putpalette(p)
             
             new_frame = Image.new('RGBA', im.size)
-            
             new_frame.paste(im, (0,0), im.convert('RGBA'))
-            #frames.append(new_frame.point(lambda p: p * 0.6))
             frames.append(new_frame)
-            last_frame = new_frame
             im.seek(im.tell() + 1)
     except EOFError:
         pass
@@ -109,37 +97,65 @@ def fetchIndoorTemps():
     client.close()
     return temp
 
+def getMoonPhaseIcon(phase):
+    if phase < 0.125:
+        return NEW_MOON
+    elif phase < 0.25:
+        return CRESCENT_MOON
+    elif phase < 0.375:
+        return QUARTER_MOON
+    elif phase < 0.5:
+        return GIBBOUS_MOON
+    elif phase < 0.625:
+        return FULL_MOON
+    elif phase < 0.75:
+        return GIBBOUS_MOON
+    elif phase < 0.875:
+        return QUARTER_MOON
+    elif phase < 1:
+        return CRESCENT_MOON
+    
+
 def getDailyIcons(weather):
     global UNKNOWN
     global RAIN
-    global TEXT_ICON_PAIRS
+    global TEXT_TO_ICON_DAY
+    global TEXT_TO_ICON_NIGHT
+    global MOON_PHASE_CONDITIONS
 
     daily_icons = []
-    for epoch in sorted(weather['days']):
+    for i, epoch in enumerate(sorted(weather['days'])):
         day = weather['days'][epoch]
         condition = day['condition']
-        found = False
-        for conditions, icon in TEXT_ICON_PAIRS:
-            if condition in conditions:
-                daily_icons.append(icon)
-                found = True
-                break
-        if not found:
-            #daily_icons.append(UNKNOWN)
-            daily_icons.append(RAIN)
-            #log.error('No icon for {}'.format(condition))
+        icons = [RAIN]
 
+        now = datetime.datetime.now()
+        sun_rise = datetime.datetime.fromtimestamp(day['rise'])
+        sun_set = datetime.datetime.fromtimestamp(day['set'])
+        if i == 0 and (now < sun_rise or now > sun_set):
+            # Current day nighttime
+            if condition in TEXT_TO_ICON_DAY:
+                icons = TEXT_TO_ICON_NIGHT[condition]
+                if condition in MOON_PHASE_CONDITIONS:
+                    icons.append(getMoonPhaseIcon(day['moonPhase']))
+        else:
+            # daytime
+            if condition in TEXT_TO_ICON_DAY:
+                icons = TEXT_TO_ICON_DAY[condition]
+
+        daily_icons.append(icons)
     return daily_icons
 
 def drawDailyIcons(daily_icons, new_frame, tick, weather):
-    for j, day in enumerate(daily_icons):
-        offset = 0
-        if j > 0:
-            offset = j * 13
-        else:
+    for j, icons in enumerate(daily_icons):
+        for icon in icons:
             offset = 0
-        this_day_frame_index = (tick + j*4) % len(day)
-        new_frame.paste(day[this_day_frame_index], (offset,0))
+            if j > 0:
+                offset = j * 13
+            else:
+                offset = 0
+            this_day_frame_index = (tick + j*4) % len(icon)
+            new_frame.paste(icon[this_day_frame_index], (offset,0), icon[this_day_frame_index])
 
 def drawDailyText(weather, offscreen_canvas, medium_font, small_font):
     global HIGH_TEMP_COLOR
@@ -200,9 +216,13 @@ def drawIndoor(current, offscreen_canvas, medium_font):
 def drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT):
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
+        riseTime = weather['days'][sorted(weather['days'])[0]]['rise']
+        setTime = weather['days'][sorted(weather['days'])[0]]['set']
+        sun_rise = datetime.datetime.fromtimestamp(riseTime).hour
+        sun_set = datetime.datetime.fromtimestamp(setTime).hour
         dt =  datetime.datetime.fromtimestamp(float(epoch))
         column = BAR_LEFT + i
-        if dt.hour >= weather['rise'] and dt.hour <= weather['set']:
+        if dt.hour >= sun_rise and dt.hour <= sun_set:
             graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
 
 def drawHorBars(offscreen_canvas, horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH):
@@ -350,21 +370,59 @@ def main():
     global MOSTLY_CLOUD
     global MOSTLY_SUN 
     global UNKNOWN
-    global TEXT_ICON_PAIRS
+    global NEW_MOON
+    global CRESCENT_MOON
+    global QUARTER_MOON
+    global GIBBOUS_MOON
+    global FULL_MOON
+    global TEXT_TO_ICON_DAY
+    global TEXT_TO_ICON_NIGHT
+    global MOON_PHASE_CONDITIONS
 
-    RAIN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/rain.gif')
-    SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/sun.gif')
-    CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/cloud.gif')
-    MOSTLY_CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/mostly_cloud.gif')
-    MOSTLY_SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/mostly_sun.gif')
-    UNKNOWN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/unknown.gif')
+    RAIN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/rain.gif')
+    SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/sun.gif')
+    NEW_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/new_moon.gif')
+    CRESCENT_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/crescent_moon.gif')
+    QUARTER_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/quarter_moon.gif')
+    GIBBOUS_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/gibbous_moon.gif')
+    FULL_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/full_moon.gif')
+    SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/sun.gif')
+    CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/cloud.gif')
+    JUST_CLOUDS = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/just_clouds.gif')
+    JUST_CLOUDS_NIGHT = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/just_clouds_night.gif')
+    MOSTLY_CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/mostly_cloud.gif')
+    MOSTLY_SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/mostly_sun.gif')
+    UNKNOWN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/unknown.gif')
 
-    TEXT_ICON_PAIRS = (
-        (set(['clear-day', 'clear-night', 'wind', ]), SUN),
-        (set(['fog', 'cloudy']), CLOUD),
-        (set(['partly-cloudy-day', 'partly-cloudy-night']), MOSTLY_SUN),
-        (set(['rain', 'snow', 'sleet', ]), RAIN),
-    )
+    TEXT_TO_ICON_DAY = {
+        'clear-day': [SUN],
+        'clear-night': [SUN],
+        'wind': [SUN],
+        'fog': [CLOUD],
+        'cloudy': [CLOUD],
+        'partly-cloudy-day': [SUN, JUST_CLOUDS],
+        'partly-cloudy-night': [SUN, JUST_CLOUDS],
+        'rain': [RAIN],
+        'snow': [RAIN],
+        'sleet': [RAIN]
+    }
+
+    TEXT_TO_ICON_NIGHT = {
+        'clear-day': [],
+        'clear-night': [],
+        'wind': [],
+        'fog': [CLOUD],
+        'cloudy': [CLOUD],
+        'partly-cloudy-day': [],
+        'partly-cloudy-night': [],
+        #'partly-cloudy-day': [JUST_CLOUDS_NIGHT],
+        #'partly-cloudy-night': [JUST_CLOUDS_NIGHT],
+        'rain': [RAIN],
+        'snow': [RAIN],
+        'sleet': [RAIN]
+    }
+
+    MOON_PHASE_CONDITIONS = {'clear-day', 'clear-night', 'wind', 'partly-cloudy-day', 'partly-cloudy-night'}
 
     try:
         weather, daily_icons, indoor_temp = fetchData()
