@@ -34,8 +34,10 @@ log.getLogger("urllib3").setLevel(log.WARNING)
 API_KEY = pi_config['weather_API_key']
 STATE = 'CA'
 CITY = 'Palo_Alto'
-LAT = '37.441607'
-LON = '-122.125530'
+LAT = '37.441607' # Palo Alto
+LON = '-122.125530' # Palo Alto
+#LAT = '41.258199' # Williamsport
+#LON = '-76.975901' # Williamsport
 
 def fetchWeather():
     url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)
@@ -78,7 +80,7 @@ def parseDays(raw_weather):
             'rise': int(item['sunriseTime']),
             'set': int(item['sunsetTime'])
         }
-        print item['moonPhase'], float(item['moonPhase']), datetime.datetime.fromtimestamp(item['time'])
+        # print item['moonPhase'], float(item['moonPhase']), datetime.datetime.fromtimestamp(item['time'])
     return days
 
 def parseWeather(raw_weather):
