@@ -17,7 +17,7 @@ parser.add_argument('-v', default=False, action='store_true', help='verbose mode
 args = parser.parse_args()
 
 READ_FREQ_SECS = 1
-WRITE_FREQ_SECS = 1 * 10 * 1 #10
+WRITE_FREQ_SECS = 1 * 60 * 10
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
