@@ -6,13 +6,13 @@ from Adafruit_LED_Backpack import SevenSegment
 #segment = SevenSegment.SevenSegment(address=0x70)
 # Initialize the display. Must be called once before using the display.
 #segment.begin()
+segment = SevenSegment.SevenSegment(address=0x70)
+# Initialize the display. Must be called once before using the display.
+segment.begin()
+
+segment.set_brightness(15)
 
 while(True):
-  segment = SevenSegment.SevenSegment(address=0x70)
-  # Initialize the display. Must be called once before using the display.
-  segment.begin()
-
-  segment.set_brightness(15)
   now = datetime.datetime.now()
   hour = now.hour
   minute = now.minute
