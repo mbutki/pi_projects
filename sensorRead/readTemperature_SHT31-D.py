@@ -1,11 +1,11 @@
 import time
 import Adafruit_GPIO.SPI as SPI
-import Adafruit_MCP3008
 import numpy
 import json
 import os
 import argparse
 from pymongo import MongoClient
+#import MySQLdb
 import datetime
 from Adafruit_SHT31 import *
 import logging as log
@@ -15,11 +15,8 @@ parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
 
-
 READ_FREQ_SECS = 1
 WRITE_FREQ_SECS = 1 * 60 * 10
-
-
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
@@ -75,6 +72,25 @@ def main():
                 db.humidities.insert_one(doc) 
 
                 client.close()
+
+                '''
+                db = MySQLdb.connect(host=db_config['host'],
+                             user=db_config['user'],
+                             passwd=db_config['password'],
+                             db=db_config['database'])
+                cur = db.cursor()
+                try:
+                    cmd = 'insert into temperature values(NOW(), "{0}", {1});'.format(LOCATION, temp)
+                    if args.v:
+                        print cmd
+                    cur.execute(cmd)
+                    db.commit()
+                except Exception as e:
+                    print 'had error:{0}'.format(e)
+                    db.rollback()
+                db.close()
+                '''
+
                 if args.v:
                     print 'write to db:{0} {1}'.format(temp_median, humid_median)
 

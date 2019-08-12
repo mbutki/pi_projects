@@ -132,7 +132,7 @@ def getDailyIcons(weather):
         now = datetime.datetime.now()
         sun_rise = datetime.datetime.fromtimestamp(day['rise'])
         sun_set = datetime.datetime.fromtimestamp(day['set'])
-        if i == 0 and (now < sun_rise or now > sun_set):
+        if i == 0 and (now > sun_set):
             # Current day nighttime
             if condition in TEXT_TO_ICON_DAY:
                 icons = TEXT_TO_ICON_NIGHT[condition]
@@ -142,7 +142,6 @@ def getDailyIcons(weather):
             # daytime
             if condition in TEXT_TO_ICON_DAY:
                 icons = TEXT_TO_ICON_DAY[condition]
-
         daily_icons.append(icons)
     return daily_icons
 
@@ -355,6 +354,7 @@ def createMatrix():
     options.gpio_slowdown = 2
     options.pwm_lsb_nanoseconds = 100
     options.brightness = 65
+    #options.brightness = 80
     # options.show_refresh_rate = 1
     options.hardware_mapping = 'adafruit-hat-pwm'  # If you have an Adafruit HAT: 'adafruit-hat'
 
@@ -443,6 +443,7 @@ def main():
                     log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
             new_frame = Image.new('RGBA', (64,32))
+            #daily_icons = [[NEW_MOON], [CRESCENT_MOON ], [QUARTER_MOON ], [GIBBOUS_MOON], [FULL_MOON]]
             drawDailyIcons(daily_icons, new_frame, tick, weather)
             new_frame = new_frame.convert('RGB')
             offscreen_canvas.SetImage(new_frame, 0, 0)
