@@ -35,6 +35,8 @@ log.basicConfig(level=log_level,
                 format='%(asctime)s %(levelname)s %(message)s',
                 filemode='w')
 
+LIB_DIR = PI_DIR + '/displays/rpi-rgb-led-matrix/bindings/python'
+
 HIGH_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
 CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
@@ -380,20 +382,20 @@ def main():
     global TEXT_TO_ICON_NIGHT
     global MOON_PHASE_CONDITIONS
 
-    RAIN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/rain.gif')
-    SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/sun.gif')
-    NEW_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/new_moon.gif')
-    CRESCENT_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/crescent_moon.gif')
-    QUARTER_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/quarter_moon.gif')
-    GIBBOUS_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/gibbous_moon.gif')
-    FULL_MOON = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/full_moon.gif')
-    SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/sun.gif')
-    CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/cloud.gif')
-    JUST_CLOUDS = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/just_clouds.gif')
-    JUST_CLOUDS_NIGHT = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/just_clouds_night.gif')
-    MOSTLY_CLOUD = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/mostly_cloud.gif')
-    MOSTLY_SUN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/mostly_sun.gif')
-    UNKNOWN = processImage('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/imgs/unknown.gif')
+    RAIN = processImage(LIB_DIR + '/imgs/rain.gif')
+    SUN = processImage(LIB_DIR + '/imgs/sun.gif')
+    NEW_MOON = processImage(LIB_DIR + '/imgs/new_moon.gif')
+    CRESCENT_MOON = processImage(LIB_DIR + '/imgs/crescent_moon.gif')
+    QUARTER_MOON = processImage(LIB_DIR + '/imgs/quarter_moon.gif')
+    GIBBOUS_MOON = processImage(LIB_DIR + '/imgs/gibbous_moon.gif')
+    FULL_MOON = processImage(LIB_DIR + '/imgs/full_moon.gif')
+    SUN = processImage(LIB_DIR + '/imgs/sun.gif')
+    CLOUD = processImage(LIB_DIR + '/imgs/cloud.gif')
+    JUST_CLOUDS = processImage(LIB_DIR + '/imgs/just_clouds.gif')
+    JUST_CLOUDS_NIGHT = processImage(LIB_DIR + '/imgs/just_clouds_night.gif')
+    MOSTLY_CLOUD = processImage(LIB_DIR + '/imgs/mostly_cloud.gif')
+    MOSTLY_SUN = processImage(LIB_DIR + '/imgs/mostly_sun.gif')
+    UNKNOWN = processImage(LIB_DIR + '/imgs/unknown.gif')
 
     TEXT_TO_ICON_DAY = {
         'clear-day': [SUN],
@@ -432,8 +434,8 @@ def main():
 
         medium_font = graphics.Font()
         small_font = graphics.Font()
-        medium_font.LoadFont('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/fonts/5x7_mike.bdf')
-        small_font.LoadFont('/home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/python/fonts/4x6_mike_bigger.bdf')
+        medium_font.LoadFont(LIB_DIR + '/fonts/5x7_mike.bdf')
+        small_font.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
 
         tick = 1
         while True:
