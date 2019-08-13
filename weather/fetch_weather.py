@@ -105,14 +105,16 @@ def storeWeather(weather):
     client.close()
 
 def main():
-    #try:
-        raw_weather = fetchWeather()
-        weather = parseWeather(raw_weather)
-        #for time, day in sorted(weather['days'].iteritems()):
-        #    print time, day
-        storeWeather(weather)
-    #except Exception as err:
-    #    log.error("main error: {0}".format(err))
+    while True:
+        try:
+            raw_weather = fetchWeather()
+            weather = parseWeather(raw_weather)
+            #for t, day in sorted(weather['days'].iteritems()):
+            #    print t, day
+            storeWeather(weather)
+        except Exception as err:
+            log.error("main error: {0}".format(err))
+        time.sleep(300)
 
 if __name__ == '__main__':
     main()

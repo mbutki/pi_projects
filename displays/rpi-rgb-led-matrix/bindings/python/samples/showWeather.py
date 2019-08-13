@@ -53,7 +53,7 @@ TEMP_INCREMENT_LINE_COLOR = graphics.Color(40, 40, 40)
 HIGH_TEMP_LINE_COLOR = graphics.Color(130, 0, 0)
 LOW_TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
 
-RUNNER_DOT_COLOR = graphics.Color(0, 255, 0)
+RUNNER_DOT_COLOR = graphics.Color(255, 255, 255)
 
 BAR_CHART_BOTTOM = 31
 BAR_MIN_TEMP = 30
@@ -94,7 +94,7 @@ def fetchIndoorTemps():
     client = MongoClient(db_config['host'])
     db = client.piData
 
-    rows = db.temperatures.find({"location" : "shelf"}).sort('time', -1).limit(1)
+    rows = db.temperatures.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
     temp = rows[0]['value']
 
     client.close()
@@ -355,7 +355,7 @@ def createMatrix():
     options.rows = 32
     options.chain_length = 2
     options.gpio_slowdown = 2
-    options.pwm_lsb_nanoseconds = 100
+    #options.pwm_lsb_nanoseconds = 100
     options.brightness = 65
     #options.brightness = 80
     # options.show_refresh_rate = 1

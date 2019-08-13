@@ -15,8 +15,11 @@ parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
 
-READ_FREQ_SECS = 1
-WRITE_FREQ_SECS = 1 * 60 * 10
+READ_FREQ_SECS = 30
+WRITE_FREQ_SECS = 60 * 5
+
+#READ_FREQ_SECS = 1
+#WRITE_FREQ_SECS = 10
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
@@ -52,7 +55,7 @@ def main():
             humidity = sensor.read_humidity()
 
             temp_F = (temp * 9.0 / 5.0) + 32
-            if len(temp_data) < WRITE_FREQ_SECS:
+            if len(temp_data) < (WRITE_FREQ_SECS / READ_FREQ_SECS):
                 temp_data.append(temp_F)
                 humid_data.append(humidity)
                 if args.v:
