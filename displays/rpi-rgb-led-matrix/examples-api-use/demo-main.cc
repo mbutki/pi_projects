@@ -7,7 +7,7 @@
 // This is a grab-bag of various demos and not very readable.
 #include "led-matrix.h"
 #include "threaded-canvas-manipulator.h"
-#include "transformer.h"
+#include "pixel-mapper.h"
 #include "graphics.h"
 
 #include <assert.h>
@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -969,10 +970,10 @@ private:
       const float sexuallyActive = 1.0 - eliteRate;
       const int p1 = rand() % (int)(popSize_ * sexuallyActive);
       const int p2 = rand() % (int)(popSize_ * sexuallyActive);
-      const int matingMask = (~0) << (rand() % bitsPerPixel);
+      const unsigned matingMask = (~0u) << (rand() % bitsPerPixel);
 
       // Make a baby
-      int baby = (parents_[p1].dna & matingMask)
+      unsigned baby = (parents_[p1].dna & matingMask)
         | (parents_[p2].dna & ~matingMask);
       children_[i].dna = baby;
 
@@ -1023,10 +1024,6 @@ static int usage(const char *progname) {
   fprintf(stderr, "Options:\n");
   fprintf(stderr,
           "\t-D <demo-nr>              : Always needs to be set\n"
-          "\t-L                        : Large display, in which each chain is 'folded down'\n"
-          "\t                            in the middle in an U-arrangement to get more vertical space.\n"
-          "\t-R <rotation>             : Sets the rotation of matrix. "
-          "Allowed: 0, 90, 180, 270. Default: 0.\n"
           "\t-t <seconds>              : Run for these number of seconds, then exit.\n");
 
 
@@ -1054,8 +1051,6 @@ int main(int argc, char *argv[]) {
   int runtime_seconds = -1;
   int demo = -1;
   int scroll_ms = 30;
-  int rotation = 0;
-  bool large_display = false;
 
   const char *demo_parameter = NULL;
   RGBMatrix::Options matrix_options;
@@ -1087,25 +1082,26 @@ int main(int argc, char *argv[]) {
       scroll_ms = atoi(optarg);
       break;
 
+      // These used to be options we understood, but deprecated now. Accept
+      // but don't mention in usage()
     case 'R':
-      rotation = atoi(optarg);
+      fprintf(stderr, "-R is deprecated. "
+              "Use --led-pixel-mapper=\"Rotate:%s\" instead.\n", optarg);
+      return 1;
       break;
 
     case 'L':
-      if (matrix_options.chain_length == 1) {
-        // If this is still default, force the 64x64 arrangement.
-        matrix_options.chain_length = 4;
-      }
-      large_display = true;
+      fprintf(stderr, "-L is deprecated. Use\n\t--led-pixel-mapper=\"U-mapper\" --led-chain=4\ninstead.\n");
+      return 1;
       break;
 
-      // These used to be options we understood, but deprecated now. Accept
-      // but don't mention in usage()
     case 'd':
       runtime_opt.daemon = 1;
       break;
 
     case 'r':
+      fprintf(stderr, "Instead of deprecated -r, use --led-rows=%s instead.\n",
+              optarg);
       matrix_options.rows = atoi(optarg);
       break;
 
@@ -1114,6 +1110,8 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'c':
+      fprintf(stderr, "Instead of deprecated -c, use --led-chain=%s instead.\n",
+              optarg);
       matrix_options.chain_length = atoi(optarg);
       break;
 
@@ -1139,26 +1137,9 @@ int main(int argc, char *argv[]) {
     return usage(argv[0]);
   }
 
-  if (rotation % 90 != 0) {
-    fprintf(stderr, TERM_ERR "Rotation %d not allowed! "
-            "Only 0, 90, 180 and 270 are possible.\n" TERM_NORM, rotation);
-    return 1;
-  }
-
   RGBMatrix *matrix = CreateMatrixFromOptions(matrix_options, runtime_opt);
   if (matrix == NULL)
     return 1;
-
-  if (large_display) {
-    // Mapping the coordinates of a 32x128 display mapped to a square of 64x64.
-    // Or any other U-arrangement.
-    matrix->ApplyStaticTransformer(UArrangementTransformer(
-                                     matrix_options.parallel));
-  }
-
-  if (rotation > 0) {
-    matrix->ApplyStaticTransformer(RotateTransformer(rotation));
-  }
 
   printf("Size: %dx%d. Hardware gpio mapping: %s\n",
          matrix->width(), matrix->height(), matrix_options.hardware_mapping);

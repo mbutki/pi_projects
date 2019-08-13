@@ -36,6 +36,7 @@ extern "C" {
 
 struct RGBLedMatrix;
 struct LedCanvas;
+struct LedFont;
 
 /**
  * Parameters to create a new matrix.
@@ -55,6 +56,15 @@ struct RGBLedMatrixOptions {
    * Corresponding flag: --led-rows
    */
   int rows;
+
+  /* The "cols" are the number of columns per panel. Typically something
+   * like 32, but also 64 is possible. Sometimes even 40.
+   * cols * chain_length is the total length of the display, so you can
+   * represent a 64 wide display as cols=32, chain=2 or cols=64, chain=1;
+   * same thing.
+   * Flag: --led-cols
+   */
+  int cols;
 
   /* The chain_length is the number of displays daisy-chained together
    * (output of one connected to input of next). Default: 1
@@ -85,6 +95,11 @@ struct RGBLedMatrixOptions {
    */
   int pwm_lsb_nanoseconds;
 
+  /* The lower bits can be time-dithered for higher refresh rate.
+   * Corresponding flag: --led-pwm-dither-bits
+   */
+  int pwm_dither_bits;
+
   /* The initial brightness of the panel in percent. Valid range is 1..100
    * Corresponding flag: --led-brightness
    */
@@ -95,6 +110,27 @@ struct RGBLedMatrixOptions {
    */
   int scan_mode;
 
+  /* Default row address type is 0, corresponding to direct setting of the
+   * row, while row address type 1 is used for panels that only have A/B,
+   * typically some 64x64 panels
+   */
+  int row_address_type;  /* Corresponding flag: --led-row-addr-type */
+
+  /*  Type of multiplexing. 0 = direct, 1 = stripe, 2 = checker (typical 1:8)
+   */
+  int multiplexing;
+
+  /* In case the internal sequence of mapping is not "RGB", this contains the
+   * real mapping. Some panels mix up these colors.
+   */
+  const char *led_rgb_sequence;     /* Corresponding flag: --led-rgb-sequence */
+
+  /* A string describing a sequence of pixel mappers that should be applied
+   * to this matrix. A semicolon-separated list of pixel-mappers with optional
+   * parameter.
+   */
+  const char *pixel_mapper_config;  /* Corresponding flag: --led-pixel-mapper */
+
   /** The following are boolean flags, all off by default **/
 
   /* Allow to use the hardware subsystem to create pulses. This won't do
@@ -103,7 +139,7 @@ struct RGBLedMatrixOptions {
    */
   unsigned disable_hardware_pulsing:1;
   unsigned show_refresh_rate:1;  /* Corresponding flag: --led-show-refresh    */
-  unsigned swap_green_blue:1;    /* Corresponding flag: --led-swap-green-blue */
+  // unsigned swap_green_blue:1; /* deprecated, use led_sequence instead */
   unsigned inverse_colors:1;     /* Corresponding flag: --led-inverse         */
 };
 
@@ -216,6 +252,23 @@ struct LedCanvas *led_matrix_create_offscreen_canvas(struct RGBLedMatrix *matrix
  */
 struct LedCanvas *led_matrix_swap_on_vsync(struct RGBLedMatrix *matrix,
                                            struct LedCanvas *canvas);
+
+uint8_t led_matrix_get_brightness(struct RGBLedMatrix *matrix);
+void led_matrix_set_brightness(struct RGBLedMatrix *matrix, uint8_t brightness);
+
+struct LedFont *load_font(const char *bdf_font_file);
+void delete_font(struct LedFont *font);
+
+int draw_text(struct LedCanvas *c, struct LedFont *font, int x, int y,
+	uint8_t r, uint8_t g, uint8_t b,
+	const char *utf8_text, int kerning_offset);
+
+int vertical_draw_text(struct LedCanvas *c, struct LedFont *font, int x, int y,
+	uint8_t r, uint8_t g, uint8_t b, const char *utf8_text, int kerning_offset);
+
+void draw_circle(struct LedCanvas *c, int xx, int y, int radius, uint8_t r, uint8_t g, uint8_t b);
+
+void draw_line(struct LedCanvas *c, int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b);
 
 #ifdef  __cplusplus
 }  // extern C

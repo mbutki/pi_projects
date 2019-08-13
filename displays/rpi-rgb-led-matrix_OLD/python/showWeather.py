@@ -1,5 +1,6 @@
-import Image
-import ImageDraw
+#import Image
+#import ImageDraw
+from PIL import Image, ImageDraw
 import os
 import time
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics

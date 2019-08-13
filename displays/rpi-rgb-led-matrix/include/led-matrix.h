@@ -27,14 +27,15 @@
 #include "gpio.h"
 #include "canvas.h"
 #include "thread.h"
-#include "transformer.h"
+#include "pixel-mapper.h"
 
 namespace rgb_matrix {
 class RGBMatrix;
 class FrameCanvas;   // Canvas for Double- and Multibuffering
+
 namespace internal {
 class Framebuffer;
-class PixelMapper;
+class PixelDesignatorMap;
 }
 
 // The RGB matrix provides the framebuffer and the facilities to constantly
@@ -69,6 +70,14 @@ public:
     // Flag: --led-rows
     int rows;
 
+    // The "cols" are the number of columns per panel. Typically something
+    // like 32, but also 64 is possible. Sometimes even 40.
+    // cols * chain_length is the total length of the display, so you can
+    // represent a 64 wide display as cols=32, chain=2 or cols=64, chain=1;
+    // same thing, but more convenient to think of.
+    // Flag: --led-cols
+    int cols;
+
     // The chain_length is the number of displays daisy-chained together
     // (output of one connected to input of next). Default: 1
     // Flag: --led-chain
@@ -94,6 +103,10 @@ public:
     // Flag: --led-pwm-lsb-nanoseconds
     int pwm_lsb_nanoseconds;
 
+    // The lower bits can be time-dithered for higher refresh rate.
+    // Flag: --led-pwm-dither-bits
+    int pwm_dither_bits;
+
     // The initial brightness of the panel in percent. Valid range is 1..100
     // Default: 100
     // Flag: --led-brightness
@@ -103,6 +116,14 @@ public:
     // Flag: --led-scan-mode
     int scan_mode;
 
+    // Default row address type is 0, corresponding to direct setting of the
+    // row, while row address type 1 is used for panels that only have A/B,
+    // typically some 64x64 panels
+    int row_address_type;  // Flag --led-row-addr-type
+
+    // Type of multiplexing. 0 = direct, 1 = stripe, 2 = checker (typical 1:8)
+    int multiplexing;
+
     // Disable the PWM hardware subsystem to create pulses.
     // Typically, you don't want to disable hardware pulsing, this is mostly
     // for debugging and figuring out if there is interference with the
@@ -111,9 +132,18 @@ public:
     // non-standard wirings.
     // Flag: --led-hardware-pulse
     bool disable_hardware_pulsing;
-    bool show_refresh_rate;  // Flag: --led-show-refresh
-    bool swap_green_blue;    // Flag: --led-swap-green-blue
-    bool inverse_colors;     // Flag: --led-inverse
+    bool show_refresh_rate;    // Flag: --led-show-refresh
+    // bool swap_green_blue; (Deprecated: use led_sequence instead)
+    bool inverse_colors;       // Flag: --led-inverse
+
+    // In case the internal sequence of mapping is not "RGB", this contains the
+    // real mapping. Some panels mix up these colors.
+    const char *led_rgb_sequence;  // Flag: --led-rgb-sequence
+
+    // A string describing a sequence of pixel mappers that should be applied
+    // to this matrix. A semicolon-separated list of pixel-mappers with optional
+    // parameter.
+    const char *pixel_mapper_config;   // Flag: --led-pixel-mapper
   };
 
   // Create an RGBMatrix.
@@ -161,14 +191,21 @@ public:
   //   matrix->StartRefresh();          // Now start thread.
   // -------------
   // (Note, that there is a convenience function (CreateMatrixFromOptions())
-  // that does these things).
+  // that does all these things).
   void SetGPIO(GPIO *io, bool start_thread = true);
 
   // Start thread. Typically, you don't need to call this, see SetGPIO()
   // description when you might want it.
-  // It doesn't harm to call if the thread is already started.
+  // It doesn't harm to call if the thread is already started, it is a no-op
+  // then.
   // Returns 'false' if it couldn't start because GPIO was not set yet.
   bool StartRefresh();
+
+  // Apply a pixel mapper. This is used to re-map pixels according to some
+  // scheme implemented by the PixelMapper. Does not take ownership of the
+  // mapper. Mapper can be NULL, in which case nothing happens.
+  // Returns a boolean indicating if this was successful.
+  bool ApplyPixelMapper(const PixelMapper *mapper);
 
   // Set PWM bits used for output. Default is 11, but if you only deal with
   // limited comic-colors, 1 might be sufficient. Lower require less CPU and
@@ -185,10 +222,38 @@ public:
   void set_luminance_correct(bool on);
   bool luminance_correct() const;
 
-  // Set brightness in percent. 1%..100%.
+  // Set brightness in percent for all created FrameCanvas. 1%..100%.
   // This will only affect newly set pixels.
   void SetBrightness(uint8_t brightness);
   uint8_t brightness();
+
+  //-- GPIO interaction
+
+  // Return pointer to GPIO object for your own interaction with free
+  // pins. But don't mess with bits already in use by the matrix :)
+  GPIO *gpio() { return io_; }
+
+  // This function will return whenever the GPIO input pins
+  // change (pins that are not already in use for output, that is) or the
+  // timeout is reached. You need to have reserved the inputs with
+  // gpio()->RequestInputs(...) first (e.g.
+  //   gpio()->RequestInputs((1<<25)|(1<<24));
+  //
+  // A positive timeout waits the given amount of milliseconds for a change
+  // (e.g. a button-press) to occur; if there is no change, it will just
+  // return the last value.
+  // If you just want to know how the pins are right now, call with zero
+  // timeout.
+  // A negative number waits forever and will only return if there is a change.
+  //
+  // Note, while you can poll the gpio()->Read() function directly, it is
+  // not recommended as this might occur during the display update which might
+  // result in flicker.
+  // This function only samples between display refreshes and is more
+  // convenient as it allows to wait for a change.
+  //
+  // Returns the bitmap of all GPIO input pins.
+  uint32_t AwaitInputChange(int timeout_ms);
 
   //-- Double- and Multibuffering.
 
@@ -220,37 +285,6 @@ public:
   // 28Hz animation, nicely locked to the frame-rate).
   FrameCanvas *SwapOnVSync(FrameCanvas *other, unsigned framerate_fraction = 1);
 
-  // Set image transformer that maps the logical canvas coordinates to the
-  // physical canvas coordinates.
-  // This preprocesses the transformation for static pixel mapping once.
-  //
-  // (In the rate case that you have transformers that dynamically change
-  //  their behavior at runtime or do transformations on the color, you have to
-  //  manually use them to wrap canvases.)
-  void ApplyStaticTransformer(const CanvasTransformer &transformer);
-
-  // Don't use this function anymore, use ApplyStaticTransformer() instead.
-  // See demo-main.cc how.
-  //
-  // This used to somewhat work with dynamic tranformations, but it
-  // was confusing as that didn't apply to FrameCanvases as well.
-  // If you have static transformations that can be done at program start
-  // (such as rotation or creating your particular pysical display mapping),
-  // use ApplyStaticTransformer().
-  // If you use the Transformer concept to modify writes to canvases on-the-fly,
-  // use them directly as such.
-  //
-  // DO NOT USE. WILL BE REMOVED.
-  void SetTransformer(CanvasTransformer *t) __attribute__((deprecated)) {
-    transformer_ = t;
-    if (t) ApplyStaticTransformer(*t);
-  }
-
-  // DO NOT USE. WILL BE REMOVED.
-  CanvasTransformer *transformer() __attribute__((deprecated)) {
-    return transformer_;
-  }
-
   // -- Canvas interface. These write to the active FrameCanvas
   // (see documentation in canvas.h)
   virtual int width() const;
@@ -260,9 +294,34 @@ public:
   virtual void Clear();
   virtual void Fill(uint8_t red, uint8_t green, uint8_t blue);
 
+
+#ifndef REMOVE_DEPRECATED_TRANSFORMERS
+  //--- deprecated section: transformers. Use PixelMapper instead.
+  void ApplyStaticTransformer(const CanvasTransformer &transformer) __attribute__((deprecated)) {
+    ApplyStaticTransformerDeprecated(transformer);
+  }
+  void SetTransformer(CanvasTransformer *t) __attribute__((deprecated)) {
+    transformer_ = t;
+    if (t) ApplyStaticTransformerDeprecated(*t);
+  }
+  CanvasTransformer *transformer() __attribute__((deprecated)) {
+    return transformer_;
+  }
+  // --- end deprecated section.
+#endif  // INCLUDE_DEPRECATED_TRANSFORMERS
+
 private:
   class UpdateThread;
   friend class UpdateThread;
+
+  // Apply pixel mappers that have been passed down via a configuration
+  // string.
+  void ApplyNamedPixelMappers(const char *pixel_mapper_config,
+                              int chain, int parallel);
+
+#ifndef REMOVE_DEPRECATED_TRANSFORMERS
+  void ApplyStaticTransformerDeprecated(const CanvasTransformer &transformer);
+#endif  // REMOVE_DEPRECATED_TRANSFORMERS
 
   Options params_;
   bool do_luminance_correct_;
@@ -271,10 +330,12 @@ private:
 
   GPIO *io_;
   Mutex active_frame_sync_;
+#ifndef REMOVE_DEPRECATED_TRANSFORMERS
   CanvasTransformer *transformer_;  // deprecated. To be removed.
+#endif
   UpdateThread *updater_;
   std::vector<FrameCanvas*> created_frames_;
-  internal::PixelMapper *shared_pixel_mapper_;
+  internal::PixelDesignatorMap *shared_pixel_mapper_;
 };
 
 class FrameCanvas : public Canvas {
@@ -292,6 +353,30 @@ public:
 
   void SetBrightness(uint8_t brightness);
   uint8_t brightness();
+
+  //-- Serialize()/Deserialize() are fast ways to store and re-create a canvas.
+
+  // Provides a pointer to a buffer of the internal representation to
+  // be copied out for later Deserialize().
+  //
+  // Returns a "data" pointer and the data "len" in the given out-paramters;
+  // the content can be copied from there by the caller.
+  //
+  // Note, the content is not simply RGB, it is the opaque and platform
+  // specific representation which allows to make deserialization very fast.
+  // It is also bigger than just RGB; if you want to store it somewhere,
+  // using compression is a good idea.
+  void Serialize(const char **data, size_t *len) const;
+
+  // Load data previously stored with Serialize(). Needs to be restored into
+  // a FrameCanvas with exactly the same settings (rows, chain, transformer,...)
+  // as serialized.
+  // Returns 'false' if size is unexpected.
+  // This method should only be called if FrameCanvas is off-screen.
+  bool Deserialize(const char *data, size_t len);
+
+  // Copy content from other FrameCanvas owned by the same RGBMatrix.
+  void CopyFrom(const FrameCanvas &other);
 
   // -- Canvas interface.
   virtual int width() const;
@@ -317,11 +402,27 @@ struct RuntimeOptions {
   RuntimeOptions();
 
   int gpio_slowdown;    // 0 = no slowdown.          Flag: --led-slowdown-gpio
-  // If the following are disabled, the following options will not be offered.
-  // If daemon is disabled, the user has to call StartRefresh() once the
-  // matrix is created.
+
+  // ----------
+  // If the following options are set to disabled with -1, they are not
+  // even offered via the command line flags.
+  // ----------
+
+  // If daemon is disabled (= -1), the user has to call StartRefresh() manually
+  // once the matrix is created, to leave the decision to become a daemon
+  // after the call (which requires that no threads have been started yet).
+  // In the other cases (off or on), the choice is already made, so the thread
+  // is conveniently already started for you.
   int daemon;           // -1 disabled. 0=off, 1=on. Flag: --led-daemon
+
+  // Drop privileges from 'root' to 'daemon' once the hardware is initialized.
+  // This is usually a good idea unless you need to stay on elevated privs.
   int drop_privileges;  // -1 disabled. 0=off, 1=on. flag: --led-drop-privs
+
+  // By default, the gpio is initialized for you, but if you want to manually
+  // do that yourself, set this flag to false.
+  // Then, you have to initialize the matrix yourself with SetGPIO().
+  bool do_gpio_init;
 };
 
 // Convenience utility functions to read standard rgb-matrix flags and create
@@ -363,8 +464,10 @@ int main(int argc, char **argv) {
 */
 // This parses the flags from argv and updates the structs with the parsed-out
 // values. Structs can be NULL if you are not interested in it.
-// The recongized flags are removed from argv if "remove_consumed_flags"
-// is true; this simplifies your command line processing.
+//
+// The recongized flags are removed from argv if "remove_consumed_flags" is
+// true; this simplifies your command line processing for the remaining options.
+//
 // Returns 'true' on success, 'false' if there was flag parsing problem.
 bool ParseOptionsFromFlags(int *argc, char ***argv,
                            RGBMatrix::Options *default_options,
@@ -381,6 +484,14 @@ RGBMatrix *CreateMatrixFromOptions(const RGBMatrix::Options &options,
 // you can pass in option structs with a couple of defaults. A matrix is
 // created and returned; also the options structs are updated to reflect
 // the values that were used.
+//
+// If you allow the user to start a daemon with --led-daemon, make sure to
+// call this function before you have started any threads, so early on in
+// main() (see RuntimeOptions doc above).
+//
+// Note, the permissions are dropped by default from 'root' to 'daemon', so
+// if you are required to stay root after this, disable this option in
+// the default RuntimeOptions (set drop_privileges = -1).
 // Returns NULL, if there was a problem (a message then is written to stderr).
 RGBMatrix *CreateMatrixFromFlags(int *argc, char ***argv,
                                  RGBMatrix::Options *default_options = NULL,

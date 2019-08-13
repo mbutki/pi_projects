@@ -16,6 +16,7 @@
 #define RPI_RGBMATRIX_FRAMEBUFFER_INTERNAL_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "hardware-mapping.h"
 
@@ -23,6 +24,7 @@ namespace rgb_matrix {
 class GPIO;
 class PinPulser;
 namespace internal {
+class RowAddressSetter;
 
 // An opaque type used within the framebuffer that can be used
 // to copy between PixelMappers.
@@ -35,21 +37,25 @@ struct PixelDesignator {
   uint32_t mask;
 };
 
-class PixelMapper {
+class PixelDesignatorMap {
 public:
-  PixelMapper(int width, int height);
-  ~PixelMapper();
+  PixelDesignatorMap(int width, int height, const PixelDesignator &fill_bits);
+  ~PixelDesignatorMap();
 
   // Get a writable version of the PixelDesignator. Outside Framebuffer used
-  // by the RGBMatrix to re-assign mappings to new PixelMappers.
+  // by the RGBMatrix to re-assign mappings to new PixelDesignatorMappers.
   PixelDesignator *get(int x, int y);
 
   inline int width() const { return width_; }
   inline int height() const { return height_; }
 
+  // All bits that set red/green/blue pixels; used for Fill().
+  const PixelDesignator &GetFillColorBits() { return fill_bits_; }
+
 private:
   const int width_;
   const int height_;
+  const PixelDesignator fill_bits_;  // Precalculated for fill.
   PixelDesignator *const buffer_;
 };
 
@@ -61,15 +67,17 @@ class Framebuffer {
 public:
   Framebuffer(int rows, int columns, int parallel,
               int scan_mode,
-              bool swap_green_blue, bool inverse_color,
-              PixelMapper **mapper);
+              const char* led_sequence, bool inverse_color,
+              PixelDesignatorMap **mapper);
   ~Framebuffer();
 
   // Initialize GPIO bits for output. Only call once.
   static void InitHardwareMapping(const char *named_hardware);
   static void InitGPIO(GPIO *io, int rows, int parallel,
                        bool allow_hardware_pulsing,
-                       int pwm_lsb_nanoseconds);
+                       int pwm_lsb_nanoseconds,
+                       int dither_bits,
+                       int row_address_type);
 
   // Set PWM bits used for output. Default is 11, but if you only deal with
   // simple comic-colors, 1 might be sufficient. Lower require less CPU.
@@ -88,7 +96,11 @@ public:
   }
   uint8_t brightness() { return brightness_; }
 
-  void DumpToMatrix(GPIO *io);
+  void DumpToMatrix(GPIO *io, int pwm_bits_to_show);
+
+  void Serialize(const char **data, size_t *len) const;
+  bool Deserialize(const char *data, size_t len);
+  void CopyFrom(const Framebuffer *other);
 
   // Canvas-inspired methods, but we're not implementing this interface to not
   // have an unnecessary vtable.
@@ -100,8 +112,17 @@ public:
 
 private:
   static const struct HardwareMapping *hardware_mapping_;
+  static RowAddressSetter *row_setter_;
 
-  void InitDefaultDesignator(int x, int y, PixelDesignator *designator);
+  // This returns the gpio-bit for given color (one of 'R', 'G', 'B'). This is
+  // returning the right value in case "led_sequence" is _not_ "RGB"
+  static gpio_bits_t GetGpioFromLedSequence(char col, const char *led_sequence,
+                                            gpio_bits_t default_r,
+                                            gpio_bits_t default_g,
+                                            gpio_bits_t default_b);
+
+  void InitDefaultDesignator(int x, int y, const char *led_sequence,
+                             PixelDesignator *designator);
   inline void  MapColors(uint8_t r, uint8_t g, uint8_t b,
                          uint16_t *red, uint16_t *green, uint16_t *blue);
   const int rows_;     // Number of rows. 16 or 32.
@@ -110,7 +131,6 @@ private:
   const int columns_;  // Number of columns. Number of chained boards * 32.
 
   const int scan_mode_;
-  const bool swap_green_blue_;
   const bool inverse_color_;
 
   uint8_t pwm_bits_;   // PWM bits to display.
@@ -118,7 +138,7 @@ private:
   uint8_t brightness_;
 
   const int double_rows_;
-  const uint8_t row_mask_;
+  const size_t buffer_size_;
 
   // The frame-buffer is organized in bitplanes.
   // Highest level (slowest to cycle through) are double rows.
@@ -129,7 +149,7 @@ private:
   gpio_bits_t *bitplane_buffer_;
   inline gpio_bits_t *ValueAt(int double_row, int column, int bit);
 
-  PixelMapper **shared_mapper_;  // Storage in RGBMatrix.
+  PixelDesignatorMap **shared_mapper_;  // Storage in RGBMatrix.
 };
 }  // namespace internal
 }  // namespace rgb_matrix

@@ -17,8 +17,8 @@
 
 #include <sched.h>
 #include <stdio.h>
-#include <string.h>
 #include <assert.h>
+#include <string.h>
 
 namespace rgb_matrix {
 void *Thread::PthreadCallRun(void *tobject) {
@@ -35,7 +35,7 @@ void Thread::WaitStopped() {
   if (!started_) return;
   int result = pthread_join(thread_, NULL);
   if (result != 0) {
-    fprintf(stderr, "err code: %d %s\n", result, strerror(result));
+    perror("Issue joining thread");
   }
   started_ = false;
 }
@@ -43,11 +43,21 @@ void Thread::WaitStopped() {
 void Thread::Start(int priority, uint32_t affinity_mask) {
   assert(!started_);  // Did you call WaitStopped() ?
   pthread_create(&thread_, NULL, &PthreadCallRun, this);
+  int err;
 
   if (priority > 0) {
     struct sched_param p;
     p.sched_priority = priority;
-    pthread_setschedparam(thread_, SCHED_FIFO, &p);
+    if ((err = pthread_setschedparam(thread_, SCHED_FIFO, &p))) {
+      fprintf(stderr, "Can't set realtime thread priority=%d: %s.\n"
+              "\tYou are probably not running as root ?\n"
+              "\tThis will seriously mess with color stability and flicker\n"
+              "\tof the matrix. Please run as `root` (e.g. by invoking this\n"
+              "\tprogram with `sudo`), or setting the capability on this\n"
+              "\tbinary by calling\n"
+              "\tsudo setcap 'cap_sys_nice=eip' $THIS_BINARY\n",
+              p.sched_priority, strerror(err));
+    }
   }
 
   if (affinity_mask != 0) {
@@ -58,10 +68,29 @@ void Thread::Start(int priority, uint32_t affinity_mask) {
         CPU_SET(i, &cpu_mask);
       }
     }
-    pthread_setaffinity_np(thread_, sizeof(cpu_mask), &cpu_mask);
+    if ((err=pthread_setaffinity_np(thread_, sizeof(cpu_mask), &cpu_mask))) {
+      // On a Pi1, this won't work as there is only one core. Don't worry in
+      // that case.
+    }
   }
 
   started_ = true;
 }
 
+bool Mutex::WaitOn(pthread_cond_t *cond, long timeout_ms) {
+  if (timeout_ms < 0) {
+    pthread_cond_wait(cond, &mutex_);
+    return true;
+  }
+  else {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    t.tv_sec += timeout_ms / 1000;
+    t.tv_nsec += (timeout_ms % 1000) * 1000000;
+    t.tv_sec += t.tv_nsec / 1000000000;
+    t.tv_nsec %= 1000000000;
+    // TODO(hzeller): It doesn't seem we return with EINTR on signal. We should.
+    return pthread_cond_timedwait(cond, &mutex_, &t) == 0;
+  }
+}
 }  // namespace rgb_matrix

@@ -24,7 +24,7 @@ popt.SetLineWidth(FromMM(0.35))
 popt.SetAutoScale(False)
 popt.SetScale(1)
 popt.SetMirror(False)
-popt.SetUseGerberAttributes(True)
+popt.SetUseGerberAttributes(False)
 popt.SetUseGerberProtelExtensions(True)
 popt.SetExcludeEdgeLayer(True);
 popt.SetScale(1)
@@ -41,7 +41,7 @@ popt.SetSubtractMaskFromSilk(False)
 #   gerbv *
 # just makes sense.
 plot_plan = [
-    ( Edge_Cuts, "0-EdgeCuts",    "Edges" ),
+    ( Edge_Cuts, "0-Edge_Cuts",   "Edges" ),
 
     ( F_Paste,   "1-PasteTop",    "Paste top" ),
     ( F_SilkS,   "2-SilkTop",     "Silk top" ),

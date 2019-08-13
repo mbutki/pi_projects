@@ -5,7 +5,8 @@
 ##
 OBJECTS=gpio.o led-matrix.o options-initialize.o framebuffer.o \
         thread.o bdf-font.o graphics.o transformer.o led-matrix-c.o \
-	hardware-mapping.o
+	hardware-mapping.o content-streamer.o pixel-mapper.o multiplex-mappers.o
+
 TARGET=librgbmatrix
 
 # There are several different pinouts for various breakout boards that uses
@@ -23,12 +24,13 @@ TARGET=librgbmatrix
 #   regular-pi1        # If you have an old Pi1 and regular didn't work.
 #   classic            # (deprecated) Classic Pi1/2/. Not used anymore.
 #   classic-pi1        # (deprecated) Classic pinout on Rasperry Pi 1
-HARDWARE_DESC=adafruit-hat-pwm
+HARDWARE_DESC?=regular
 
 ###
 # After you change any of the following DEFINES, make sure to 'make' again.
 #
-# Note, all of these options can now can be set programmatically and
+# ###########      NOTE     ###########
+# all of these options can now can be set programmatically and
 # via command line flags as well. No real need to change them in the Makefile.
 # (So be prepared for these to be removed at some point)
 ###
@@ -37,12 +39,6 @@ HARDWARE_DESC=adafruit-hat-pwm
 # has uses inverse logic for the RGB bits. In that case: uncomment this.
 # Flag: --led-inverse
 #DEFINES+=-DINVERSE_RGB_DISPLAY_COLORS
-
-# Some panels out there seem to have Green and Blue swapped (even though the
-# writing on connector looks correct). This option will swap these colors if
-# you happen to have gotten such panel.
-# Flag: --led-swap-green-blue
-#DEFINES+=-DRGB_SWAP_GREEN_BLUE
 
 # For curiosity reasons and while tweaking values for LSB_PWM_NANOSECONDS,
 # uncomment to see refresh rate in terminal.
@@ -100,6 +96,44 @@ HARDWARE_DESC=adafruit-hat-pwm
 # Flag: --led-no-hardware-pulses
 #DEFINES+=-DDISABLE_HARDWARE_PULSES
 
+# If defined, remove deprecated transformers from the API.
+# This will eventually be enabled by default and at some point the code
+# in question will be removed from the code-base, so don't use transformers.
+# Use PixelMappers instead (include/pixel-mapper.h)
+#DEFINES+=-DREMOVE_DEPRECATED_TRANSFORMERS
+
+# --- EXPERIMENTAL --
+# This allows to fix the refresh rate to a particular refresh time in
+# microseconds.
+#
+# This can be used to mitigate some situations in which you have a rare
+# faint flicker, which can happen due to hardware events (network access)
+# or other situations such as other IO or heavy memory access by other
+# processes (all of which seem to break the isolation we request from the
+# kernel. You did set isolcpus=3 right ?)
+# You trade a slightly slower refresh rate and display brightness for less
+# visible flicker situations.
+#
+# For this to calibrate, run your program for a while with --led-show-refresh
+# and watch the line that shows the refresh time and the maximum microseconds
+# for a frame observed. The maximum number is updated whenever the frame
+# refresh take a little bit longer. So wait a while until that value doesn't
+# change anymore (at least a minute, so that you catch tasks that happen once
+# a minute). Some value might read e.g.
+#   204.6Hz max: 5133usec
+# Now take this maximum value you see there (here: 5133) and put in
+# this define (don't forget to remove the # in front).
+#
+# The refresh rate will now be adapted to always have this amount of time
+# between frames, so faster refreshes will be slowed down, but the occasional
+# delayed frame will fit into the time-window as well, thus reducing visible
+# brightness fluctuations.
+#
+# You can play with value a little and reduce until you find a good balance
+# between refresh rate (which is reduce the higher this value is) and
+# flicker suppression (which is better with higher values).
+#DEFINES+=-DFIXED_FRAME_MICROSECONDS=5000
+
 # ---- Pinout options for hardware variants; usually no change needed here ----
 
 # Uncomment if you want to use the Adafruit HAT with stable PWM timings.
@@ -128,8 +162,8 @@ DEFINES+=$(USER_DEFINES)
 
 DEFINES+=-DDEFAULT_HARDWARE='"$(HARDWARE_DESC)"'
 INCDIR=../include
-CFLAGS=-Wall -O3 -g -fPIC $(DEFINES)
-CXXFLAGS=$(CFLAGS)
+CFLAGS=-Wall -O3 -g -fPIC $(DEFINES) -Wextra -Wno-unused-parameter
+CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all : $(TARGET).a $(TARGET).so.1
 
@@ -142,6 +176,7 @@ $(TARGET).so.1 : $(OBJECTS)
 led-matrix.o: led-matrix.cc $(INCDIR)/led-matrix.h
 thread.o : thread.cc $(INCDIR)/thread.h
 framebuffer.o: framebuffer.cc framebuffer-internal.h
+multiplex-transformers.o : multiplex-transformers.cc multiplex-transformers-internal.h
 graphics.o: graphics.cc utf8-internal.h
 
 %.o : %.cc compiler-flags

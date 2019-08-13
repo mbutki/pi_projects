@@ -42,7 +42,7 @@ sensor = SHT31(address = 0x44)
 
 def main():
     if args.v:
-        print 'location:{0} db_host:{1} db_name:{2} db_user:{3}'.format(LOCATION, db_config['host'], db_config['database'], db_config['user'])
+        print 'location:{0} db_host:{1}'.format(LOCATION, db_config['host'])
 
     temp_data = []
     humid_data = []
