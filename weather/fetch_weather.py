@@ -32,12 +32,8 @@ log.getLogger("requests").setLevel(log.WARNING)
 log.getLogger("urllib3").setLevel(log.WARNING)
 
 API_KEY = pi_config['weather_API_key']
-STATE = 'CA'
-CITY = 'Palo_Alto'
-LAT = '37.441607' # Palo Alto
-LON = '-122.125530' # Palo Alto
-#LAT = '41.258199' # Williamsport
-#LON = '-76.975901' # Williamsport
+LAT = pi_config['weather_lat']
+LON = pi_config['weather_lon']
 
 def fetchWeather():
     url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)
