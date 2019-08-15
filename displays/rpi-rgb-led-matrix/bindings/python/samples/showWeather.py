@@ -94,8 +94,12 @@ def fetchIndoorTemps():
     client = MongoClient(db_config['host'])
     db = client.piData
 
+    temp = 0
     rows = db.temperatures.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
-    temp = rows[0]['value']
+    try:
+        temp = rows[0]['value']
+    except:
+        pass
 
     client.close()
     return temp
@@ -215,7 +219,7 @@ def drawIndoor(current, offscreen_canvas, medium_font):
     graphics.DrawText(offscreen_canvas, medium_font, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
 
 
-def drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT):
+def drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT, TEMP_DIV):
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
         riseTime = weather['days'][sorted(weather['days'])[0]]['rise']
@@ -224,8 +228,14 @@ def drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT):
         sun_set = datetime.datetime.fromtimestamp(setTime).hour
         dt =  datetime.datetime.fromtimestamp(float(epoch))
         column = BAR_LEFT + i
+
+        # Only Area under the curve
+        temp = int(round( (hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
+        temp_y2 = BAR_CHART_BOTTOM - temp
+
         if dt.hour >= sun_rise and dt.hour <= sun_set:
-            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
+            graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, temp_y2 + 1, DAYLIGHT_BAR_COLOR)
+            #graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
 
 def drawHorBars(offscreen_canvas, horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH):
     for h_temp in horizontal_temps:
@@ -330,7 +340,8 @@ def drawBars(weather, offscreen_canvas, tick):
     horizontal_temps = [40, 60, 80, 100]
     epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
 
-    drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT)
+    drawDaylight(epochs, weather, offscreen_canvas, BAR_LEFT, TEMP_DIV)
+
     drawHorBars(offscreen_canvas, horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH)
     drawVertBars(epochs, weather, offscreen_canvas, BAR_LEFT)
     drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, offscreen_canvas, tick)
@@ -437,7 +448,7 @@ def main():
         medium_font.LoadFont(LIB_DIR + '/fonts/5x7_mike.bdf')
         small_font.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
 
-        tick = 1
+        tick = 0
         while True:
             if (tick % 60 * 5 * 2) == 0:
                 try:
