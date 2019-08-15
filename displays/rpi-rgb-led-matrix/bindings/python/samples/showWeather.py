@@ -26,6 +26,7 @@ LOG_NAME = 'show_weather.log'
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
 LOG_DIR = pi_config['log_dir']
+PERFER_RAIN_POP = True if pi_config['perfer_rain_pop'] == 'True' else False
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -178,11 +179,11 @@ def drawDailyText(weather, offscreen_canvas, medium_font, small_font):
 
         display_num = 0
         display_color = None
-        if day['pop'] == 100:
+        if day['pop'] == 100 and PERFER_RAIN_POP:
             display_color = POP_COLOR
             display_num = day['pop']
             font = small_font
-        elif day['pop'] > 20:
+        elif day['pop'] > 20 and PERFER_RAIN_POP:
             display_color = POP_COLOR
             display_num = day['pop']
             font = medium_font
