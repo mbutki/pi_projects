@@ -1,11 +1,11 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          weatherDisplayButton
+# Provides:          temperature
 # Required-Start:    $all
 # Required-Stop:     
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: enables a button to turn weather display on/off
+# Short-Description: record temperature
 ### END INIT INFO
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 
@@ -15,12 +15,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 case "$1" in
   start)
     log_begin_msg "mbutki: temp start"
-    nohup python /home/mbutki/pi_projects/displays/weatherDisplayButton.py &
+    nohup python /home/mbutki/pi_projects/sensorRead/readLight_VEML7700.py &
     log_end_msg $?
     exit 0
     ;;
   stop)
-    pkill -f /home/mbutki/pi_projects/displays/weatherDisplayButton.py
+    pkill -f /home/mbutki/pi_projects/sensorRead/readLight_VEML7700.py
     log_begin_msg "mbutki: temp stop"
     log_end_msg $?
     exit 0

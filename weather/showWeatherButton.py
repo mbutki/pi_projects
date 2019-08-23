@@ -10,8 +10,8 @@ PIN_IN = pi_config['weather_display_button_pin']
 gpio.setmode(gpio.BCM)
 gpio.setup(PIN_IN, gpio.IN, pull_up_down=gpio.PUD_DOWN)
 
-restartService = 'sudo service weatherDisplay restart'
-stopService = 'sudo service weatherDisplay stop'
+restartService = 'sudo service showWeather restart'
+stopService = 'sudo service showWeather stop'
 displayOn = True
 
 try:
@@ -31,4 +31,3 @@ except KeyboardInterrupt:
 finally:
     print 'cleaning up'
     gpio.cleanup()
-
