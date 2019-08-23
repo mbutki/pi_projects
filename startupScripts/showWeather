@@ -15,12 +15,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 case "$1" in
   start)
     log_begin_msg "mbutki: temp start"
-    nohup python /home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/bindings/python/samples/showWeather.py &
+    nohup python /home/mbutki/pi_projects/weather/showWeather.py &
     log_end_msg $?
     exit 0
     ;;
   stop)
-    pkill -f /home/mbutki/pi_projects/displays/rpi-rgb-led-matrix/bindings/python/samples/showWeather.py
+    pkill -f /home/mbutki/pi_projects/weather/showWeather.py
     log_begin_msg "mbutki: temp stop"
     log_end_msg $?
     exit 0
