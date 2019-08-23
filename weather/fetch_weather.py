@@ -37,6 +37,8 @@ LON = pi_config['weather_lon']
 
 def fetchWeather():
     url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)
+    if args.v:
+        print 'fetching: ', url
     data = requests.get(url).json()
     return data
 
@@ -89,16 +91,24 @@ def parseWeather(raw_weather):
     return weather
 
 def storeWeather(weather):
+    if args.v:
+        print 'Starting db pu'
     client = MongoClient(db_config['host'])
     db = client.piData
 
     doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
 
     db.weather.delete_many({})
+    if args.v:
+        print 'Deleted previous weather data'
     log.debug('deleting previous weather data')
     db.weather.insert_one(doc)
+    if args.v:
+        print 'Stored new  weather data'
     log.debug('storing new weather data')
     client.close()
+    if args.v:
+        print 'DB client closed'
 
 def main():
     while True:
