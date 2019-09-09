@@ -59,30 +59,42 @@ def twoThree(pos):
     num = digits[2]
     show(pos, num)
 
+    num = remove(pos, num, bottom)
     num = remove(pos, num, bottomLeft)
+    num = remove(pos, num, middle)
     num = add(pos, num, bottomRight)
+    num = add(pos, num, bottom)
+    num = add(pos, num, middle)
 
 def threeFour(pos):
     num = digits[3]
     show(pos, num)
 
     num = remove(pos, num, top)
-    num = add(pos, num, topLeft)
+    num = remove(pos, num, middle)
     num = remove(pos, num, bottom)
+    num = add(pos, num, middle)
+    num = add(pos, num, topLeft)
 
 def fourFive(pos):
     num = digits[4]
     show(pos, num)
 
+    num = remove(pos, num, topLeft)
+    num = remove(pos, num, middle)
     num = remove(pos, num, topRight)
+    num = remove(pos, num, bottomRight)
+    
     num = add(pos, num, top)
+    num = add(pos, num, topLeft)
+    num = add(pos, num, middle)
+    num = add(pos, num, bottomRight)
     num = add(pos, num, bottom)
 
 def fiveSix(pos):
     num = digits[5]
     show(pos, num)
 
-    #num = add(pos, num, bottomLeft)
     num = remove(pos, num, bottom)
     num = remove(pos, num, bottomRight)
     num = remove(pos, num, middle)
@@ -118,9 +130,17 @@ def eightNine(pos):
     num = digits[8]
     show(pos, num)
 
-    num = remove(pos, num, bottomRight)
+    num = remove(pos, num, top)
+    num = remove(pos, num, middle)
+    num = remove(pos, num, bottom)
+    num = remove(pos, num, topLeft)
     num = remove(pos, num, bottomLeft)
-    num = add(pos, num, bottomRight)
+
+    num = add(pos, num, bottom)
+    num = add(pos, num, middle)
+    num = add(pos, num, top)
+    num = add(pos, num, topLeft)
+
 
 def nineZero(pos):
     num = digits[9]
@@ -262,9 +282,9 @@ def main():
     hourMapTens = { 0: oneOff,
         1: offOne}
 
-    #while True:
-    #    for key, value in minMapOnes.iteritems():
-    #        value(0)
+    while True:
+        for key, value in minMapOnes.iteritems():
+            value(0)
 
     shouldAnimate = True
     while True:
