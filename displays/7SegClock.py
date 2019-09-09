@@ -282,9 +282,9 @@ def main():
     hourMapTens = { 0: oneOff,
         1: offOne}
 
-    while True:
-        for key, value in minMapOnes.iteritems():
-            value(0)
+    #while True:
+    #    for key, value in minMapOnes.iteritems():
+    #        value(0)
 
     shouldAnimate = True
     while True:
