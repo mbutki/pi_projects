@@ -160,27 +160,22 @@ def getDailyIcons(weather):
     global RAIN
     global TEXT_TO_ICON_DAY
     global TEXT_TO_ICON_NIGHT
-    global MOON_PHASE_CONDITIONS
 
     daily_icons = []
     for i, epoch in enumerate(sorted(weather['days'])):
         day = weather['days'][epoch]
         condition = day['condition']
-        icons = [RAIN]
+        icons = []
 
         now = datetime.datetime.now()
         sun_rise = datetime.datetime.fromtimestamp(day['rise'])
         sun_set = datetime.datetime.fromtimestamp(day['set'])
         if i == 0 and (now > sun_set):
-            # Current day nighttime
-            if condition in TEXT_TO_ICON_DAY:
-                icons = TEXT_TO_ICON_NIGHT[condition]
-                if condition in MOON_PHASE_CONDITIONS:
-                    icons.append(getMoonPhaseIcon(day['moonPhase']))
+            # night time
+            icons = [getMoonPhaseIcon(day['moonPhase'])]
         else:
             # daytime
-            if condition in TEXT_TO_ICON_DAY:
-                icons = TEXT_TO_ICON_DAY[condition]
+            icons = TEXT_TO_ICON_DAY[condition] if condition in TEXT_TO_ICON_DAY else [UNKNOWN]
         daily_icons.append(icons)
     return daily_icons
 
@@ -442,7 +437,6 @@ def weatherSetup():
 
     global TEXT_TO_ICON_DAY
     global TEXT_TO_ICON_NIGHT
-    global MOON_PHASE_CONDITIONS
 
     RAIN = processImage(LIB_DIR + '/imgs/rain.gif')
     SUN = processImage(LIB_DIR + '/imgs/sun.gif')
@@ -487,8 +481,6 @@ def weatherSetup():
         'snow': [RAIN],
         'sleet': [RAIN]
     }
-
-    MOON_PHASE_CONDITIONS = {'clear-day', 'clear-night', 'wind', 'partly-cloudy-day', 'partly-cloudy-night'}
 
 weather = daily_icons = indoor_temp = outdoor_temp = None
 def drawWeather(tick):
