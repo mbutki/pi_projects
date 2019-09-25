@@ -12,6 +12,7 @@ import json
 import datetime
 import logging as log
 import traceback
+import threading
 
 #from pi_projects.security import readMotionSensors
 #import  pi_projects
@@ -29,6 +30,12 @@ LOG_DIR = pi_config['log_dir']
 PERFER_RAIN_POP = True if pi_config['perfer_rain_pop'] == 'True' else False
 EXTENDED_WEATHER = True if pi_config['extended_weather'] == 'True' else False
 WEATHER_BRIGHTNESS = pi_config['weather_brightness'] if pi_config['weather_brightness'] else 65
+CURRENT_BRIGHTNESS = WEATHER_BRIGHTNESS
+
+MAX_LUX = 200 # 10000
+MIN_LUX = 0
+MAX_BRIGHTNESS = WEATHER_BRIGHTNESS
+MIN_BRIGHTNESS = 10
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -93,25 +100,29 @@ def processImage(path):
 
     return frames
 
-def fetchWeather():
+def fetchLux(db):
+    if args.v:
+        print 'Fetching lux...'
+    rows = db.light.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
+
+    lux =  rows[0]['value']
+    if args.v:
+        print 'Fetched lux'
+
+    return lux
+
+def fetchWeather(db):
     if args.v:
         print 'Fetching weather...'
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
     rows = db.weather.find({}).sort('time', -1).limit(1)
 
     weather =  rows[0]['weather']
-    client.close()
     if args.v:
         print 'Fetched weather'
 
     return weather
 
-def fetchIndoorTemps():
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
+def fetchIndoorTemps(db):
     temp = 0
     rows = db.temperatures.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
     try:
@@ -119,13 +130,9 @@ def fetchIndoorTemps():
     except:
         pass
 
-    client.close()
     return temp
 
-def fetchOutdoorTemps():
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
+def fetchOutdoorTemps(db):
     temp = 0
     rows = db.temperatures.find({"location" : "frontDoor"}).sort('time', -1).limit(1)
     try:
@@ -133,7 +140,6 @@ def fetchOutdoorTemps():
     except:
         temp = -999
 
-    client.close()
     return temp
 
 def getMoonPhaseIcon(phase):
@@ -378,12 +384,74 @@ def drawConnectingLine(prev, cur, prev_y2, y2, column, color):
     elif prev < cur - 1:
         graphics.DrawLine(OFFSCREEN_CANVAS, column,     y2,     column,     prev_y2 - 1, color)
 
+def fetchDataThreaded():
+    x = threading.Thread(target=fetchData, args=())
+    x.start()
+
 def fetchData():
-    weather = fetchWeather()
+    global weather, daily_icons, indoor_temp, outdoor_temp
+    if args.v:
+        print 'Opening DB...'
+    client = MongoClient(db_config['host'])
+    db = client.piData
+
+    weather = fetchWeather(db)
     daily_icons = getDailyIcons(weather)
-    indoor_temp = fetchIndoorTemps()
-    outdoor_temp = fetchOutdoorTemps()
+    indoor_temp = fetchIndoorTemps(db)
+    outdoor_temp = fetchOutdoorTemps(db)
+
+    client.close()
+    if args.v:
+        print 'Closing DB...'
+
     return weather, daily_icons, indoor_temp, outdoor_temp
+
+def fetchLuxDataThreaded():
+    x = threading.Thread(target=fetchLuxData, args=())
+    x.start()
+
+def fetchLuxData():
+    if args.v:
+        print 'Opening DB...'
+    client = MongoClient(db_config['host'])
+    db = client.piData
+
+    lux = fetchLux(db)
+
+    client.close()
+    if args.v:
+        print 'lux={}'.format(lux)
+        print 'Closing DB...'
+
+    setBrightness(lux)
+
+def translate(value, leftMin, leftMax, rightMin, rightMax):
+    # Figure out how 'wide' each range is
+    print value
+    print leftMin
+    print leftMax
+    print rightMin
+    print rightMax
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
+
+    print float(value - leftMin)
+    print float(leftSpan)
+    # Convert the left range into a 0-1 range (float)
+    valueScaled = float(value - leftMin) / float(leftSpan)
+
+    # Convert the 0-1 range into a value in the right range.
+    return rightMin + (valueScaled * rightSpan)
+
+def setBrightness(lux):
+    global MATRIX
+    lux = max(lux, MIN_LUX)
+    lux = min(lux, MAX_LUX)
+    brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
+    if args.v:
+        print 'LUX:{}'.format(lux)
+        print 'brightness:{}'.format(brightness)
+    MATRIX.brightness = brightness
 
 def createMatrix():
     global MATRIX
@@ -482,13 +550,27 @@ def weatherSetup():
         'sleet': [RAIN]
     }
 
-weather = daily_icons = indoor_temp = outdoor_temp = None
+    global weather, daily_icons, indoor_temp, outdoor_temp
+    try:
+        weather, daily_icons, indoor_temp, outdoor_temp = fetchData()
+        fetchLuxData()
+    except Exception as e:
+        log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
+
+weather = daily_icons = indoor_temp = outdoor_temp = lux = None
 def drawWeather(tick):
     global weather, daily_icons, indoor_temp, outdoor_temp
     try:
-        if (tick % 60 * 5 * ( 1 / TICK_DUR)) == 0:
+        if (tick % (60 * 5 * ( 1 / TICK_DUR))) == 0:
             try:
-                weather, daily_icons, indoor_temp, outdoor_temp = fetchData()
+                weather, daily_icons, indoor_temp, outdoor_temp = fetchDataThreaded()
+                fetchLuxDataThreaded()
+            except Exception as e:
+                log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
+
+        if (tick % (10 * ( 1 / TICK_DUR))) == 0:
+            try:
+                fetchLuxDataThreaded()
             except Exception as e:
                 log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
