@@ -66,6 +66,10 @@ def main():
                 client = MongoClient(db_config['host'])
                 db = client.piData
 
+                db.light.drop()
+                if args.v:
+                    print('Deleted previous light data')
+
                 doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_median}
                 db.light.insert_one(doc)
 

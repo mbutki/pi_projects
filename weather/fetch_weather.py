@@ -98,7 +98,7 @@ def storeWeather(weather):
 
     doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
 
-    db.weather.delete_many({})
+    db.weather.drop()
     if args.v:
         print 'Deleted previous weather data'
     log.debug('deleting previous weather data')

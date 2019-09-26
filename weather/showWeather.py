@@ -35,7 +35,7 @@ CURRENT_BRIGHTNESS = WEATHER_BRIGHTNESS
 MAX_LUX = 200 # 10000
 MIN_LUX = 0
 MAX_BRIGHTNESS = WEATHER_BRIGHTNESS
-MIN_BRIGHTNESS = 10
+MIN_BRIGHTNESS = 0
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -451,7 +451,8 @@ def setBrightness(lux):
     if args.v:
         print 'LUX:{}'.format(lux)
         print 'brightness:{}'.format(brightness)
-    MATRIX.brightness = brightness
+    #MATRIX.brightness = brightness
+    MATRIX.brightness = 20
 
 def createMatrix():
     global MATRIX
