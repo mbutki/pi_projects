@@ -30,7 +30,6 @@ LOG_DIR = pi_config['log_dir']
 PERFER_RAIN_POP = True if pi_config['perfer_rain_pop'] == 'True' else False
 EXTENDED_WEATHER = True if pi_config['extended_weather'] == 'True' else False
 WEATHER_BRIGHTNESS = pi_config['weather_brightness'] if pi_config['weather_brightness'] else 65
-CURRENT_BRIGHTNESS = WEATHER_BRIGHTNESS
 
 MAX_LUX = 200 # 10000
 MIN_LUX = 0
@@ -105,7 +104,10 @@ def fetchLux(db):
         print 'Fetching lux...'
     rows = db.light.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
 
-    lux =  rows[0]['value']
+    try:
+        lux =  rows[0]['value']
+    except:
+        lux = WEATHER_BRIGHTNESS
     if args.v:
         print 'Fetched lux'
 
