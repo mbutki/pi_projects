@@ -31,7 +31,7 @@ PERFER_RAIN_POP = True if pi_config['perfer_rain_pop'] == 'True' else False
 EXTENDED_WEATHER = True if pi_config['extended_weather'] == 'True' else False
 WEATHER_BRIGHTNESS = pi_config['weather_brightness'] if pi_config['weather_brightness'] else 65
 
-MAX_LUX = 200 # 10000
+MAX_LUX = 400 # 10000
 MIN_LUX = 0
 MAX_BRIGHTNESS = WEATHER_BRIGHTNESS
 MIN_BRIGHTNESS = 10
