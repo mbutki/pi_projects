@@ -453,8 +453,7 @@ def setBrightness(lux):
     if args.v:
         print 'LUX:{}'.format(lux)
         print 'brightness:{}'.format(brightness)
-    #MATRIX.brightness = brightness
-    MATRIX.brightness = 20
+    MATRIX.brightness = brightness
 
 def createMatrix():
     global MATRIX
@@ -463,7 +462,6 @@ def createMatrix():
     options.chain_length = 6 if EXTENDED_WEATHER else 2
     options.gpio_slowdown = 2
     options.brightness = WEATHER_BRIGHTNESS
-    #options.brightness = 80
     options.hardware_mapping = 'adafruit-hat-pwm'
 
     MATRIX = RGBMatrix(options = options)
@@ -567,13 +565,13 @@ def drawWeather(tick):
         if (tick % (60 * 5 * ( 1 / TICK_DUR))) == 0:
             try:
                 weather, daily_icons, indoor_temp, outdoor_temp = fetchDataThreaded()
-                fetchLuxDataThreaded()
             except Exception as e:
                 log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
         if (tick % (10 * ( 1 / TICK_DUR))) == 0:
             try:
                 fetchLuxDataThreaded()
+                pass
             except Exception as e:
                 log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
