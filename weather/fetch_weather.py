@@ -18,6 +18,7 @@ LOG_NAME = 'fetch_weather.log'
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
+matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
 LOCATION = pi_config['location']
 LOG_DIR = pi_config['log_dir']
 
@@ -31,9 +32,9 @@ log.basicConfig(level=log_level,
 log.getLogger("requests").setLevel(log.WARNING)
 log.getLogger("urllib3").setLevel(log.WARNING)
 
-API_KEY = pi_config['weather_API_key']
-LAT = pi_config['weather_lat']
-LON = pi_config['weather_lon']
+API_KEY = matrix_config['weather_API_key']
+LAT = matrix_config['weather_lat']
+LON = matrix_config['weather_lon']
 
 def fetchWeather():
     url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)

@@ -26,15 +26,17 @@ LOG_NAME = 'show_weather.log'
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-LOG_DIR = pi_config['log_dir']
-PERFER_RAIN_POP = True if pi_config['perfer_rain_pop'] == 'True' else False
-EXTENDED_WEATHER = True if pi_config['extended_weather'] == 'True' else False
-WEATHER_BRIGHTNESS = pi_config['weather_brightness'] if pi_config['weather_brightness'] else 65
+matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
 
-MAX_LUX = 400 # 10000
-MIN_LUX = 0
-MAX_BRIGHTNESS = WEATHER_BRIGHTNESS
-MIN_BRIGHTNESS = 10
+LOG_DIR = pi_config['log_dir']
+
+PERFER_RAIN_POP = True if matrix_config['perfer_rain_pop'] == 'True' else False
+EXTENDED_WEATHER = True if matrix_config['extended_weather'] == 'True' else False
+
+MAX_LUX = matrix_config['max_lux']
+MIN_LUX = matrix_config['min_lux']
+MAX_BRIGHTNESS = matrix_config['max_brightness']
+MIN_BRIGHTNESS = matrix_config['min_brightness']
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -107,7 +109,7 @@ def fetchLux(db):
     try:
         lux =  rows[0]['value']
     except:
-        lux = WEATHER_BRIGHTNESS
+        lux = MAX_BRIGHTNESS
     if args.v:
         print 'Fetched lux'
 
@@ -461,7 +463,7 @@ def createMatrix():
     options = RGBMatrixOptions()
     options.chain_length = 6 if EXTENDED_WEATHER else 2
     options.gpio_slowdown = 2
-    options.brightness = WEATHER_BRIGHTNESS
+    options.brightness = MAX_BRIGHTNESS
     options.hardware_mapping = 'adafruit-hat-pwm'
 
     MATRIX = RGBMatrix(options = options)

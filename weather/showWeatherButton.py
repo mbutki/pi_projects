@@ -9,8 +9,10 @@ parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
 
-pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
-PIN_IN = pi_config['weather_display_button_pin']
+PI_DIR = '/home/mbutki/pi_projects'
+
+matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
+PIN_IN = matrix_config['weather_display_button_pin']
 
 gpio.setmode(gpio.BCM)
 gpio.setup(PIN_IN, gpio.IN, pull_up_down=gpio.PUD_UP)
