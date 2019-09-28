@@ -12,8 +12,9 @@ import board
 import busio
 import adafruit_veml7700
 
-parser = argparse.ArgumentParser(description='Display Weather')
+parser = argparse.ArgumentParser(description='Read temperature and humidity')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
+parser.add_argument('-n', default=False, action='store_true', help='no write mode')
 args = parser.parse_args()
 
 #READ_FREQ_SECS = 1
@@ -37,11 +38,6 @@ log.basicConfig(level=log_level,
                 filemode='w')
 
 
-parser = argparse.ArgumentParser(description='Read temperature and humidity')
-parser.add_argument('-v', default=False, action='store_true',
-                    help='verbose mode')
-args = parser.parse_args()
-
 i2c = busio.I2C(board.SCL, board.SDA)
 veml7700 = adafruit_veml7700.VEML7700(i2c)
 
@@ -62,6 +58,9 @@ def main():
             else:
                 temp_median = numpy.median(numpy.array(temp_data))
                 temp_data = []
+                if args.n:
+                    print ('temp median:{0}'.format(temp_median))
+                    continue
 
                 client = MongoClient(db_config['host'])
                 db = client.piData
