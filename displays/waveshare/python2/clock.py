@@ -44,7 +44,7 @@ def run():
         draw.text((5, 110), minute, font = mainFont, fill = 0)
         image = image.transpose(Image.ROTATE_180)
 
-        if minute == '00':
+        if minute == '00' || minute == '15' || minute == '30' || minute == '45' ||:
             epd.init(epd.FULL_UPDATE)
             epd.displayPartBaseImage(epd.getbuffer(image))
         else:
