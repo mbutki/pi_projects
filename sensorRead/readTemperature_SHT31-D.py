@@ -76,24 +76,6 @@ def main():
 
                 client.close()
 
-                '''
-                db = MySQLdb.connect(host=db_config['host'],
-                             user=db_config['user'],
-                             passwd=db_config['password'],
-                             db=db_config['database'])
-                cur = db.cursor()
-                try:
-                    cmd = 'insert into temperature values(NOW(), "{0}", {1});'.format(LOCATION, temp)
-                    if args.v:
-                        print cmd
-                    cur.execute(cmd)
-                    db.commit()
-                except Exception as e:
-                    print 'had error:{0}'.format(e)
-                    db.rollback()
-                db.close()
-                '''
-
                 if args.v:
                     print 'write to db:{0} {1}'.format(temp_median, humid_median)
 
