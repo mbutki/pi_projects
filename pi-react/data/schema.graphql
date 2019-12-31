@@ -1,0 +1,11 @@
+type Ds {
+  loc: String
+  times: [String]
+  values: [Float]
+}
+
+type Query {
+  getTemps: [Ds]
+  getHumid: [Ds]
+  getLight: [Ds]
+}

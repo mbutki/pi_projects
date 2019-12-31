@@ -51,8 +51,11 @@ function loopbackTest() {
   var serveStatic = require('serve-static')(webrootPath, { dotfiles: 'allow' });
   var finalhandler = require('finalhandler');
   var server = http.createServer(function (req, res) {
+    // fail on purpose
+    //setTimeout(function () {
     req.url = req.url.replace(/^\/\.well-known\/acme-challenge\//, '/');
     serveStatic(req, res, finalhandler(req, res));
+    //}, 2000);
   });
 
   server.listen(0, function () {
@@ -63,7 +66,7 @@ function loopbackTest() {
     opts.loopbackTimeout = 500;
     challenge.test(opts, 'localhost', 'foo', 'bar', function (err) {
       server.close();
-      if (err) { console.error(err.stack); return; }
+      if (err) { console.error(err.stack); process.exit(1); return; }
 
       console.info('[PASS] localhost loopback');
     });
