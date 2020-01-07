@@ -52,7 +52,8 @@ def shouldWriteLong():
 
 def main():
     if args.v:
-        print 'location:{} db_host:{}'.format(LOCATION, db_config['host'])
+        #print 'location:{} db_host:{}'.format(LOCATION, db_config['host'])
+        pass
 
     light_data = []
     while True:
