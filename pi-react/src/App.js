@@ -72,6 +72,14 @@ export default class Example extends Component {
 
               <h1>Light</h1>
               <LightGraph data={props['getLight']} />
+
+
+              <h1>Web Cams</h1>
+              <a href="http://www.mbutki.com:8080/">Web Cam Website</a>
+              <h3>Static Screenshots</h3>
+              <br/>
+              <img src="http://192.168.86.204/picture/2/current/?_username=admin&_signature=921e8825a488d97e76103d6feeb39f5280330764" />
+              <img src="http://192.168.86.204/picture/1/current/?_username=admin&_signature=d8c7f6315899d385e4710f040623be8f0e1a0d4d" />
             </div>
           );
         }}

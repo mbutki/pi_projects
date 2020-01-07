@@ -115,11 +115,10 @@ class Ds {
 
 async function stdDataFetch(collection_name) {
     let db = await MongoClient.connect(mongo_url);
-    //MongoClient.connect(mongo_url, function(err, db) {
 
-    let past_week = {"time": {$gte: new Date(new Date() - 1000*60*60*24*3)}};//1000*60*60*24*7)}};
+    let past_week = {"time": {$gte: new Date(new Date() - 1000*60*5*24*7)}};//1000*60*60*24*3)}};
     var dbo = db.db("piData");
-    var raw = await dbo.collection(collection_name).find(past_week, {'sort': 'time'});
+    var raw = await dbo.collection(collection_name).find(past_week).sort({time: 1});
     let docs = await raw.toArray();
     let location2data = {};
 
