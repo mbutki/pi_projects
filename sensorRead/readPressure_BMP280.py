@@ -9,8 +9,11 @@ from pymongo import MongoClient
 import datetime
 from Adafruit_BME280 import *
 
-READ_FREQ_SECS = 1
-WRITE_FREQ_SECS = 1 * 60 * 10
+READ_FREQ_SECS = 30
+WRITE_FREQ_SECS = 60 * 5
+
+LONG_TERM_SECS = 60 * 20
+longTermCountdown = LONG_TERM_SECS
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
@@ -23,6 +26,15 @@ parser.add_argument('-v', default=False, action='store_true',
 args = parser.parse_args()
 
 sensor = BME280(mode=BME280_OSAMPLE_16)
+
+def shouldWriteLong():
+    global longTermCountdown
+    longTermCountdown -= WRITE_FREQ_SECS
+    if longTermCountdown <= 0:
+        longTermCountdown = WRITE_FREQ_SECS
+        return True
+    else:
+        return False
 
 def main():
     if args.v:
@@ -49,7 +61,10 @@ def main():
             db = client.piData
 
             doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': press_median}
-            db.pressures.insert_one(doc)
+            db.presNow.insert_one(doc)
+
+            if shouldWriteLong():
+                db.pres.insert_one(doc)
 
             client.close()
             if args.v:

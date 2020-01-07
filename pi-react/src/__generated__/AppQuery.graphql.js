@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 7b01e6275f11237dffa93dfca848186f
+ * @relayHash ad9d2ff99154c00410415b0d3fe14799
  */
 
 /* eslint-disable */
@@ -11,7 +11,7 @@
 import type { ConcreteRequest } from 'relay-runtime';
 export type AppQueryVariables = {||};
 export type AppQueryResponse = {|
-  +getTemps: ?$ReadOnlyArray<?{|
+  +getTemp: ?$ReadOnlyArray<?{|
     +loc: ?string,
     +times: ?$ReadOnlyArray<?string>,
     +values: ?$ReadOnlyArray<?number>,
@@ -36,7 +36,7 @@ export type AppQuery = {|
 
 /*
 query AppQuery {
-  getTemps {
+  getTemp {
     loc
     times
     values
@@ -82,7 +82,7 @@ v1 = [
   {
     "kind": "LinkedField",
     "alias": null,
-    "name": "getTemps",
+    "name": "getTemp",
     "storageKey": null,
     "args": null,
     "concreteType": "Ds",
@@ -130,11 +130,11 @@ return {
     "operationKind": "query",
     "name": "AppQuery",
     "id": null,
-    "text": "query AppQuery {\n  getTemps {\n    loc\n    times\n    values\n  }\n  getHumid {\n    loc\n    times\n    values\n  }\n  getLight {\n    loc\n    times\n    values\n  }\n}\n",
+    "text": "query AppQuery {\n  getTemp {\n    loc\n    times\n    values\n  }\n  getHumid {\n    loc\n    times\n    values\n  }\n  getLight {\n    loc\n    times\n    values\n  }\n}\n",
     "metadata": {}
   }
 };
 })();
 // prettier-ignore
-(node/*: any*/).hash = '5c3fc84fc4b15b52dc23e8aa88d5cc8d';
+(node/*: any*/).hash = '112334e3073dabf9dbac56398cdfa19f';
 module.exports = node;

@@ -15,7 +15,7 @@ export default class Example extends Component {
         environment={environment}
         query={graphql`
           query AppQuery {
-            getTemps {
+            getTemp {
               loc
               times
               values
@@ -41,7 +41,7 @@ export default class Example extends Component {
             return <div>Loading...</div>;
           }
 
-          let indoorTemps = props['getTemps'].reduce((result, temp) => {
+          let indoorTemps = props['getTemp'].reduce((result, temp) => {
               if (temp.loc !== 'frontDoor') {
                 result.push(temp);
               }
@@ -49,7 +49,7 @@ export default class Example extends Component {
           }, []);
 
 
-          let outdoorTemps = props['getTemps'].reduce((result, temp) => {
+          let outdoorTemps = props['getTemp'].reduce((result, temp) => {
               if (temp.loc === 'frontDoor') {
                result.push(temp);
               }
@@ -59,7 +59,7 @@ export default class Example extends Component {
           return (
             <div>
               <h1>Temperature</h1>
-              <TempTable data={props['getTemps']} />
+              <TempTable data={props['getTemp']} />
               <br/><br/><br/>
 
               <TempGraph data={indoorTemps} />

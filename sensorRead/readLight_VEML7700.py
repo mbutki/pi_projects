@@ -17,18 +17,18 @@ parser.add_argument('-v', default=False, action='store_true', help='verbose mode
 parser.add_argument('-n', default=False, action='store_true', help='no write mode')
 args = parser.parse_args()
 
-#READ_FREQ_SECS = 1
-#WRITE_FREQ_SECS = 10
-
 READ_FREQ_SECS = 3
 WRITE_FREQ_SECS = 9
+
+LONG_TERM_SECS = 60 * 20
+longTermCountdown = LONG_TERM_SECS
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
 LOG_DIR = pi_config['log_dir']
 LOCATION = pi_config['location']
 
-LOG_NAME = 'readTemperature_VEML7700_log.txt'
+LOG_NAME = 'readLight_VEML7700_log.txt'
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 log_level = log.DEBUG if args.v else log.INFO
@@ -41,41 +41,48 @@ log.basicConfig(level=log_level,
 i2c = busio.I2C(board.SCL, board.SDA)
 veml7700 = adafruit_veml7700.VEML7700(i2c)
 
+def shouldWriteLong():
+    global longTermCountdown
+    longTermCountdown -= WRITE_FREQ_SECS
+    if longTermCountdown <= 0:
+        longTermCountdown = WRITE_FREQ_SECS
+        return True
+    else:
+        return False
+
 def main():
     if args.v:
-        #print 'location:{} db_host:{}'.format(LOCATION, db_config['host'])
-        pass
+        print 'location:{} db_host:{}'.format(LOCATION, db_config['host'])
 
-    temp_data = []
+    light_data = []
     while True:
         try: 
-            temp = veml7700.light
+            light = veml7700.light
 
-            if len(temp_data) < (WRITE_FREQ_SECS / READ_FREQ_SECS):
-                temp_data.append(temp)
+            if len(light_data) < (WRITE_FREQ_SECS / READ_FREQ_SECS):
+                light_data.append(light)
                 if args.v:
-                    print ('lux: ', temp)
+                    print ('lux: ', light)
             else:
-                temp_median = numpy.median(numpy.array(temp_data))
-                temp_data = []
+                light_median = numpy.median(numpy.array(light_data))
+                light_data = []
                 if args.n:
-                    print ('temp median:{0}'.format(temp_median))
+                    print ('light median:{0}'.format(light_median))
                     continue
 
                 client = MongoClient(db_config['host'])
                 db = client.piData
 
-                db.light.drop()
-                if args.v:
-                    print('Deleted previous light data')
+                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': light_median}
+                db.lightNow.insert_one(doc)
 
-                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_median}
-                db.light.insert_one(doc)
+                if shouldWriteLong():
+                    db.light.insert_one(doc)
 
                 client.close()
 
                 if args.v:
-                    print ('write to db:{0}'.format(temp_median))
+                    print ('write to db:{0}'.format(light_median))
 
             time.sleep(READ_FREQ_SECS)
         except Exception as e:

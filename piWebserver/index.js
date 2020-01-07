@@ -70,9 +70,9 @@ var schema = buildSchema(`
   }
 
   type Query {
-    getTemps: [Ds]
+    getTemp: [Ds]
     getHumid: [Ds]
-    getPressure: [Ds]
+    getPres: [Ds]
     getLight: [Ds]
   }
 `);
@@ -81,15 +81,15 @@ var schema = buildSchema(`
 // The root provides the top-level API endpoints
 var root = {
     getTemps: async () => {
-        let data = await stdDataFetch('temperatures');
+        let data = await stdDataFetch('temp');
         return data;
     },
     getHumid: async () => {
-        let data = await stdDataFetch('humidities');
+        let data = await stdDataFetch('humid');
         return data;
     },
     getPressure: async () => {
-        let data = await stdDataFetch('temperatures');
+        let data = await stdDataFetch('pres');
         return data;
     },
     getLight: async () => {
@@ -116,9 +116,10 @@ class Ds {
 async function stdDataFetch(collection_name) {
     let db = await MongoClient.connect(mongo_url);
 
-    let past_week = {"time": {$gte: new Date(new Date() - 1000*60*5*24*7)}};//1000*60*60*24*3)}};
+    let past_week = {"time": {$gte: new Date(new Date() - 1000*60*60*24*7)}};//1000*60*60*24*3)}};
     var dbo = db.db("piData");
     var raw = await dbo.collection(collection_name).find(past_week).sort({time: 1});
+    //var raw = await dbo.collection(collection_name).find().sort({time: 1});
     let docs = await raw.toArray();
     let location2data = {};
 

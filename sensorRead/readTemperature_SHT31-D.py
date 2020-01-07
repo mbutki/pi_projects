@@ -5,7 +5,6 @@ import json
 import os
 import argparse
 from pymongo import MongoClient
-#import MySQLdb
 import datetime
 from Adafruit_SHT31 import *
 import logging as log
@@ -18,8 +17,8 @@ args = parser.parse_args()
 READ_FREQ_SECS = 30
 WRITE_FREQ_SECS = 60 * 5
 
-#READ_FREQ_SECS = 1
-#WRITE_FREQ_SECS = 10
+LONG_TERM_SECS = 60 * 20
+longTermCountdown = LONG_TERM_SECS
 
 db_config = json.load(open('/home/mbutki/pi_projects/db.config'))
 pi_config = json.load(open('/home/mbutki/pi_projects/pi.config'))
@@ -42,6 +41,15 @@ parser.add_argument('-v', default=False, action='store_true',
 args = parser.parse_args()
 
 sensor = SHT31(address = 0x44)
+
+def shouldWriteLong():
+    global longTermCountdown
+    longTermCountdown -= WRITE_FREQ_SECS
+    if longTermCountdown <= 0:
+        longTermCountdown = WRITE_FREQ_SECS
+        return True
+    else:
+        return False
 
 def main():
     if args.v:
@@ -68,11 +76,15 @@ def main():
                 client = MongoClient(db_config['host'])
                 db = client.piData
 
-                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_median}
-                db.temperatures.insert_one(doc)
+                doc1 = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': temp_median}
+                db.tempNow.insert_one(doc1)
 
-                doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': humid_median}
-                db.humidities.insert_one(doc) 
+                doc2 = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': humid_median}
+                db.humidNow.insert_one(doc2) 
+
+                if shouldWriteLong():
+                    db.temp.insert_one(doc1)
+                    db.humid.insert_one(doc2)
 
                 client.close()
 
