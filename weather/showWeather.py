@@ -128,7 +128,7 @@ def fetchWeather(db):
 
 def fetchIndoorTemps(db):
     temp = 0
-    rows = db.temp.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
+    rows = db.tempNow.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
     try:
         temp = rows[0]['value']
     except:
@@ -138,7 +138,7 @@ def fetchIndoorTemps(db):
 
 def fetchOutdoorTemps(db):
     temp = 0
-    rows = db.temp.find({"location" : "frontDoor"}).sort('time', -1).limit(1)
+    rows = db.tempNow.find({"location" : "frontDoor"}).sort('time', -1).limit(1)
     try:
         temp = rows[0]['value']
     except:

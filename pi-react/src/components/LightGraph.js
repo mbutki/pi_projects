@@ -74,7 +74,7 @@ class TempGraph extends PureComponent {
         />
         <Tooltip 
           labelFormatter={(tickItem) => {
-            return moment.unix(tickItem).tz('America/Los_Angeles').format('MM/DD: ha');
+            return moment.unix(tickItem).tz('America/Los_Angeles').format('MM/DD: h:mm a');
           }}
         />
         <Legend verticalAlign="top"/>

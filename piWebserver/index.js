@@ -80,7 +80,7 @@ var schema = buildSchema(`
 
 // The root provides the top-level API endpoints
 var root = {
-    getTemps: async () => {
+    getTemp: async () => {
         let data = await stdDataFetch('temp');
         return data;
     },
