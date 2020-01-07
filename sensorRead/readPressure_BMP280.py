@@ -31,7 +31,7 @@ def shouldWriteLong():
     global longTermCountdown
     longTermCountdown -= WRITE_FREQ_SECS
     if longTermCountdown <= 0:
-        longTermCountdown = WRITE_FREQ_SECS
+        longTermCountdown = LONG_TERM_SECS
         return True
     else:
         return False
