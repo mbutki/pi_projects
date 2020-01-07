@@ -11,6 +11,7 @@ import os
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
+parser.add_argument('-n', default=False, action='store_true', help='no DB write')
 args = parser.parse_args()
 
 PI_DIR = '/home/mbutki/pi_projects'
@@ -93,7 +94,7 @@ def parseWeather(raw_weather):
 
 def storeWeather(weather):
     if args.v:
-        print 'Starting db pu'
+        print 'Starting db put'
     client = MongoClient(db_config['host'])
     db = client.piData
 
@@ -119,7 +120,8 @@ def main():
             if args.v:
                 for t, day in sorted(weather['days'].iteritems()):
                     print t, day
-            storeWeather(weather)
+            if not args.n:
+                storeWeather(weather)
         except Exception as err:
             log.error("main error: {0}".format(err))
         time.sleep(300)
