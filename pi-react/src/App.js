@@ -15,6 +15,11 @@ export default class Example extends Component {
         environment={environment}
         query={graphql`
           query AppQuery {
+            getTempNow {
+              loc
+              times
+              values
+            } 
             getTemp {
               loc
               times
@@ -59,7 +64,7 @@ export default class Example extends Component {
           return (
             <div>
               <h1>Temperature</h1>
-              <TempTable data={props['getTemp']} />
+              <TempTable data={props['getTempNow']} />
               <br/><br/><br/>
 
               <TempGraph data={indoorTemps} />

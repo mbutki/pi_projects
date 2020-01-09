@@ -70,6 +70,7 @@ var schema = buildSchema(`
   }
 
   type Query {
+    getTempNow: [Ds]
     getTemp: [Ds]
     getHumid: [Ds]
     getPres: [Ds]
@@ -80,6 +81,10 @@ var schema = buildSchema(`
 
 // The root provides the top-level API endpoints
 var root = {
+    getTempNow: async () => {
+        let data = await stdDataFetch('tempNow');
+        return data;
+    },
     getTemp: async () => {
         let data = await stdDataFetch('temp');
         return data;

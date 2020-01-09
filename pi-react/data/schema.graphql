@@ -5,6 +5,7 @@ type Ds {
 }
 
 type Query {
+  getTempNow: [Ds]
   getTemp: [Ds]
   getHumid: [Ds]
   getLight: [Ds]
