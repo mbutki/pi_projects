@@ -38,7 +38,7 @@ LAT = matrix_config['weather_lat']
 LON = matrix_config['weather_lon']
 
 def fetchWeather():
-    url = 'https://api.darksky.net/forecast/{0}/{1},{2}'.format(API_KEY, LAT, LON)
+    url = 'https://api.darksky.net/forecast/{0}/{1},{2}?exclude=minutely,alerts,flags&extend=hourly'.format(API_KEY, LAT, LON)
     if args.v:
         print 'fetching: ', url
     data = requests.get(url).json()
@@ -53,6 +53,7 @@ def parseHours(raw_weather):
             'condition': item['icon'],
             'pop': int(item['precipProbability'] * 100),
             'precipIntensity': float(item['precipIntensity']),
+            'cloudCover': int(item['cloudCover'] * 100)
         }
     return hours
 
@@ -118,11 +119,18 @@ def main():
             raw_weather = fetchWeather()
             weather = parseWeather(raw_weather)
             if args.v:
+                print 'DAYS:'
                 for t, day in sorted(weather['days'].iteritems()):
-                    print t, day
+                    print time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t)))
+                    print t, day, '\n'
+                print '\nHOURS:'
+                for t, hour in sorted(weather['hours'].iteritems()):
+                    print time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t)))
+                    print t, hour, '\n'
             if not args.n:
                 storeWeather(weather)
         except Exception as err:
+            print "main error: {0}".format(err)
             log.error("main error: {0}".format(err))
         time.sleep(300)
 

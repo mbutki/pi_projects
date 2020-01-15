@@ -1,5 +1,3 @@
-#import Image
-#import ImageDraw
 from PIL import Image, ImageDraw
 import os
 import time
@@ -13,9 +11,6 @@ import datetime
 import logging as log
 import traceback
 import threading
-
-#from pi_projects.security import readMotionSensors
-#import  pi_projects
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -48,23 +43,27 @@ log.basicConfig(level=log_level,
 
 LIB_DIR = PI_DIR + '/displays/rpi-rgb-led-matrix/bindings/python'
 
-HIGH_TEMP_COLOR = graphics.Color(170, 170, 170)
+###################### COLORS ######################
+# Number Colors
+DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
 CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
 
-DAYLIGHT_BAR_COLOR = graphics.Color(15, 15, 15)
-NOON_BAR_COLOR = graphics.Color(80, 80, 80)
+# Plot Bar Lines
+DAYLIGHT_BAR_COLOR = graphics.Color(30, 30, 30)
+NOON_BAR_COLOR = graphics.Color(100, 100, 100)
 MIDNIGHT_BAR_COLOR = graphics.Color(50, 50, 50)
-
-TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
-POP_LINE_COLOR = graphics.Color(0, 130, 255)
-PERCIP_INTENSITY_LINE_COLOR = graphics.Color(134, 36, 214)
 TEMP_INCREMENT_LINE_COLOR = graphics.Color(40, 40, 40)
 
-HIGH_TEMP_LINE_COLOR = graphics.Color(130, 0, 0)
-LOW_TEMP_LINE_COLOR = graphics.Color(130, 130, 130)
+# Plot Data Points
+TEMP_LINE_COLOR = graphics.Color(140, 140, 140)
+POP_LINE_COLOR = graphics.Color(0, 130, 255)
+CLOUD_COVER_LINE_COLOR = graphics.Color(140, 0, 0)
+PERCIP_INTENSITY_LINE_COLOR = graphics.Color(134, 36, 214)
 
+# Plot Dot Animation
 RUNNER_DOT_COLOR = graphics.Color(255, 255, 255)
+################## END COLORS ######################
 
 BAR_CHART_BOTTOM = 31
 BAR_MIN_TEMP = 30
@@ -80,6 +79,57 @@ MEDIUM_FONT = graphics.Font()
 SMALL_FONT = graphics.Font()
 MEDIUM_FONT.LoadFont(LIB_DIR + '/fonts/5x7_mike.bdf')
 SMALL_FONT.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
+
+def main():
+    global OFFSCREEN_CANVAS
+
+    createMatrix()
+    OFFSCREEN_CANVAS = MATRIX.CreateFrameCanvas()
+
+    weatherSetup()
+
+    tick = 0
+    while True:
+        OFFSCREEN_CANVAS.Clear()
+        drawWeather(tick)
+        drawClock(tick)
+        drawDate(tick)
+
+        OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
+        time.sleep(TICK_DUR)
+        tick += 1
+        if tick == sys.maxint:
+            tick = 0
+
+def drawClock(tick):
+    now = datetime.datetime.now()
+    timeStr = now.strftime("%-I:%M:%S")
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+13, 15, CLOCK_COLOR, timeStr)
+
+def drawDate(tick):
+    now = datetime.datetime.now()
+    timeStr = now.strftime("%-m/%-d/%y")
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+13, 15, CLOCK_COLOR, timeStr)
+
+def drawBars(weather, tick):
+    TEMP_DIV = 5.0
+    POP_DIV = 7.0
+    PERCIP_INTENSITY_DIV = 0.02
+    MAX_PERCIP_INTENSITY = 0.3
+    CHART_WIDTH = 44
+    BAR_LEFT = 10
+
+    horizontal_temps = [40, 60, 80, 100]
+    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
+
+    drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV)
+
+    drawHorBars(horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH)
+    drawVertBars(epochs, weather, BAR_LEFT)
+    drawCloudCoverLine(epochs, weather, POP_DIV, BAR_LEFT)
+    drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick)
+    drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX_PERCIP_INTENSITY)
+    drawPopLine(epochs, weather, POP_DIV, BAR_LEFT)
 
 def processImage(path):
     im = Image.open(path)
@@ -104,14 +154,16 @@ def processImage(path):
 def fetchLux(db):
     if args.v:
         print 'Fetching lux...'
-    rows = db.lightNow.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
+    rows = db.lightNow.find({"location" : "family room"}).sort('time', -1).limit(1)
 
     try:
         lux =  rows[0]['value']
+        if args.v:
+            print 'Fetched lux: {}'.format(lux)
     except:
         lux = MAX_BRIGHTNESS
     if args.v:
-        print 'Fetched lux'
+        print 'Used lux: {}'.format(lux)
 
     return lux
 
@@ -128,7 +180,7 @@ def fetchWeather(db):
 
 def fetchIndoorTemps(db):
     temp = 0
-    rows = db.tempNow.find({"location" : "familyRoom"}).sort('time', -1).limit(1)
+    rows = db.tempNow.find({"location" : "family room"}).sort('time', -1).limit(1)
     try:
         temp = rows[0]['value']
     except:
@@ -138,7 +190,7 @@ def fetchIndoorTemps(db):
 
 def fetchOutdoorTemps(db):
     temp = 0
-    rows = db.tempNow.find({"location" : "frontDoor"}).sort('time', -1).limit(1)
+    rows = db.tempNow.find({"location" : "outside"}).sort('time', -1).limit(1)
     try:
         temp = rows[0]['value']
     except:
@@ -169,7 +221,6 @@ def getDailyIcons(weather):
     global UNKNOWN
     global RAIN
     global TEXT_TO_ICON_DAY
-    global TEXT_TO_ICON_NIGHT
 
     daily_icons = []
     for i, epoch in enumerate(sorted(weather['days'])):
@@ -185,9 +236,54 @@ def getDailyIcons(weather):
             icons = [getMoonPhaseIcon(day['moonPhase'])]
         else:
             # daytime
+            condition = rainIconLogic(weather, epoch)
             icons = TEXT_TO_ICON_DAY[condition] if condition in TEXT_TO_ICON_DAY else [UNKNOWN]
         daily_icons.append(icons)
     return daily_icons
+
+def rainIconLogic(weather, epoch):
+    day = weather['days'][epoch]
+    condition = day['condition']
+    if condition in PERCIPITATION:
+        riseTime = day['rise'] - (day['rise'] % 3600)
+        setTime = day['set'] - (day['set'] % 3600) + 3600
+        
+        startHour = 0
+        endHour = 0
+        hours = sorted(weather['hours'].keys())
+        if int(hours[0]) < riseTime:
+            startHour = riseTime
+            endHour = setTime
+        elif int(hours[0]) > setTime:
+            return condition
+        else:
+            startHour = int(hours[0])
+            endHour = setTime
+
+        maxPop = 0
+        maxCC = 0
+        for hourEpoch in xrange(startHour, endHour + 3600, 3600):
+            if str(hourEpoch) not in weather['hours']:
+                break
+            hour = weather['hours'][str(hourEpoch)]
+            maxPop = max(maxPop, hour['pop'])
+            maxCC = max(maxCC, hour['cloudCover'])
+        if maxPop < 40:
+            if maxCC > 70:
+                if args.v:
+                    print 'Changed to cloudy'
+                return 'cloudy'
+            elif maxCC > 30:
+                if args.v:
+                    print 'Changed to partly cloudy'
+                return 'partly-cloudy-day'
+            else:
+                if args.v:
+                    print 'Changed to clear'
+                return 'clear-day'
+    if args.v:
+        print 'keeping at {}'.format(condition)
+    return condition
 
 def drawDailyIcons(daily_icons, new_frame, tick, weather):
     for j, icons in enumerate(daily_icons):
@@ -201,9 +297,6 @@ def drawDailyIcons(daily_icons, new_frame, tick, weather):
             new_frame.paste(icon[this_day_frame_index], (offset,0), icon[this_day_frame_index])
 
 def drawDailyText(weather):
-    global HIGH_TEMP_COLOR
-    global POP_COLOR
-
     for j, epoch in enumerate(sorted(weather['days'])[:5]):
         dt =  datetime.datetime.fromtimestamp(float(epoch))
         day = weather['days'][epoch]
@@ -224,7 +317,7 @@ def drawDailyText(weather):
             display_num = day['pop']
             font = MEDIUM_FONT
         else:
-            display_color = HIGH_TEMP_COLOR
+            display_color = DAY_TEMP_COLOR
             display_num = day['high']
             font = MEDIUM_FONT
         
@@ -268,8 +361,8 @@ def drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV):
         temp_y2 = BAR_CHART_BOTTOM - temp
 
         if dt.hour >= sun_rise and dt.hour <= sun_set:
-            graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, temp_y2 + 1, DAYLIGHT_BAR_COLOR)
-            #graphics.DrawLine(offscreen_canvas, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
+            #graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, temp_y2 + 1, DAYLIGHT_BAR_COLOR)
+            graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
 
 def drawHorBars(horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH):
     for h_temp in horizontal_temps:
@@ -308,12 +401,7 @@ def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
         if i != tick % CHART_WIDTH:
             base_temp = 80
             low_temp = 50
-            if hour['temp'] >= base_temp:
-                OFFSCREEN_CANVAS.SetPixel(column, temp_y2, HIGH_TEMP_LINE_COLOR.red, HIGH_TEMP_LINE_COLOR.green, HIGH_TEMP_LINE_COLOR.blue)
-            elif hour['temp'] <= low_temp:
-                OFFSCREEN_CANVAS.SetPixel(column, temp_y2, LOW_TEMP_LINE_COLOR.red, LOW_TEMP_LINE_COLOR.green, LOW_TEMP_LINE_COLOR.blue)
-            else:
-                OFFSCREEN_CANVAS.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
+            OFFSCREEN_CANVAS.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
 
             if prev_temp:
                 drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, column, TEMP_LINE_COLOR)
@@ -321,6 +409,25 @@ def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
         # Animated Dot
         if i == tick % CHART_WIDTH:
             OFFSCREEN_CANVAS.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
+
+def drawCloudCoverLine(epochs, weather, POP_DIV, BAR_LEFT):
+    for i, epoch in enumerate(epochs):
+        hour = weather['hours'][epoch]
+
+        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
+        dt =  datetime.datetime.fromtimestamp(float(epoch))
+
+        pop = int(round(hour['cloudCover'] / POP_DIV)) - 1
+        prev_pop = int(round( prev_hour['cloudCover'] / POP_DIV )) - 1 if prev_hour else None
+
+        column = BAR_LEFT + i
+        pop_y2 = BAR_CHART_BOTTOM - pop
+        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
+
+        if True:
+            OFFSCREEN_CANVAS.SetPixel(column, pop_y2, CLOUD_COVER_LINE_COLOR.red, CLOUD_COVER_LINE_COLOR.green, CLOUD_COVER_LINE_COLOR.blue)
+            if prev_pop:
+                drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, column, CLOUD_COVER_LINE_COLOR)
 
 def drawPopLine(epochs, weather, POP_DIV, BAR_LEFT):
     for i, epoch in enumerate(epochs):
@@ -362,25 +469,6 @@ def drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX
             OFFSCREEN_CANVAS.SetPixel(column, pop_y2, PERCIP_INTENSITY_LINE_COLOR.red, PERCIP_INTENSITY_LINE_COLOR.green, PERCIP_INTENSITY_LINE_COLOR.blue)
             if prev_pop:
                 drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, column, PERCIP_INTENSITY_LINE_COLOR)
-
-def drawBars(weather, tick):
-    TEMP_DIV = 5.0
-    POP_DIV = 7.0
-    PERCIP_INTENSITY_DIV = 0.02
-    MAX_PERCIP_INTENSITY = 0.3
-    CHART_WIDTH = 44
-    BAR_LEFT = 10
-
-    horizontal_temps = [40, 60, 80, 100]
-    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
-
-    drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV)
-
-    drawHorBars(horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH)
-    drawVertBars(epochs, weather, BAR_LEFT)
-    drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick)
-    drawPopLine(epochs, weather, POP_DIV, BAR_LEFT)
-    drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX_PERCIP_INTENSITY)
 
 def drawConnectingLine(prev, cur, prev_y2, y2, column, color):
     if prev > cur + 1:
@@ -431,16 +519,18 @@ def fetchLuxData():
 
 def translate(value, leftMin, leftMax, rightMin, rightMax):
     # Figure out how 'wide' each range is
-    print value
-    print leftMin
-    print leftMax
-    print rightMin
-    print rightMax
+    if args.v:
+        print value
+        print leftMin
+        print leftMax
+        print rightMin
+        print rightMax
     leftSpan = leftMax - leftMin
     rightSpan = rightMax - rightMin
 
-    print float(value - leftMin)
-    print float(leftSpan)
+    if args.v:
+        print float(value - leftMin)
+        print float(leftSpan)
     # Convert the left range into a 0-1 range (float)
     valueScaled = float(value - leftMin) / float(leftSpan)
 
@@ -453,7 +543,7 @@ def setBrightness(lux):
     lux = min(lux, MAX_LUX)
     brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
     if args.v:
-        print 'LUX:{}'.format(lux)
+        print 'LUX After Min/Max:{}'.format(lux)
         print 'brightness:{}'.format(brightness)
     MATRIX.brightness = brightness
 
@@ -467,30 +557,6 @@ def createMatrix():
     options.hardware_mapping = 'adafruit-hat-pwm'
 
     MATRIX = RGBMatrix(options = options)
-
-def main():
-    global OFFSCREEN_CANVAS
-
-    createMatrix()
-    OFFSCREEN_CANVAS = MATRIX.CreateFrameCanvas()
-
-    weatherSetup()
-
-    tick = 0
-    while True:
-        OFFSCREEN_CANVAS.Clear()
-        drawWeather(tick)
-        drawClock(tick)
-
-        OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
-        time.sleep(TICK_DUR)
-        tick += 1
-        if tick == sys.maxint:
-            tick = 0
-def drawClock(tick):
-    now = datetime.datetime.now()
-    timeStr = now.strftime("%-I:%M:%S")
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+13, 32/2, CLOCK_COLOR, timeStr)
 
 def weatherSetup():
     global RAIN
@@ -507,7 +573,7 @@ def weatherSetup():
     global FULL_MOON
 
     global TEXT_TO_ICON_DAY
-    global TEXT_TO_ICON_NIGHT
+    global PERCIPITATION
 
     RAIN = processImage(LIB_DIR + '/imgs/rain.gif')
     SUN = processImage(LIB_DIR + '/imgs/sun.gif')
@@ -538,20 +604,7 @@ def weatherSetup():
         'sleet': [RAIN]
     }
 
-    TEXT_TO_ICON_NIGHT = {
-        'clear-day': [],
-        'clear-night': [],
-        'wind': [],
-        'fog': [CLOUD],
-        'cloudy': [CLOUD],
-        'partly-cloudy-day': [],
-        'partly-cloudy-night': [],
-        #'partly-cloudy-day': [JUST_CLOUDS_NIGHT],
-        #'partly-cloudy-night': [JUST_CLOUDS_NIGHT],
-        'rain': [RAIN],
-        'snow': [RAIN],
-        'sleet': [RAIN]
-    }
+    PERCIPITATION = set(['rain', 'snow', 'sleet'])
 
     global weather, daily_icons, indoor_temp, outdoor_temp
     try:

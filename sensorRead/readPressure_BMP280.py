@@ -1,6 +1,4 @@
 import time
-import Adafruit_GPIO.SPI as SPI
-import Adafruit_MCP3008
 import numpy
 import json
 import os
@@ -10,7 +8,7 @@ import datetime
 from Adafruit_BME280 import *
 
 READ_FREQ_SECS = 30
-WRITE_FREQ_SECS = 60 * 5
+WRITE_FREQ_SECS =  60 * 5
 
 LONG_TERM_SECS = 60 * 20
 longTermCountdown = LONG_TERM_SECS
@@ -37,22 +35,17 @@ def shouldWriteLong():
         return False
 
 def main():
-    if args.v:
-        print 'location:{0} db_host:{1} db_name:{2} db_user:{3}'.format(LOCATION, db_config['host'], db_config['database'], db_config['user'])
-
     press_data = []
     while True:
         temp = sensor.read_temperature()
         pressure = sensor.read_pressure()
         hectopascals = pressure / 100
-        inOfMerc = hectopascals * 0.02952998751
+        #inOfMerc = hectopascals * 0.02952998751
 
-
-        if len(press_data) < WRITE_FREQ_SECS:
-            press_data.append(inOfMerc)
+        if len(press_data) < (WRITE_FREQ_SECS / READ_FREQ_SECS):
+            press_data.append(hectopascals)
             if args.v:
-                #print 'Pressure  = {0:0.2f} in'.format(inOfMerc)
-                print 'Pressure  = {0} in'.format(inOfMerc)
+                print 'Pressure  = {0} in'.format(hectopascals)
         else:
             press_median = numpy.median(numpy.array(press_data))
             press_data = []
@@ -62,13 +55,15 @@ def main():
 
             doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': press_median}
             db.presNow.insert_one(doc)
+            if args.v:
+                print 'write to db:{0}'.format(doc)
 
             if shouldWriteLong():
                 db.pres.insert_one(doc)
+                if args.v:
+                    print 'write long to db:{0}'.format(press_median)
 
             client.close()
-            if args.v:
-                print 'write to db:{0} {1}'.format(press_median)
 
         time.sleep(READ_FREQ_SECS)
 

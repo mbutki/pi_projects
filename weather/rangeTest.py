@@ -26,7 +26,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 lux = int(sys.argv[1])
 lux = max(lux, MIN_LUX)
 lux = min(lux, MAX_LUX)
-print lux
+print 'lux after min/max: {}'.format(lux)
 
 brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
-print brightness
+print 'brightness used: {}'.format(brightness)
