@@ -1,16 +1,20 @@
-from PIL import Image, ImageDraw
 import os
 import time
-from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 import sys
-from pymongo import MongoClient
 import argparse
-from multiprocessing import Process
-import json
 import datetime
-import logging as log
-import traceback
+from multiprocessing import Process
 import threading
+import traceback
+import json
+import logging as log
+
+from PIL import Image, ImageDraw
+from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
+
+from pymongo import MongoClient
+from dbReads import *
+from iconUtils import *
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -18,12 +22,11 @@ args = parser.parse_args()
 
 PI_DIR = '/home/mbutki/pi_projects'
 LOG_NAME = 'show_weather.log'
+LOG_DIR = pi_config['log_dir']
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
 matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
-
-LOG_DIR = pi_config['log_dir']
 
 PERFER_RAIN_POP = True if matrix_config['perfer_rain_pop'] == 'True' else False
 EXTENDED_WEATHER = True if matrix_config['extended_weather'] == 'True' else False
@@ -69,9 +72,9 @@ BAR_CHART_BOTTOM = 31
 BAR_MIN_TEMP = 30
 CURRENT_BOTTOM = 28
 
-MATRIX = None
-OFFSCREEN_CANVAS = None
 TICK_DUR = 0.25
+READ_WEATHER_SECS = 60 * 5
+READ_LUX_SECS = 10
 
 CLOCK_COLOR = graphics.Color(170, 170, 170)
 
@@ -80,13 +83,19 @@ SMALL_FONT = graphics.Font()
 MEDIUM_FONT.LoadFont(LIB_DIR + '/fonts/5x7_mike.bdf')
 SMALL_FONT.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
 
+#### GLOBALS ####
+OFFSCREEN_CANVAS = MATRIX = None
+weather = daily_icons = indoor_temp = outdoor_temp = lux = None
+#################
+
 def main():
     global OFFSCREEN_CANVAS
+    global MATRIX
 
-    createMatrix()
+    MATRIX = createMatrix()
     OFFSCREEN_CANVAS = MATRIX.CreateFrameCanvas()
 
-    weatherSetup()
+    weatherSetup() # Blocking fetch of weather data
 
     tick = 0
     while True:
@@ -111,7 +120,40 @@ def drawDate(tick):
     timeStr = now.strftime("%-m/%-d/%y")
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+13, 15, CLOCK_COLOR, timeStr)
 
-def drawBars(weather, tick):
+def drawWeather(tick):
+    try:
+        updateData(tick)
+
+        new_frame = Image.new('RGBA', (64,32))
+        #daily_icons = [[NEW_MOON], [CRESCENT_MOON ], [QUARTER_MOON ], [GIBBOUS_MOON], [FULL_MOON]]
+        drawDailyIcons(daily_icons, new_frame, tick, weather)
+        new_frame = new_frame.convert('RGB')
+        OFFSCREEN_CANVAS.SetImage(new_frame, 0, 0)
+
+        drawDailyText(weather)
+        drawCurrent(weather['current'], outdoor_temp)
+        drawIndoor(indoor_temp)
+        drawGraph(weather, tick)
+    except Exception as e:
+        if args.v:
+            print('main() exception: {}'.format(traceback.format_exc()))
+        log.error('main() exception: {}'.format(traceback.format_exc()))
+
+def updateData(tick):
+    if (tick % (READ_WEATHER_SECS * ( 1 / TICK_DUR))) == 0:
+        try:
+            fetchDataThreaded()
+        except Exception as e:
+            log.error('fetchWeather() threaded exception: {}'.format(traceback.format_exc()))
+
+    if (tick % (READ_LUX_SECS * ( 1 / TICK_DUR))) == 0:
+        try:
+            adjustBrightnessThreaded()
+            pass
+        except Exception as e:
+            log.error('fetchLux() threaded exception: {}'.format(traceback.format_exc()))
+
+def drawGraph(weather, tick):
     TEMP_DIV = 5.0
     POP_DIV = 7.0
     PERCIP_INTENSITY_DIV = 0.02
@@ -130,160 +172,6 @@ def drawBars(weather, tick):
     drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick)
     drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX_PERCIP_INTENSITY)
     drawPopLine(epochs, weather, POP_DIV, BAR_LEFT)
-
-def processImage(path):
-    im = Image.open(path)
-
-    frames = []
-    p = im.getpalette()
-    
-    try:
-        while True:            
-            if not im.getpalette():
-                im.putpalette(p)
-            
-            new_frame = Image.new('RGBA', im.size)
-            new_frame.paste(im, (0,0), im.convert('RGBA'))
-            frames.append(new_frame)
-            im.seek(im.tell() + 1)
-    except EOFError:
-        pass
-
-    return frames
-
-def fetchLux(db):
-    if args.v:
-        print 'Fetching lux...'
-    rows = db.lightNow.find({"location" : "family room"}).sort('time', -1).limit(1)
-
-    try:
-        lux =  rows[0]['value']
-        if args.v:
-            print 'Fetched lux: {}'.format(lux)
-    except:
-        lux = MAX_BRIGHTNESS
-    if args.v:
-        print 'Used lux: {}'.format(lux)
-
-    return lux
-
-def fetchWeather(db):
-    if args.v:
-        print 'Fetching weather...'
-    rows = db.weather.find({}).sort('time', -1).limit(1)
-
-    weather =  rows[0]['weather']
-    if args.v:
-        print 'Fetched weather'
-
-    return weather
-
-def fetchIndoorTemps(db):
-    temp = 0
-    rows = db.tempNow.find({"location" : "family room"}).sort('time', -1).limit(1)
-    try:
-        temp = rows[0]['value']
-    except:
-        pass
-
-    return temp
-
-def fetchOutdoorTemps(db):
-    temp = 0
-    rows = db.tempNow.find({"location" : "outside"}).sort('time', -1).limit(1)
-    try:
-        temp = rows[0]['value']
-    except:
-        temp = -999
-
-    return temp
-
-def getMoonPhaseIcon(phase):
-    if phase < 0.125:
-        return NEW_MOON
-    elif phase < 0.25:
-        return CRESCENT_MOON
-    elif phase < 0.375:
-        return QUARTER_MOON
-    elif phase < 0.5:
-        return GIBBOUS_MOON
-    elif phase < 0.625:
-        return FULL_MOON
-    elif phase < 0.75:
-        return GIBBOUS_MOON
-    elif phase < 0.875:
-        return QUARTER_MOON
-    elif phase < 1:
-        return CRESCENT_MOON
-    
-
-def getDailyIcons(weather):
-    global UNKNOWN
-    global RAIN
-    global TEXT_TO_ICON_DAY
-
-    daily_icons = []
-    for i, epoch in enumerate(sorted(weather['days'])):
-        day = weather['days'][epoch]
-        condition = day['condition']
-        icons = []
-
-        now = datetime.datetime.now()
-        sun_rise = datetime.datetime.fromtimestamp(day['rise'])
-        sun_set = datetime.datetime.fromtimestamp(day['set'])
-        if i == 0 and (now > sun_set):
-            # night time
-            icons = [getMoonPhaseIcon(day['moonPhase'])]
-        else:
-            # daytime
-            condition = rainIconLogic(weather, epoch)
-            icons = TEXT_TO_ICON_DAY[condition] if condition in TEXT_TO_ICON_DAY else [UNKNOWN]
-        daily_icons.append(icons)
-    return daily_icons
-
-def rainIconLogic(weather, epoch):
-    day = weather['days'][epoch]
-    condition = day['condition']
-    if condition in PERCIPITATION:
-        riseTime = day['rise'] - (day['rise'] % 3600)
-        setTime = day['set'] - (day['set'] % 3600) + 3600
-        
-        startHour = 0
-        endHour = 0
-        hours = sorted(weather['hours'].keys())
-        if int(hours[0]) < riseTime:
-            startHour = riseTime
-            endHour = setTime
-        elif int(hours[0]) > setTime:
-            return condition
-        else:
-            startHour = int(hours[0])
-            endHour = setTime
-
-        maxPop = 0
-        maxCC = 0
-        for hourEpoch in xrange(startHour, endHour + 3600, 3600):
-            if str(hourEpoch) not in weather['hours']:
-                break
-            hour = weather['hours'][str(hourEpoch)]
-            maxPop = max(maxPop, hour['pop'])
-            maxCC = max(maxCC, hour['cloudCover'])
-        if maxPop < 40:
-            if maxCC > 70:
-                if args.v:
-                    print 'Changed to cloudy'
-                return 'cloudy'
-            elif maxCC > 30:
-                if args.v:
-                    print 'Changed to partly cloudy'
-                return 'partly-cloudy-day'
-            else:
-                if args.v:
-                    print 'Changed to clear'
-                return 'clear-day'
-    if args.v:
-        print 'keeping at {}'.format(condition)
-    return condition
 
 def drawDailyIcons(daily_icons, new_frame, tick, weather):
     for j, icons in enumerate(daily_icons):
@@ -344,7 +232,6 @@ def drawCurrent(current, outdoor):
 
 def drawIndoor(current):
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
-
 
 def drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV):
     for i, epoch in enumerate(epochs):
@@ -476,6 +363,22 @@ def drawConnectingLine(prev, cur, prev_y2, y2, column, color):
     elif prev < cur - 1:
         graphics.DrawLine(OFFSCREEN_CANVAS, column,     y2,     column,     prev_y2 - 1, color)
 
+def createMatrix():
+    options = RGBMatrixOptions()
+    options.chain_length = 6 if EXTENDED_WEATHER else 2
+    options.gpio_slowdown = 2
+    options.brightness = MAX_BRIGHTNESS
+    options.hardware_mapping = 'adafruit-hat-pwm'
+
+    return RGBMatrix(options = options)
+
+def weatherSetup():
+    try:
+        fetchData()
+        adjustBrightness()
+    except Exception as e:
+        log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
+
 def fetchDataThreaded():
     x = threading.Thread(target=fetchData, args=())
     x.start()
@@ -487,7 +390,7 @@ def fetchData():
     client = MongoClient(db_config['host'])
     db = client.piData
 
-    weather = fetchWeather(db)
+    weather = fetchWeather(db, args)
     daily_icons = getDailyIcons(weather)
     indoor_temp = fetchIndoorTemps(db)
     outdoor_temp = fetchOutdoorTemps(db)
@@ -496,154 +399,34 @@ def fetchData():
     if args.v:
         print 'Closing DB...'
 
-    return weather, daily_icons, indoor_temp, outdoor_temp
-
-def fetchLuxDataThreaded():
-    x = threading.Thread(target=fetchLuxData, args=())
+def adjustBrightnessThreaded():
+    print 'about to call threaded lux'
+    x = threading.Thread(target=adjustBrightness, args=())
     x.start()
 
-def fetchLuxData():
-    if args.v:
-        print 'Opening DB...'
+def adjustBrightness():
+    #if args.v:
+    print 'Opening DB...'
     client = MongoClient(db_config['host'])
     db = client.piData
 
-    lux = fetchLux(db)
+    lux = fetchLux(db, MAX_BRIGHTNESS)
 
     client.close()
-    if args.v:
-        print 'lux={}'.format(lux)
-        print 'Closing DB...'
+    #if args.v:
+    print 'lux={}'.format(lux)
+    print 'Closing DB...'
 
     setBrightness(lux)
 
-def translate(value, leftMin, leftMax, rightMin, rightMax):
-    # Figure out how 'wide' each range is
-    if args.v:
-        print value
-        print leftMin
-        print leftMax
-        print rightMin
-        print rightMax
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
-
-    if args.v:
-        print float(value - leftMin)
-        print float(leftSpan)
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
-
-    # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
-
 def setBrightness(lux):
-    global MATRIX
     lux = max(lux, MIN_LUX)
     lux = min(lux, MAX_LUX)
     brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
-    if args.v:
-        print 'LUX After Min/Max:{}'.format(lux)
-        print 'brightness:{}'.format(brightness)
+    #if args.v:
+    print 'LUX After Min/Max:{}'.format(lux)
+    print 'brightness:{}'.format(brightness)
     MATRIX.brightness = brightness
-
-def createMatrix():
-    global MATRIX
-
-    options = RGBMatrixOptions()
-    options.chain_length = 6 if EXTENDED_WEATHER else 2
-    options.gpio_slowdown = 2
-    options.brightness = MAX_BRIGHTNESS
-    options.hardware_mapping = 'adafruit-hat-pwm'
-
-    MATRIX = RGBMatrix(options = options)
-
-def weatherSetup():
-    global RAIN
-    global SUN 
-    global CLOUD
-    global MOSTLY_CLOUD
-    global MOSTLY_SUN 
-    global UNKNOWN
-
-    global NEW_MOON
-    global CRESCENT_MOON
-    global QUARTER_MOON
-    global GIBBOUS_MOON
-    global FULL_MOON
-
-    global TEXT_TO_ICON_DAY
-    global PERCIPITATION
-
-    RAIN = processImage(LIB_DIR + '/imgs/rain.gif')
-    SUN = processImage(LIB_DIR + '/imgs/sun.gif')
-    CLOUD = processImage(LIB_DIR + '/imgs/cloud.gif')
-    MOSTLY_CLOUD = processImage(LIB_DIR + '/imgs/mostly_cloud.gif')
-    MOSTLY_SUN = processImage(LIB_DIR + '/imgs/mostly_sun.gif')
-    UNKNOWN = processImage(LIB_DIR + '/imgs/unknown.gif')
-
-    NEW_MOON = processImage(LIB_DIR + '/imgs/new_moon.gif')
-    CRESCENT_MOON = processImage(LIB_DIR + '/imgs/crescent_moon.gif')
-    QUARTER_MOON = processImage(LIB_DIR + '/imgs/quarter_moon.gif')
-    GIBBOUS_MOON = processImage(LIB_DIR + '/imgs/gibbous_moon.gif')
-    FULL_MOON = processImage(LIB_DIR + '/imgs/full_moon.gif')
-
-    JUST_CLOUDS = processImage(LIB_DIR + '/imgs/just_clouds.gif')
-    JUST_CLOUDS_NIGHT = processImage(LIB_DIR + '/imgs/just_clouds_night.gif')
-
-    TEXT_TO_ICON_DAY = {
-        'clear-day': [SUN],
-        'clear-night': [SUN],
-        'wind': [SUN],
-        'fog': [CLOUD],
-        'cloudy': [CLOUD],
-        'partly-cloudy-day': [SUN, JUST_CLOUDS],
-        'partly-cloudy-night': [SUN, JUST_CLOUDS],
-        'rain': [RAIN],
-        'snow': [RAIN],
-        'sleet': [RAIN]
-    }
-
-    PERCIPITATION = set(['rain', 'snow', 'sleet'])
-
-    global weather, daily_icons, indoor_temp, outdoor_temp
-    try:
-        weather, daily_icons, indoor_temp, outdoor_temp = fetchData()
-        fetchLuxData()
-    except Exception as e:
-        log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
-
-weather = daily_icons = indoor_temp = outdoor_temp = lux = None
-def drawWeather(tick):
-    global weather, daily_icons, indoor_temp, outdoor_temp
-    try:
-        if (tick % (60 * 5 * ( 1 / TICK_DUR))) == 0:
-            try:
-                weather, daily_icons, indoor_temp, outdoor_temp = fetchDataThreaded()
-            except Exception as e:
-                log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
-
-        if (tick % (10 * ( 1 / TICK_DUR))) == 0:
-            try:
-                fetchLuxDataThreaded()
-                pass
-            except Exception as e:
-                log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
-
-        new_frame = Image.new('RGBA', (64,32))
-        #daily_icons = [[NEW_MOON], [CRESCENT_MOON ], [QUARTER_MOON ], [GIBBOUS_MOON], [FULL_MOON]]
-        drawDailyIcons(daily_icons, new_frame, tick, weather)
-        new_frame = new_frame.convert('RGB')
-        OFFSCREEN_CANVAS.SetImage(new_frame, 0, 0)
-
-        drawDailyText(weather)
-        drawCurrent(weather['current'], outdoor_temp)
-        drawIndoor(indoor_temp)
-        drawBars(weather, tick)
-    except Exception as e:
-        if args.v:
-            print('main() exception: {}'.format(traceback.format_exc()))
-        log.error('main() exception: {}'.format(traceback.format_exc()))
 
 if __name__ == "__main__":
     main()
