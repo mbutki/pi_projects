@@ -8,6 +8,7 @@ import logging as log
 import pickle 
 import requests
 import os
+import aqi
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -43,6 +44,19 @@ def fetchWeather():
         print 'fetching: ', url
     data = requests.get(url).json()
     return data
+
+def fetchAqi():
+    url = 'https://www.purpleair.com/json?key=DA9PGOKPSWDB5I5J&show=15049'
+    if args.v:
+        print 'fetching: ', url
+    data = requests.get(url).json()['results'][0]
+    stats = json.loads(data['Stats'])
+    print stats
+    myAqi = aqi.to_aqi([
+        (aqi.POLLUTANT_PM25, stats['v1'])
+    ])
+
+    return int(myAqi)
 
 def parseHours(raw_weather):
     hours = {}
@@ -113,6 +127,21 @@ def storeWeather(weather):
     if args.v:
         print 'DB client closed'
 
+def storeAqi(data):
+    if args.v:
+        print 'Starting db put'
+    client = MongoClient(db_config['host'])
+    db = client.piData
+
+    doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': data}
+    db.aqiNow.insert_one(doc)
+
+    if args.v:
+        print 'Stored new aqi data: {}'.format(data)
+    client.close()
+    if args.v:
+        print 'DB client closed'
+
 def main():
     while True:
         try:
@@ -129,6 +158,9 @@ def main():
                     print t, hour, '\n'
             if not args.n:
                 storeWeather(weather)
+
+            #storeAqi(fetchAqi())
+            
         except Exception as err:
             print "main error: {0}".format(err)
             log.error("main error: {0}".format(err))

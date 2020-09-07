@@ -16,7 +16,7 @@ PIN_IN = matrix_config['weather_display_button_pin']
 
 gpio.setmode(gpio.BCM)
 gpio.setup(PIN_IN, gpio.IN, pull_up_down=gpio.PUD_UP)
-
+'''
 restartService = 'sudo service showWeather restart'
 stopService = 'sudo service showWeather stop'
 displayOn = True
@@ -37,6 +37,19 @@ try:
             if args.v:
                 print 'turned on'
         displayOn = not displayOn
+'''
+clearLock = 'sudo rm /var/lib/mongodb/mongod.lock'
+reboot = 'sudo reboot -h now'
+try:
+    while True:
+        gpio.wait_for_edge(PIN_IN, gpio.FALLING, bouncetime=200)
+        if args.v:
+            print 'clearing lock'
+        subprocess.call(clearLock, shell = True)
+        if args.v:
+            print 'rebooting'
+        subprocess.call(reboot, shell = True)
+
 except KeyboardInterrupt:
     print '\nExiting'
 finally:

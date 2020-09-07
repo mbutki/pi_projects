@@ -66,6 +66,13 @@ PERCIP_INTENSITY_LINE_COLOR = graphics.Color(134, 36, 214)
 
 # Plot Dot Animation
 RUNNER_DOT_COLOR = graphics.Color(255, 255, 255)
+
+# AQI
+AQI_GREEN_COLOR = graphics.Color(11, 164, 11)
+AQI_YELLOW_COLOR = graphics.Color(210, 210, 0)
+AQI_ORANGE_COLOR = graphics.Color(210, 143, 0)
+AQI_RED_COLOR = graphics.Color(180, 0, 0)
+AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
 ################## END COLORS ######################
 
 BAR_CHART_BOTTOM = 31
@@ -103,6 +110,7 @@ def main():
         drawWeather(tick)
         drawClock(tick)
         drawDate(tick)
+        drawAqi(tick)
 
         OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
         time.sleep(TICK_DUR)
@@ -110,15 +118,39 @@ def main():
         if tick == sys.maxint:
             tick = 0
 
+def drawAqi(tick):
+    client = MongoClient(db_config['host'])
+    db = client.piData
+    outdoorAqi = fetchOutdoorAqi(db)
+    indoorAqi = fetchIndoorAqi(db)
+    client.close()
+
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 13, aqiColor(outdoorAqi), 'O AQI:' + str(outdoorAqi))
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 25, aqiColor(indoorAqi), 'I AQI:' + str(indoorAqi))
+
+def aqiColor(aqi):
+    color = None
+    if aqi < 50:
+        color = AQI_GREEN_COLOR
+    elif aqi < 100:
+        color = AQI_YELLOW_COLOR
+    elif aqi < 150:
+        color = AQI_ORANGE_COLOR
+    elif aqi < 200:
+        color = AQI_RED_COLOR
+    else:
+        color = AQI_PURPLE_COLOR
+    return color
+
 def drawClock(tick):
     now = datetime.datetime.now()
     timeStr = now.strftime("%-I:%M:%S")
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+13, 15, CLOCK_COLOR, timeStr)
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+9, 13+11, CLOCK_COLOR, timeStr)
 
 def drawDate(tick):
     now = datetime.datetime.now()
     timeStr = now.strftime("%-m/%-d/%y")
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+13, 15, CLOCK_COLOR, timeStr)
+    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+13, 13, CLOCK_COLOR, timeStr)
 
 def drawWeather(tick):
     try:
@@ -219,6 +251,8 @@ def drawDailyText(weather):
             offset -= 1
             
         y = 6+9+2
+        if display_num >= 100:
+            font = SMALL_FONT
         graphics.DrawText(OFFSCREEN_CANVAS, font, offset, y, display_color, number_str)
 
         if dt.weekday() == 5 or dt.weekday() == 6:
@@ -227,11 +261,19 @@ def drawDailyText(weather):
             graphics.DrawLine(OFFSCREEN_CANVAS, offset-3, 12, offset-3 , 15, CURRENT_TEMP_COLOR)
 
 def drawCurrent(current, outdoor):
+    if outdoor < 100:
+        font = MEDIUM_FONT
+    else:
+        font = SMALL_FONT
     temp = str(int(round(outdoor))) if outdoor != -999 else str(int(round(current['temp'])))
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, temp)
+    graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, temp)
 
 def drawIndoor(current):
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
+    if current < 100:
+        font = MEDIUM_FONT
+    else:
+        font = SMALL_FONT
+    graphics.DrawText(OFFSCREEN_CANVAS, font, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
 
 def drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV):
     for i, epoch in enumerate(epochs):

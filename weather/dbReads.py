@@ -46,3 +46,23 @@ def fetchOutdoorTemps(db):
         temp = -999
 
     return temp
+
+def fetchIndoorAqi(db):
+    temp = 0
+    rows = db.aqiNow.find({"location" : "family room"}).sort('time', -1).limit(1)
+    try:
+        temp = int(rows[0]['value'])
+    except:
+        temp = -999
+
+    return temp
+
+def fetchOutdoorAqi(db):
+    temp = 0
+    rows = db.aqiNow.find({"location" : "outside"}).sort('time', -1).limit(1)
+    try:
+        temp = int(rows[0]['value'])
+    except:
+        temp = -999
+
+    return temp
