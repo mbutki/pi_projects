@@ -14,14 +14,14 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 
 case "$1" in
   start)
-    log_begin_msg "mbutki: temp start"
-    nohup python3 /home/mbutki/pi_projects/sensorRead/readLight_VEML7700.py &
+    log_begin_msg "mbutki: air quality start"
+    nohup python3 /home/mbutki/pi_projects/sensorRead/readAirQuality_PMS5003.py &
     log_end_msg $?
     exit 0
     ;;
   stop)
-    pkill -f /home/mbutki/pi_projects/sensorRead/readLight_VEML7700.py
-    log_begin_msg "mbutki: temp stop"
+    pkill -f /home/mbutki/pi_projects/sensorRead/readAirQuality_PMS5003.py
+    log_begin_msg "mbutki: air quality stop"
     log_end_msg $?
     exit 0
     ;;
