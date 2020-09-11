@@ -63,7 +63,10 @@ def main():
     while True:
         try: 
             aqdata = pm25.read()
-            myAqi = aqi.to_iaqi(aqi.POLLUTANT_PM25, aqdata['pm25 env'], algo=aqi.ALGO_EPA)
+            myAqi = aqi.to_iaqi(aqi.POLLUTANT_PM25, aqdata['pm25 standard'], algo=aqi.ALGO_EPA)
+            if args.v:
+                print ('Raw 2.5 Concentration: {}, AQI: {}'.format(aqdata, myAqi))
+            
             myAqi = int(myAqi)
 
             if len(data) < (WRITE_FREQ_SECS / READ_FREQ_SECS):

@@ -93,6 +93,7 @@ SMALL_FONT.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
 #### GLOBALS ####
 OFFSCREEN_CANVAS = MATRIX = None
 weather = daily_icons = indoor_temp = outdoor_temp = lux = None
+outdoorAqi = indoorAqi = None
 #################
 
 def main():
@@ -119,11 +120,14 @@ def main():
             tick = 0
 
 def drawAqi(tick):
-    client = MongoClient(db_config['host'])
-    db = client.piData
-    outdoorAqi = fetchOutdoorAqi(db)
-    indoorAqi = fetchIndoorAqi(db)
-    client.close()
+    global indoorAqi
+    global outdoorAqi
+    if tick == 0 or (tick % (READ_WEATHER_SECS * ( 1 / TICK_DUR))) == 0:
+        client = MongoClient(db_config['host'])
+        db = client.piData
+        outdoorAqi = fetchOutdoorAqi(db)
+        indoorAqi = fetchIndoorAqi(db)
+        client.close()
 
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 13, aqiColor(outdoorAqi), 'O AQI:' + str(outdoorAqi))
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 25, aqiColor(indoorAqi), 'I AQI:' + str(indoorAqi))
