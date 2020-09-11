@@ -54,6 +54,9 @@ def shouldWriteLong():
     else:
         return False
 
+def AQandU(val):
+    return (0.778*val)+2.65
+
 def main():
     if args.v:
         #print 'location:{} db_host:{}'.format(LOCATION, db_config['host'])
@@ -63,9 +66,10 @@ def main():
     while True:
         try: 
             aqdata = pm25.read()
-            myAqi = aqi.to_iaqi(aqi.POLLUTANT_PM25, aqdata['pm25 env'], algo=aqi.ALGO_EPA)
+            val = AQandU(aqdata['pm25 env'])
+            myAqi = aqi.to_iaqi(aqi.POLLUTANT_PM25, val, algo=aqi.ALGO_EPA)
             if args.v:
-                print ('Raw 2.5 Concentration: {}, AQI: {}'.format(aqdata, myAqi))
+                print ('Raw: {}, Adjusted: {}, AQI: {}'.format(aqdata, val, myAqi))
             
             myAqi = int(myAqi)
 
