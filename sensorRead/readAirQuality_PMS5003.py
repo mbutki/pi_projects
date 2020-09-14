@@ -19,8 +19,8 @@ parser.add_argument('-v', default=False, action='store_true', help='verbose mode
 parser.add_argument('-n', default=False, action='store_true', help='no write mode')
 args = parser.parse_args()
 
-READ_FREQ_SECS = 3
-WRITE_FREQ_SECS = 9
+READ_FREQ_SECS = 5
+WRITE_FREQ_SECS = 30
 
 LONG_TERM_SECS = 60 * 20
 longTermCountdown = LONG_TERM_SECS
