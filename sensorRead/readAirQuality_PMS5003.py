@@ -37,13 +37,7 @@ log_level = log.DEBUG if args.v else log.INFO
 log.basicConfig(level=log_level,
                 filename='{}/{}'.format(LOG_DIR, LOG_NAME),
                 format='%(asctime)s %(levelname)s %(message)s',
-                filemode='w')
-
-
-# Connect to a PM2.5 sensor over UART
-uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
-pm25 = adafruit_pm25.PM25_UART(uart, None)
-time.sleep(1)
+                filemode='a')
 
 def shouldWriteLong():
     global longTermCountdown
@@ -65,6 +59,11 @@ def main():
     data = []
     while True:
         try: 
+            # Connect to a PM2.5 sensor over UART
+            uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
+            pm25 = adafruit_pm25.PM25_UART(uart, None)
+            time.sleep(1)
+
             aqdata = pm25.read()
             val = AQandU(aqdata['pm25 env'])
             myAqi = aqi.to_iaqi(aqi.POLLUTANT_PM25, val, algo=aqi.ALGO_EPA)
