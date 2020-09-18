@@ -49,7 +49,9 @@ def shouldWriteLong():
         return False
 
 def AQandU(val):
-    return (0.778*val)+2.65
+    if val > 12:
+        return (0.778*val)+2.65
+    return val
 
 def main():
     if args.v:
