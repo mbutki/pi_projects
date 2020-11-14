@@ -21,12 +21,13 @@ parser.add_argument('-v', default=False, action='store_true', help='verbose mode
 args = parser.parse_args()
 
 PI_DIR = '/home/mbutki/pi_projects'
-LOG_NAME = 'show_weather.log'
-LOG_DIR = pi_config['log_dir']
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
 matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
+
+LOG_NAME = 'show_weather.log'
+LOG_DIR = pi_config['log_dir']
 
 PERFER_RAIN_POP = True if matrix_config['perfer_rain_pop'] == 'True' else False
 EXTENDED_WEATHER = True if matrix_config['extended_weather'] == 'True' else False
