@@ -77,6 +77,7 @@ AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
 
 BAR_CHART_BOTTOM = 31
 BAR_MIN_TEMP = 30
+# BAR_MIN_TEMP = 10 low mode
 CURRENT_BOTTOM = 28
 
 TICK_DUR = 0.25
@@ -197,6 +198,7 @@ def drawGraph(weather, tick):
     CHART_WIDTH = 44
     BAR_LEFT = 10
 
+    #horizontal_temps = [20, 40, 60, 80] low mode
     horizontal_temps = [40, 60, 80, 100]
     epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
 
