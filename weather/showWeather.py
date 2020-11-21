@@ -37,6 +37,8 @@ MIN_LUX = matrix_config['min_lux']
 MAX_BRIGHTNESS = matrix_config['max_brightness']
 MIN_BRIGHTNESS = matrix_config['min_brightness']
 
+TEMP_MODE = matrix_config['temp_mode']
+
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 log_level = log.DEBUG if args.v else log.INFO
@@ -77,8 +79,11 @@ AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
 ################## END COLORS ######################
 
 BAR_CHART_BOTTOM = 31
+
 BAR_MIN_TEMP = 30
-# BAR_MIN_TEMP = 10 low mode
+if TEMP_MODE == "low":
+    BAR_MIN_TEMP = 10
+
 CURRENT_BOTTOM = 28
 
 TICK_DUR = 0.25
@@ -199,8 +204,9 @@ def drawGraph(weather, tick):
     CHART_WIDTH = 44
     BAR_LEFT = 10
 
-    #horizontal_temps = [20, 40, 60, 80] low mode
     horizontal_temps = [40, 60, 80, 100]
+    if TEMP_MODE == "low":
+        horizontal_temps = [20, 40, 60, 80]
     epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
 
     drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV)

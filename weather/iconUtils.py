@@ -38,7 +38,7 @@ def getMoonPhaseIcon(phase):
         return GIBBOUS_MOON
     elif phase < 0.875:
         return QUARTER_MOON
-    elif phase < 1:
+    elif phase <= 1:
         return CRESCENT_MOON
     
 
