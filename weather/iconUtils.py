@@ -103,11 +103,11 @@ def rainIconLogic(weather, epoch):
             elif CC > MIN_CC_FOR_PARTLY_CLOUDY:
                 #if args.v:
                 #    print 'Changed to partly cloudy. Max pop:{}, Max CC:{}, daily icon: {}'.format(maxPop, maxCC, condition)
-                return 'partly-cloudy-day'
+                return 'partly-cloudy'
             else:
                 #if args.v:
                 #    print 'Changed to clear. Max pop:{}, Max CC:{}, daily icon: {}'.format(maxPop, maxCC, condition)
-                return 'clear-day'
+                return 'clear'
     #if args.v:
     #    print 'keeping at {}'.format(condition)
     return condition
@@ -133,19 +133,14 @@ JUST_CLOUDS = processImage(LIB_DIR + '/imgs/just_clouds.gif')
 JUST_CLOUDS_NIGHT = processImage(LIB_DIR + '/imgs/just_clouds_night.gif')
 
 TEXT_TO_ICON_DAY = {
-    'clear-day': [SUN],
-    'clear-night': [SUN],
-    'wind': [SUN],
-    'fog': [CLOUD],
+    'clear': [SUN],
     'cloudy': [CLOUD],
-    'partly-cloudy-day': [SUN, JUST_CLOUDS],
-    'partly-cloudy-night': [SUN, JUST_CLOUDS],
+    'partly-cloudy': [SUN, JUST_CLOUDS],
     'rain': [RAIN],
-    'snow': [RAIN],
-    'sleet': [RAIN]
+    'snow': [RAIN]
 }
 
-PERCIPITATION = set(['rain', 'snow', 'sleet'])
+PERCIPITATION = set(['rain', 'snow'])
 
 MIN_POP_FOR_RAIN = 40
 MIN_CC_FOR_PARTLY_CLOUDY = 30

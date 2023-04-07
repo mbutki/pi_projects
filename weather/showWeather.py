@@ -168,7 +168,6 @@ def drawWeather(tick):
         updateData(tick)
 
         new_frame = Image.new('RGBA', (64,32))
-        #daily_icons = [[NEW_MOON], [CRESCENT_MOON ], [QUARTER_MOON ], [GIBBOUS_MOON], [FULL_MOON]]
         drawDailyIcons(daily_icons, new_frame, tick, weather)
         new_frame = new_frame.convert('RGB')
         OFFSCREEN_CANVAS.SetImage(new_frame, 0, 0)

@@ -39,7 +39,7 @@ LAT = matrix_config['weather_lat']
 LON = matrix_config['weather_lon']
 
 def fetchWeather():
-    url = 'https://api.openweathermap.org/data/3.0/onecall?lat={0}&lon={1}&appid={2}'.format(LAT, LON, API_KEY)
+    url = 'https://api.darksky.net/forecast/{0}/{1},{2}?exclude=minutely,alerts,flags&extend=hourly'.format(API_KEY, LAT, LON)
     if args.v:
         print 'fetching: ', url
     data = requests.get(url).json()
@@ -58,59 +58,44 @@ def fetchAqi():
 
     return int(myAqi)
 
-def KToF(k):
-    return (k - 273.15) * 9/5 + 32
-
-def iconToCondition(icon):
-    conditions = [
-        [{'01d', '01n'}, 'clear'],
-        [{'02d', '02n', '04d', '04n'}, 'partly-cloudy'],
-        [{'03d', '03n'}, 'cloudy'],
-        [{'09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n', '50n', '50d'}, 'rain']
-    ]
-    for item in conditions:
-        print item
-        if icon in item[0]:
-            return item[1]
-    return 'unknown'
-
 def parseHours(raw_weather):
     hours = {}
-    for item in raw_weather['hourly']:
-        epoch = str(item['dt'])
+    for item in raw_weather['hourly']['data']:
+        epoch = str(item['time'])
         hours[epoch] = {
-            'temp': int(KToF(item['temp'])),
-            'condition': iconToCondition(item['weather'][0]['icon']),
-            'pop': int(item['pop'] * 100),
-            'precipIntensity': max(item.get('rain', {'1h': 0})['1h'], item.get('snow', {'1h': 0})['1h']), 
-            'cloudCover': item['clouds']
+            'temp': int(item['temperature']),
+            'condition': item['icon'],
+            'pop': int(item['precipProbability'] * 100),
+            'precipIntensity': float(item['precipIntensity']),
+            'cloudCover': int(item['cloudCover'] * 100)
         }
     return hours
 
 def parseCurrent(raw_weather):
     current = {
-        'weather': iconToCondition(raw_weather['current']['weather'][0]['icon']),
-        'temp': int(KToF(raw_weather['current']['temp'])),
-        'relative_humidity': raw_weather['current']['humidity']
+        'weather': raw_weather['currently']['icon'],
+        'temp': raw_weather['currently']['temperature'],
+        'relative_humidity': raw_weather['currently']['humidity']
     }
     return current
 
 def parseDays(raw_weather):
     days = {}
-    for item in raw_weather['daily']:
-        epoch = str(item['dt'])
-        pop = int(round(item['pop'] * 10) * 10)
+    for item in raw_weather['daily']['data']:
+        epoch = str(item['time'])
+        pop = int(round(item['precipProbability'] * 10) * 10)
         days[epoch] = {
-            'high': int(KToF(item['temp']['max'])),
-            'low': int(KToF(item['temp']['min'])),
-            'condition': '09d' if pop > 20 else iconToCondition(item['weather'][0]['icon']),
+            'high': int(item['temperatureHigh']),
+            'low': int(item['temperatureLow']),
+            'condition': 'rain' if pop > 20 else item['icon'],
             'pop': pop,
-            'pretty': item['weather'][0]['description'],
-            'precipIntensity': max(item.get('rain', 0), item.get('snow', 0)), 
-            'moonPhase': item['moon_phase'],
-            'rise': item['sunrise'],
-            'set': item['sunset']
+            'pretty': item['summary'],
+            'precipIntensity': float(item['precipIntensity']),
+            'moonPhase': float(item['moonPhase']),
+            'rise': int(item['sunriseTime']),
+            'set': int(item['sunsetTime'])
         }
+        # print item['moonPhase'], float(item['moonPhase']), datetime.datetime.fromtimestamp(item['time'])
     return days
 
 def parseWeather(raw_weather):
@@ -158,8 +143,8 @@ def storeAqi(data):
         print 'DB client closed'
 
 def main():
-    #while True:
-    #    try:
+    while True:
+        try:
             raw_weather = fetchWeather()
             weather = parseWeather(raw_weather)
             if args.v:
@@ -176,10 +161,10 @@ def main():
 
             #storeAqi(fetchAqi())
             
-    #    except Exception as err:
-    #        print "main error: {0}".format(err)
-    #        log.error("main error: {0}".format(err))
-    #    time.sleep(600)
+        except Exception as err:
+            print "main error: {0}".format(err)
+            log.error("main error: {0}".format(err))
+        time.sleep(300)
 
 if __name__ == '__main__':
     main()
