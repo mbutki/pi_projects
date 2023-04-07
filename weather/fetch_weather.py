@@ -69,7 +69,6 @@ def iconToCondition(icon):
         [{'09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n', '50n', '50d'}, 'rain']
     ]
     for item in conditions:
-        print item
         if icon in item[0]:
             return item[1]
     return 'unknown'
@@ -103,7 +102,7 @@ def parseDays(raw_weather):
         days[epoch] = {
             'high': int(KToF(item['temp']['max'])),
             'low': int(KToF(item['temp']['min'])),
-            'condition': '09d' if pop > 20 else iconToCondition(item['weather'][0]['icon']),
+            'condition': 'rain' if pop > 20 else iconToCondition(item['weather'][0]['icon']),
             'pop': pop,
             'pretty': item['weather'][0]['description'],
             'precipIntensity': max(item.get('rain', 0), item.get('snow', 0)), 
