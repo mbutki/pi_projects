@@ -157,8 +157,8 @@ def storeAqi(data):
         print 'DB client closed'
 
 def main():
-    #while True:
-    #    try:
+    while True:
+        try:
             raw_weather = fetchWeather()
             weather = parseWeather(raw_weather)
             if args.v:
@@ -175,10 +175,10 @@ def main():
 
             #storeAqi(fetchAqi())
             
-    #    except Exception as err:
-    #        print "main error: {0}".format(err)
-    #        log.error("main error: {0}".format(err))
-    #    time.sleep(600)
+        except Exception as err:
+            print "main error: {0}".format(err)
+            log.error("main error: {0}".format(err))
+        time.sleep(600)
 
 if __name__ == '__main__':
     main()
