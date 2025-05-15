@@ -1,6 +1,8 @@
 db.config
 pi.config
 python/weather/matrix.config
+python/build
+python/env
 client_secret.json
 *.pyc
 
