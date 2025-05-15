@@ -24,6 +24,7 @@ parser.add_argument('-v', default=False, action='store_true', help='verbose mode
 args = parser.parse_args()
 
 def main():
+    print("Starting run")
     while True:
         try:
             run()
