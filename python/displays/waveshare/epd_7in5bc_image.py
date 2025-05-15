@@ -23,21 +23,9 @@ try:
     HBlackimage = Image.new('1', (epd.width, epd.height), 255)  # 298*126
     HRYimage = Image.new('1', (epd.width, epd.height), 255)  # 298*126  ryimage: red or yellow image  
 
-    #HBlackimage = Image.open('spike_black.png')
-    #HRYimage = Image.open('spike_color.png')
-    #HBlackimage = Image.open('shell_black.png')
-    #HRYimage = Image.open('shell_color.png')
     print("load images")
-    #HBlackimage = Image.open('shell_black.png')
-    #HRYimage = Image.open('shell_color.png')
-    HBlackimage = Image.open('spike2_black.png')
-    HRYimage = Image.open('spike2_color.png')
-    #HBlackimage = Image.open('vamp.png')
-    #HBlackimage = Image.open('mask.png')
-    #HBlackimage = Image.open('dunk_color.png')
-    #HRYimage = Image.open('vamp_color.png')
-    #HBlackimage = Image.open('dunk_black.png')
-    #HRYimage = Image.open('dunk_color.png')
+    HBlackimage = Image.open('images/shell_black.png')
+    HRYimage = Image.open('images/shell_color.png')
     print("display")
     epd.display(epd.getbuffer(HBlackimage), epd.getbuffer(HRYimage))
     #epd.display(epd.getbuffer(HRYimage), epd.getbuffer(HBlackimage))

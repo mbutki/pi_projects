@@ -1,0 +1,8 @@
+[project]
+name = "pi-projects"
+version = "0.1.0"
+description = "Python projects for my RPIs"
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]

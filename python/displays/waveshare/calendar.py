@@ -24,6 +24,8 @@ def getBirthDiff():
     now = datetime.now()
     days = None
     months = None
+    print(f'now.day {now.day} now.month {now.month}')
+    print(f'B.day {BIRTHDAY.day} B.month {BIRTHDAY.month}')
     if now.day >= BIRTHDAY.day:
         days = now.day - BIRTHDAY.day
         months = now.month - BIRTHDAY.month
@@ -37,8 +39,6 @@ def currentDateStr():
     return now.strftime('%b %-d, %a')
 
 def run():
-    print("epd7in5bc Demo")
-
     days, months = getBirthDiff()
     
     epd = epd7in5bc.EPD()
@@ -48,8 +48,8 @@ def run():
 
     getBirthDiff()
     # Drawing on the image
-    mainFont = ImageFont.truetype('{}/displays/waveshare/python2/Helvetica.ttc'.format(PI_DIR), 85)
-    dateFont = ImageFont.truetype('{}/displays/waveshare/python2/Helvetica.ttc'.format(PI_DIR), 65)
+    mainFont = ImageFont.truetype('{}/displays/waveshare/python3/fonts/Helvetica.ttc'.format(PI_DIR), 85)
+    dateFont = ImageFont.truetype('{}/displays/waveshare/python3/fonts/Helvetica.ttc'.format(PI_DIR), 65)
     
     # Drawing on the Vertical image
     LBlackimage = Image.new('1', (epd.height, epd.width), 255)  # 126*298
