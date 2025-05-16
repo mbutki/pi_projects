@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 src/displays/7SegClock.py
 src/displays/7SegClock_plain.py
@@ -67,10 +68,12 @@ src/displays/waveshare/epd7in5bc.py
 src/displays/waveshare/epd_7in5bc_image.py
 src/displays/waveshare/epd_7in5bc_test.py
 src/displays/waveshare/epdconfig.py
+src/displays/waveshare/test.py
 src/displays/waveshare/tmp_dbReads.py
 src/mbutki.egg-info/PKG-INFO
 src/mbutki.egg-info/SOURCES.txt
 src/mbutki.egg-info/dependency_links.txt
+src/mbutki.egg-info/requires.txt
 src/mbutki.egg-info/top_level.txt
 src/rfm69/radio_rfm69.py
 src/rfm69/rfm69_check.py

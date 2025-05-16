@@ -1,4 +1,12 @@
 [project]
 name = "mbutki"
 version = "0.1.0"
-description = "Python projects for my RPIs"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mariadb>=1.1.12",
+    "pillow>=11.2.1",
+    "rpi-lgpio>=0.6",
+    "spidev>=3.7",
+]

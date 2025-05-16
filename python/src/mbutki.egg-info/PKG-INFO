@@ -1,4 +1,10 @@
 Metadata-Version: 2.4
 Name: mbutki
 Version: 0.1.0
-Summary: Python projects for my RPIs
+Summary: Add your description here
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mariadb>=1.1.12
+Requires-Dist: pillow>=11.2.1
+Requires-Dist: rpi-lgpio>=0.6
+Requires-Dist: spidev>=3.7
