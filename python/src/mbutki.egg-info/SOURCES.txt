@@ -67,7 +67,6 @@ src/displays/waveshare/epd7in5bc.py
 src/displays/waveshare/epd_7in5bc_image.py
 src/displays/waveshare/epd_7in5bc_test.py
 src/displays/waveshare/epdconfig.py
-src/displays/waveshare/test.py
 src/displays/waveshare/tmp_dbReads.py
 src/mbutki.egg-info/PKG-INFO
 src/mbutki.egg-info/SOURCES.txt
