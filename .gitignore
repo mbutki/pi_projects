@@ -3,6 +3,7 @@ pi.config
 python/src/weather/matrix.config
 python/build
 client_secret.json
+python/logs
 *.pyc
 
 piWebserver/assets

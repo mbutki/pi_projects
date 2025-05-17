@@ -1,6 +1,5 @@
 import time
 import sys
-from pymongo import MongoClient
 import argparse
 import json
 import datetime
@@ -8,7 +7,8 @@ import logging as log
 import pickle 
 import requests
 import os
-import aqi
+#import aqi
+import mariadb
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -20,7 +20,7 @@ LOG_NAME = 'fetch_weather.log'
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
+matrix_config = json.load(open('{}/python/src/weather/matrix.config'.format(PI_DIR)))
 LOCATION = pi_config['location']
 LOG_DIR = pi_config['log_dir']
 
@@ -41,23 +41,23 @@ LON = matrix_config['weather_lon']
 def fetchWeather():
     url = 'https://api.openweathermap.org/data/3.0/onecall?lat={0}&lon={1}&appid={2}'.format(LAT, LON, API_KEY)
     if args.v:
-        print 'fetching: ', url
+        print('fetching: ', url)
     data = requests.get(url).json()
     return data
-
+'''
 def fetchAqi():
     url = 'https://www.purpleair.com/json?key=DA9PGOKPSWDB5I5J&show=15049'
     if args.v:
-        print 'fetching: ', url
+        print('fetching: ', url)
     data = requests.get(url).json()['results'][0]
     stats = json.loads(data['Stats'])
-    print stats
+    print(stats)
     myAqi = aqi.to_aqi([
         (aqi.POLLUTANT_PM25, stats['v1'])
     ])
 
     return int(myAqi)
-
+'''
 def KToF(k):
     return (k - 273.15) * 9/5 + 32
 
@@ -123,38 +123,51 @@ def parseWeather(raw_weather):
 
 def storeWeather(weather):
     if args.v:
-        print 'Starting db put'
-    client = MongoClient(db_config['host'])
-    db = client.piData
+        print('Starting db put')
+    #doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
+    try:
+        conn = mariadb.connect(
+            user="mbutki",
+            host="pi-desk",
+            database="pidata"
+        )
+    except mariadb.Error as e:
+        print(f"Error connecting to MariaDB Platform: {e}")
+        sys.exit(1)
 
-    doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
+    if args.v:
+        print('Get Cursor')
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "DELETE FROM weather" 
+        )
+        if args.v:
+            print('Delete Executed')
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+    conn.commit()
+    try:
+        cur.execute(
+            "INSERT INTO weather (time, weather) VALUES (?, ?)", 
+            (datetime.datetime.utcnow(), json.dumps(weather))
+        )
+        if args.v:
+            print('Insert Executed')
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+    conn.commit()
+    conn.close()
 
-    db.weather.drop()
     if args.v:
-        print 'Deleted previous weather data'
-    log.debug('deleting previous weather data')
-    db.weather.insert_one(doc)
-    if args.v:
-        print 'Stored new  weather data'
-    log.debug('storing new weather data')
-    client.close()
-    if args.v:
-        print 'DB client closed'
+        print('DB client closed')
 
 def storeAqi(data):
     if args.v:
-        print 'Starting db put'
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
-    doc = {'time': datetime.datetime.utcnow(), 'location': LOCATION, 'value': data}
-    db.aqiNow.insert_one(doc)
+        print('Starting db put')
 
     if args.v:
-        print 'Stored new aqi data: {}'.format(data)
-    client.close()
-    if args.v:
-        print 'DB client closed'
+        print('DB client closed')
 
 def main():
     while True:
@@ -162,21 +175,21 @@ def main():
             raw_weather = fetchWeather()
             weather = parseWeather(raw_weather)
             if args.v:
-                print 'DAYS:'
-                for t, day in sorted(weather['days'].iteritems()):
-                    print time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t)))
-                    print t, day, '\n'
-                print '\nHOURS:'
-                for t, hour in sorted(weather['hours'].iteritems()):
-                    print time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t)))
-                    print t, hour, '\n'
+                print('DAYS:')
+                for t, day in sorted(weather['days'].items()):
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
+                    print(t, day, '\n')
+                print('\nHOURS:')
+                for t, hour in sorted(weather['hours'].items()):
+                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
+                    print(t, hour, '\n')
             if not args.n:
                 storeWeather(weather)
 
             #storeAqi(fetchAqi())
             
         except Exception as err:
-            print "main error: {0}".format(err)
+            print("main error: {0}".format(err))
             log.error("main error: {0}".format(err))
         time.sleep(600)
 

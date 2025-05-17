@@ -8,11 +8,11 @@ import threading
 import traceback
 import json
 import logging as log
+import mariadb
 
 from PIL import Image, ImageDraw
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 
-from pymongo import MongoClient
 from dbReads import *
 from iconUtils import *
 
@@ -24,7 +24,7 @@ PI_DIR = '/home/mbutki/pi_projects'
 
 db_config = json.load(open('{}/db.config'.format(PI_DIR)))
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-matrix_config = json.load(open('{}/weather/matrix.config'.format(PI_DIR)))
+matrix_config = json.load(open('{}/python/src/weather/matrix.config'.format(PI_DIR)))
 
 LOG_NAME = 'show_weather.log'
 LOG_DIR = pi_config['log_dir']
@@ -47,7 +47,7 @@ log.basicConfig(level=log_level,
                 format='%(asctime)s %(levelname)s %(message)s',
                 filemode='w')
 
-LIB_DIR = PI_DIR + '/displays/rpi-rgb-led-matrix/bindings/python'
+WEATHER_DIR = PI_DIR + '/python/src/weather'
 
 ###################### COLORS ######################
 # Number Colors
@@ -94,8 +94,8 @@ CLOCK_COLOR = graphics.Color(170, 170, 170)
 
 MEDIUM_FONT = graphics.Font()
 SMALL_FONT = graphics.Font()
-MEDIUM_FONT.LoadFont(LIB_DIR + '/fonts/5x7_mike.bdf')
-SMALL_FONT.LoadFont(LIB_DIR + '/fonts/4x6_mike_bigger.bdf')
+MEDIUM_FONT.LoadFont(WEATHER_DIR + '/fonts/5x7_mike.bdf')
+SMALL_FONT.LoadFont(WEATHER_DIR + '/fonts/4x6_mike_bigger.bdf')
 
 #### GLOBALS ####
 OFFSCREEN_CANVAS = MATRIX = None
@@ -118,14 +118,14 @@ def main():
         drawWeather(tick)
         drawClock(tick)
         drawDate(tick)
-        drawAqi(tick)
+        #drawAqi(tick)
 
         OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
         time.sleep(TICK_DUR)
         tick += 1
-        if tick == sys.maxint:
+        if tick == sys.maxsize:
             tick = 0
-
+'''
 def drawAqi(tick):
     global indoorAqi
     global outdoorAqi
@@ -138,7 +138,7 @@ def drawAqi(tick):
 
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 13, aqiColor(outdoorAqi), 'O AQI:' + str(outdoorAqi))
     graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 25, aqiColor(indoorAqi), 'I AQI:' + str(indoorAqi))
-
+'''
 def aqiColor(aqi):
     color = None
     if aqi < 50:
@@ -178,7 +178,7 @@ def drawWeather(tick):
         drawGraph(weather, tick)
     except Exception as e:
         if args.v:
-            print('main() exception: {}'.format(traceback.format_exc()))
+            print(('main() exception: {}'.format(traceback.format_exc())))
         log.error('main() exception: {}'.format(traceback.format_exc()))
 
 def updateData(tick):
@@ -190,7 +190,7 @@ def updateData(tick):
 
     if (tick % (READ_LUX_SECS * ( 1 / TICK_DUR))) == 0:
         try:
-            adjustBrightnessThreaded()
+            #adjustBrightnessThreaded()
             pass
         except Exception as e:
             log.error('fetchLux() threaded exception: {}'.format(traceback.format_exc()))
@@ -422,14 +422,15 @@ def createMatrix():
     options.chain_length = 6 if EXTENDED_WEATHER else 2
     options.gpio_slowdown = 2
     options.brightness = MAX_BRIGHTNESS
-    options.hardware_mapping = 'adafruit-hat-pwm'
+    options.hardware_mapping = 'adafruit-hat'
+    #options.hardware_mapping = 'adafruit-hat-pwm'
 
     return RGBMatrix(options = options)
 
 def weatherSetup():
     try:
         fetchData()
-        adjustBrightness()
+        #adjustBrightness()
     except Exception as e:
         log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
@@ -440,27 +441,49 @@ def fetchDataThreaded():
 def fetchData():
     global weather, daily_icons, indoor_temp, outdoor_temp
     if args.v:
-        print 'Opening DB...'
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
-    weather = fetchWeather(db, args)
-    daily_icons = getDailyIcons(weather)
-    indoor_temp = fetchIndoorTemps(db)
-    outdoor_temp = fetchOutdoorTemps(db)
-
-    client.close()
+        print('Opening DB...')
+    #client = MongoClient(db_config['host'])
+    #db = client.piData
+    
+    conn = None
     if args.v:
-        print 'Closing DB...'
+        print('Starting db put')
+    #doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
+    try:
+        conn = mariadb.connect(
+            user="mbutki",
+            host="pi-desk",
+            database="pidata"
+        )
+    except mariadb.Error as e:
+        print(f"Error connecting to MariaDB Platform: {e}")
+        sys.exit(1)
+
+    conn.autocommit = True
+    if args.v:
+        print('Get Cursor')
+    cur = conn.cursor()
+    
+    weather = fetchWeather(cur, args)
+    daily_icons = getDailyIcons(weather)
+    indoor_temp = fetchIndoorTemps(cur)
+    outdoor_temp = fetchOutdoorTemps(cur)
+
+    conn.commit()
+    conn.close()
+
+    if args.v:
+        print('DB client closed')
 
 def adjustBrightnessThreaded():
-    print 'about to call threaded lux'
+    print('about to call threaded lux')
     x = threading.Thread(target=adjustBrightness, args=())
     x.start()
 
+'''
 def adjustBrightness():
     #if args.v:
-    print 'Opening DB...'
+    print('Opening DB...')
     client = MongoClient(db_config['host'])
     db = client.piData
 
@@ -468,18 +491,19 @@ def adjustBrightness():
 
     client.close()
     #if args.v:
-    print 'lux={}'.format(lux)
-    print 'Closing DB...'
+    print('lux={}'.format(lux))
+    print('Closing DB...')
 
     setBrightness(lux)
+'''
 
 def setBrightness(lux):
     lux = max(lux, MIN_LUX)
     lux = min(lux, MAX_LUX)
     brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
     #if args.v:
-    print 'LUX After Min/Max:{}'.format(lux)
-    print 'brightness:{}'.format(brightness)
+    print('LUX After Min/Max:{}'.format(lux))
+    print('brightness:{}'.format(brightness))
     MATRIX.brightness = brightness
 
 if __name__ == "__main__":

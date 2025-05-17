@@ -11,8 +11,8 @@ def processImage(path):
     
     try:
         while True:            
-            if not im.getpalette():
-                im.putpalette(p)
+            #if not im.getpalette():
+            #    im.putpalette(p)
             
             new_frame = Image.new('RGBA', im.size)
             new_frame.paste(im, (0,0), im.convert('RGBA'))
@@ -87,7 +87,7 @@ def rainIconLogic(weather, epoch):
 
         maxPop = 0
         CCs = []
-        for hourEpoch in xrange(startHour, endHour + 3600, 3600):
+        for hourEpoch in range(startHour, endHour + 3600, 3600):
             if str(hourEpoch) not in weather['hours']:
                 break
             hour = weather['hours'][str(hourEpoch)]
@@ -114,23 +114,23 @@ def rainIconLogic(weather, epoch):
 
 PI_DIR = '/home/mbutki/pi_projects'
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-LIB_DIR = PI_DIR + '/displays/rpi-rgb-led-matrix/bindings/python'
+WEATHER_DIR = PI_DIR + '/python/src/weather'
+print((WEATHER_DIR + '/imgs/rain.gif'))
+RAIN = processImage(WEATHER_DIR + '/imgs/rain.gif')
+SUN = processImage(WEATHER_DIR + '/imgs/sun.gif')
+CLOUD = processImage(WEATHER_DIR + '/imgs/cloud.gif')
+MOSTLY_CLOUD = processImage(WEATHER_DIR + '/imgs/mostly_cloud.gif')
+MOSTLY_SUN = processImage(WEATHER_DIR + '/imgs/mostly_sun.gif')
+UNKNOWN = processImage(WEATHER_DIR + '/imgs/unknown.gif')
 
-RAIN = processImage(LIB_DIR + '/imgs/rain.gif')
-SUN = processImage(LIB_DIR + '/imgs/sun.gif')
-CLOUD = processImage(LIB_DIR + '/imgs/cloud.gif')
-MOSTLY_CLOUD = processImage(LIB_DIR + '/imgs/mostly_cloud.gif')
-MOSTLY_SUN = processImage(LIB_DIR + '/imgs/mostly_sun.gif')
-UNKNOWN = processImage(LIB_DIR + '/imgs/unknown.gif')
+NEW_MOON = processImage(WEATHER_DIR + '/imgs/new_moon.gif')
+CRESCENT_MOON = processImage(WEATHER_DIR + '/imgs/crescent_moon.gif')
+QUARTER_MOON = processImage(WEATHER_DIR + '/imgs/quarter_moon.gif')
+GIBBOUS_MOON = processImage(WEATHER_DIR + '/imgs/gibbous_moon.gif')
+FULL_MOON = processImage(WEATHER_DIR + '/imgs/full_moon.gif')
 
-NEW_MOON = processImage(LIB_DIR + '/imgs/new_moon.gif')
-CRESCENT_MOON = processImage(LIB_DIR + '/imgs/crescent_moon.gif')
-QUARTER_MOON = processImage(LIB_DIR + '/imgs/quarter_moon.gif')
-GIBBOUS_MOON = processImage(LIB_DIR + '/imgs/gibbous_moon.gif')
-FULL_MOON = processImage(LIB_DIR + '/imgs/full_moon.gif')
-
-JUST_CLOUDS = processImage(LIB_DIR + '/imgs/just_clouds.gif')
-JUST_CLOUDS_NIGHT = processImage(LIB_DIR + '/imgs/just_clouds_night.gif')
+JUST_CLOUDS = processImage(WEATHER_DIR + '/imgs/just_clouds.gif')
+JUST_CLOUDS_NIGHT = processImage(WEATHER_DIR + '/imgs/just_clouds_night.gif')
 
 TEXT_TO_ICON_DAY = {
     'clear': [SUN],
