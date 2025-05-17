@@ -1,5 +1,5 @@
 [Unit]
-Description="Run fetchWeather service every 10 mins"
+Description="Run fetchWeather service every 10th min"
 Wants=network-online.target
 After=network-online.target
 

@@ -6,3 +6,5 @@ sudo systemctl enable fetchWeather.timer
 sudo cp showWeather.service /etc/systemd/system/
 sudo systemctl start showWeather.service
 sudo systemctl enable showWeather.service
+
+sudo systemctl daemon-reload

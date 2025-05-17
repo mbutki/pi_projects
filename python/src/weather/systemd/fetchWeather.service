@@ -5,5 +5,4 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
 ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/weather/fetch_weather.py
