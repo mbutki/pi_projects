@@ -170,28 +170,26 @@ def storeAqi(data):
         print('DB client closed')
 
 def main():
-    while True:
-        try:
-            raw_weather = fetchWeather()
-            weather = parseWeather(raw_weather)
-            if args.v:
-                print('DAYS:')
-                for t, day in sorted(weather['days'].items()):
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
-                    print(t, day, '\n')
-                print('\nHOURS:')
-                for t, hour in sorted(weather['hours'].items()):
-                    print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
-                    print(t, hour, '\n')
-            if not args.n:
-                storeWeather(weather)
+    try:
+        raw_weather = fetchWeather()
+        weather = parseWeather(raw_weather)
+        if args.v:
+            print('DAYS:')
+            for t, day in sorted(weather['days'].items()):
+                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
+                print(t, day, '\n')
+            print('\nHOURS:')
+            for t, hour in sorted(weather['hours'].items()):
+                print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(t))))
+                print(t, hour, '\n')
+        if not args.n:
+            storeWeather(weather)
 
-            #storeAqi(fetchAqi())
-            
-        except Exception as err:
-            print("main error: {0}".format(err))
-            log.error("main error: {0}".format(err))
-        time.sleep(600)
+        #storeAqi(fetchAqi())
+        
+    except Exception as err:
+        print("main error: {0}".format(err))
+        log.error("main error: {0}".format(err))
 
 if __name__ == '__main__':
     main()

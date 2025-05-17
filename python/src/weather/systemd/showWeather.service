@@ -1,0 +1,10 @@
+[Unit]
+Description="Run LED weather display"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/weather/showWeather.py
+
+[Install]
+WantedBy=multi-user.target

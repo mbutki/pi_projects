@@ -16,6 +16,8 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from dbReads import *
 from iconUtils import *
 
+print('\n'.join(sys.path))
+
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
@@ -422,8 +424,8 @@ def createMatrix():
     options.chain_length = 6 if EXTENDED_WEATHER else 2
     options.gpio_slowdown = 2
     options.brightness = MAX_BRIGHTNESS
-    options.hardware_mapping = 'adafruit-hat'
-    #options.hardware_mapping = 'adafruit-hat-pwm'
+    #options.hardware_mapping = 'adafruit-hat'
+    options.hardware_mapping = 'adafruit-hat-pwm'
 
     return RGBMatrix(options = options)
 
