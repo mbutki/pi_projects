@@ -274,12 +274,12 @@ def drawDailyText(weather):
         if dt.weekday() == 0:
             graphics.DrawLine(OFFSCREEN_CANVAS, offset-3, 12, offset-3 , 15, CURRENT_TEMP_COLOR)
 
-def drawCurrent(current, outdoor):
+def drawCurrent(api_current, outdoor):
     if outdoor < 100:
         font = MEDIUM_FONT
     else:
         font = SMALL_FONT
-    temp = str(int(round(outdoor))) if outdoor != -999 else str(int(round(current['temp'])))
+    temp = str(int(round(outdoor))) if outdoor != -999 else str(int(round(api_current['temp'])))
     graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, temp)
 
 def drawIndoor(current):
@@ -468,8 +468,8 @@ def fetchData():
     
     weather = fetchWeather(cur, args)
     daily_icons = getDailyIcons(weather)
-    indoor_temp = fetchIndoorTemps(cur)
-    outdoor_temp = fetchOutdoorTemps(cur)
+    indoor_temp = fetchIndoorTemps(cur, args)
+    outdoor_temp = fetchOutdoorTemps(cur, args)
 
     conn.commit()
     conn.close()

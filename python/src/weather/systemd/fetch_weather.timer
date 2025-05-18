@@ -1,11 +1,11 @@
 [Unit]
-Description="Run fetchWeather service every 10th min"
+Description="Run fetch_weather service every 10th min"
 Wants=network-online.target
 After=network-online.target
 
 [Timer]
 OnCalendar=*:0/10
-Unit=fetchWeather.service
+Unit=fetch_weather.service
 
 [Install]
 WantedBy=multi-user.target

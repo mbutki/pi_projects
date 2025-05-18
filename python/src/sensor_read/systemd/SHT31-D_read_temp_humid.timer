@@ -1,0 +1,12 @@
+[Unit]
+Description="Read temp/humid for long term table"
+Wants=network-online.target
+After=network-online.target
+
+[Timer]
+Unit=SHT31-D_read_temp_humid.service
+OnActiveSec=0
+OnUnitInactiveSec=5
+
+[Install]
+WantedBy=multi-user.target

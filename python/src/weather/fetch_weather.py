@@ -124,7 +124,7 @@ def parseWeather(raw_weather):
 def storeWeather(weather):
     if args.v:
         print('Starting db put')
-    #doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
+
     try:
         conn = mariadb.connect(
             user="mbutki",

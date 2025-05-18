@@ -1,0 +1,8 @@
+[Unit]
+Description="Read temp/humid for long term table"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/sensor_read/SHT31-D_read_temp_humid.py 900 4 temp humid

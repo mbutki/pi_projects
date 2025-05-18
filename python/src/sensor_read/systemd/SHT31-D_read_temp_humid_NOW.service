@@ -1,0 +1,8 @@
+[Unit]
+Description="Read temp/humid for NOW table"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/sensor_read/SHT31-D_read_temp_humid.py 30 5 temp_now humid_now --clear
