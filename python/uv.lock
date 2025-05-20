@@ -224,9 +224,13 @@ dependencies = [
     { name = "numpy" },
     { name = "pillow" },
     { name = "requests" },
-    { name = "rgbmatrix" },
     { name = "rpi-lgpio" },
     { name = "spidev" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "rgbmatrix" },
 ]
 
 [package.metadata]
@@ -236,10 +240,12 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.5" },
     { name = "pillow", specifier = ">=11.2.1" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "rgbmatrix", directory = "rpi-rgb-led-matrix/bindings/python" },
     { name = "rpi-lgpio", specifier = ">=0.6" },
     { name = "spidev", specifier = ">=3.7" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "rgbmatrix", directory = "rpi-rgb-led-matrix/bindings/python" }]
 
 [[package]]
 name = "numpy"

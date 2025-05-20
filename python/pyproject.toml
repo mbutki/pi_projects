@@ -9,11 +9,15 @@ dependencies = [
     "mariadb>=1.1.12",
     "numpy>=2.2.5",
     "pillow>=11.2.1",
-    "requests>=2.32.3",
-    "rgbmatrix",
     "rpi-lgpio>=0.6",
+    "requests>=2.32.3",
     "spidev>=3.7",
 ]
 
 [tool.uv.sources]
 rgbmatrix = { path = "rpi-rgb-led-matrix/bindings/python" }
+
+[dependency-groups]
+dev = [
+    "rgbmatrix",
+]
