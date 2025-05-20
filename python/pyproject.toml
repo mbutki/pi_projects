@@ -14,10 +14,10 @@ dependencies = [
     "spidev>=3.7",
 ]
 
-[tool.uv.sources]
-rgbmatrix = { path = "rpi-rgb-led-matrix/bindings/python" }
-
 [dependency-groups]
-dev = [
+matrix = [
     "rgbmatrix",
 ]
+
+[tool.uv.sources]
+rgbmatrix = { path = "rpi-rgb-led-matrix/bindings/python" }
