@@ -1,4 +1,7 @@
+adafruit-circuitpython-sht31d>=2.3.26
 mariadb>=1.1.12
+numpy>=2.2.5
 pillow>=11.2.1
 rpi-lgpio>=0.6
+requests>=2.32.3
 spidev>=3.7

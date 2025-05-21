@@ -4,7 +4,10 @@ Version: 0.1.0
 Summary: Add your description here
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Requires-Dist: adafruit-circuitpython-sht31d>=2.3.26
 Requires-Dist: mariadb>=1.1.12
+Requires-Dist: numpy>=2.2.5
 Requires-Dist: pillow>=11.2.1
 Requires-Dist: rpi-lgpio>=0.6
+Requires-Dist: requests>=2.32.3
 Requires-Dist: spidev>=3.7

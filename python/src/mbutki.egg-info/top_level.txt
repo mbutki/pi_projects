@@ -1,6 +1,8 @@
+backup
+db_test
 displays
 rfm69
 scripts
 security
-sensorRead
+sensor_read
 weather
