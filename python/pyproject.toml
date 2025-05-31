@@ -12,6 +12,7 @@ dependencies = [
     "rpi-lgpio>=0.6",
     "requests>=2.32.3",
     "spidev>=3.7",
+    "rpi-gpio>=0.7.1",
 ]
 
 [dependency-groups]
