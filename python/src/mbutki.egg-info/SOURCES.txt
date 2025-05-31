@@ -73,6 +73,7 @@ src/displays/starboard/stars.py
 src/displays/starboard/vert_stars.py
 src/displays/waveshare/7in5_red/cal.py
 src/displays/waveshare/7in5_red/clock.py
+src/displays/waveshare/7in5_red/daily-weather-manga.py
 src/displays/waveshare/7in5_red/daily-weather.py
 src/displays/waveshare/7in5_red/epd7in5bc.py
 src/displays/waveshare/7in5_red/epd_7in5bc_image.py
