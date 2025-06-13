@@ -45,21 +45,35 @@ wheels = [
 ]
 
 [[package]]
+name = "adafruit-circuitpython-ht16k33"
+version = "4.6.12"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "adafruit-blinka" },
+    { name = "adafruit-circuitpython-busdevice" },
+    { name = "adafruit-circuitpython-typing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/e7/04d6afb13fc502cc2bf77c7233f423b66a2ea0cb3f7126e86038ff3e1f40/adafruit_circuitpython_ht16k33-4.6.12.tar.gz", hash = "sha256:07f07fe340e20552cb4687d93de2da924f82705462278570ecd7b3d8b3dfd0ba", size = 35506, upload-time = "2025-05-15T22:12:37.002Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/ab/348e0106cc6c8bba7eaff21ed99ee1cdc8836c7c2d38739d1692ae106ed2/adafruit_circuitpython_ht16k33-4.6.12-py3-none-any.whl", hash = "sha256:f3923d327b271327a5976ab42a7a046cfc33bba5183dd997cf8fd1ef33d03648", size = 16262, upload-time = "2025-05-15T22:12:36.002Z" },
+]
+
+[[package]]
 name = "adafruit-circuitpython-requests"
-version = "4.1.10"
+version = "4.1.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adafruit-blinka" },
     { name = "adafruit-circuitpython-connectionmanager" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/eb/16/11d311192a8ec4d0b6370fb36226a95c641a993cd6fe6986fd13e6ac3ea5/adafruit_circuitpython_requests-4.1.10.tar.gz", hash = "sha256:a8657fe4b3a74c224e7365ebefa7742cc198373c1702bfc3f2b0ca3c4fd288b3", size = 66262, upload-time = "2025-03-03T14:25:46.076Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/93/0d39e35e87159c8c1be45e175ddc3cc2e81805d524d0d612b610e4f01f45/adafruit_circuitpython_requests-4.1.12.tar.gz", hash = "sha256:63b514e3612da67dbaa5cefd695dc3369b50fea43a3ba518847c4bd380a576ab", size = 67298, upload-time = "2025-06-02T21:38:38.378Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/d1/f83b60b9283db4075cb30e5938cee3f3b795b5d558619fd37d635cf8abb2/adafruit_circuitpython_requests-4.1.10-py3-none-any.whl", hash = "sha256:6a54aa39436e83e0dc75d60c861e5befa333bff265b947ea263156e64e467122", size = 10732, upload-time = "2025-03-03T14:25:44.339Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/89/0f0b1212ef6bba192250c4f9cd17433b57aefe75bed380bb577f125fb659/adafruit_circuitpython_requests-4.1.12-py3-none-any.whl", hash = "sha256:ca17fa616e50a0dae687e11a2e82672737c7be9fc7d3e383a75329509c19ee28", size = 10883, upload-time = "2025-06-02T21:38:37.433Z" },
 ]
 
 [[package]]
 name = "adafruit-circuitpython-sht31d"
-version = "2.3.26"
+version = "2.3.27"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adafruit-blinka" },
@@ -67,14 +81,14 @@ dependencies = [
     { name = "adafruit-circuitpython-typing" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/be/5c/d8567fbe498a5d9231c5ad1d34e9169b68539cbb408db0df7a1d3793d1a3/adafruit_circuitpython_sht31d-2.3.26.tar.gz", hash = "sha256:8ab77b77205979b49534fb1425ae3aedce4e728c07adf1365497f77ae1ee3162", size = 29196, upload-time = "2025-01-16T19:12:49.965Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/22/3db64dcd10fb0aa1eb70b45e32194119559bcc1c2b8cd1839eaa4fb65160/adafruit_circuitpython_sht31d-2.3.27.tar.gz", hash = "sha256:123aaaca50fd2e00673b3122e7d2a8f74e77ae30ee2a91ab3c665ec02a5cba5f", size = 25766, upload-time = "2025-05-21T20:09:56.805Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/dd/65fba46fe29d3de8107fabf1bd892887fe0316f11e1d3168620bcde6feca/adafruit_circuitpython_sht31d-2.3.26-py3-none-any.whl", hash = "sha256:399de876e8bf41a7f729e0f8354e4732aa9a43eaa96fcf2be7569a161a036953", size = 7679, upload-time = "2025-01-16T19:12:45.891Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/2f/0a8910e2cfb179c3d29c30127a8452d1213852a5734d050da0954d58a674/adafruit_circuitpython_sht31d-2.3.27-py3-none-any.whl", hash = "sha256:e37fe797ac431f5707fd7bfd36955ca89e31ffe1c0ca801d0e473d5304ad70fa", size = 7704, upload-time = "2025-05-21T20:09:55.497Z" },
 ]
 
 [[package]]
 name = "adafruit-circuitpython-typing"
-version = "1.11.2"
+version = "1.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adafruit-blinka" },
@@ -82,9 +96,9 @@ dependencies = [
     { name = "adafruit-circuitpython-requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/80/8c280fa7d42a23dce40b2fe64f708d18fa32b384adbf6934955d2c2ebecf/adafruit_circuitpython_typing-1.11.2.tar.gz", hash = "sha256:c7ac8532a9ad7e4a65d5588764b7483c0b6967d305c37faebcc0c5356d677e33", size = 29277, upload-time = "2024-12-02T13:59:35.885Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/d6/cb9a842dd89afcc53d21327cef5d3ee0149cfd3d90677c9dd68274b0bfae/adafruit_circuitpython_typing-1.12.1.tar.gz", hash = "sha256:e4b06e07cb385dc098574f2479cd77d07e0a06987c814eab33b9f525ac83a935", size = 26001, upload-time = "2025-05-30T17:46:34.679Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/d5/76a6bca9cf08907b48dfc8ccbccbd190155353f521876e02d6b7bb244003/adafruit_circuitpython_typing-1.11.2-py3-none-any.whl", hash = "sha256:e1401a09bbfdf67e43875cc6755b3af0eda8381b12c9c8f759bd7676b7425e1c", size = 11101, upload-time = "2024-12-02T13:59:34.827Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/d9/fe145e99e1251a0dcdace585477875eef8db915f04647197aa3aa50c51d6/adafruit_circuitpython_typing-1.12.1-py3-none-any.whl", hash = "sha256:f1e511f48a76cb4467050db9334fed6761cc1f05921e9edddce7fd3a0b69b459", size = 11627, upload-time = "2025-05-30T17:46:33.322Z" },
 ]
 
 [[package]]
@@ -175,6 +189,30 @@ wheels = [
 ]
 
 [[package]]
+name = "colorzero"
+version = "2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b3/ca/688824a06e8c4d04c7d2fd2af2d8da27bed51af20ee5f094154e1d680334/colorzero-2.0.tar.gz", hash = "sha256:e7d5a5c26cd0dc37b164ebefc609f388de24f8593b659191e12d85f8f9d5eb58", size = 25382, upload-time = "2021-03-15T23:42:23.261Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/a6/ddd0f130e44a7593ac6c55aa93f6e256d2270fd88e9d1b64ab7f22ab8fde/colorzero-2.0-py2.py3-none-any.whl", hash = "sha256:0e60d743a6b8071498a56465f7719c96a5e92928f858bab1be2a0d606c9aa0f8", size = 26573, upload-time = "2021-03-15T23:42:21.757Z" },
+]
+
+[[package]]
+name = "gpiozero"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorzero" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e4/47/334b8db8a981eca9a0fb1e7e48e1997a5eaa8f40bb31c504299dcca0e6ff/gpiozero-2.0.1.tar.gz", hash = "sha256:d4ea1952689ec7e331f9d4ebc9adb15f1d01c2c9dcfabb72e752c9869ab7e97e", size = 136176, upload-time = "2024-02-15T11:07:02.919Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/eb/6518a1b00488d48995034226846653c382d676cf5f04be62b3c3fae2c6a1/gpiozero-2.0.1-py3-none-any.whl", hash = "sha256:8f621de357171d574c0b7ea0e358cb66e560818a47b0eeedf41ce1cdbd20c70b", size = 150818, upload-time = "2024-02-15T11:07:00.451Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.10"
 source = { registry = "https://pypi.org/simple" }
@@ -219,13 +257,17 @@ name = "mbutki"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "adafruit-circuitpython-ht16k33" },
     { name = "adafruit-circuitpython-sht31d" },
+    { name = "gpiozero" },
     { name = "mariadb" },
     { name = "numpy" },
     { name = "pillow" },
+    { name = "pygame" },
     { name = "requests" },
     { name = "rpi-gpio" },
     { name = "rpi-lgpio" },
+    { name = "smbus2" },
     { name = "spidev" },
 ]
 
@@ -236,13 +278,17 @@ matrix = [
 
 [package.metadata]
 requires-dist = [
+    { name = "adafruit-circuitpython-ht16k33", specifier = ">=4.6.12" },
     { name = "adafruit-circuitpython-sht31d", specifier = ">=2.3.26" },
+    { name = "gpiozero", specifier = ">=2.0.1" },
     { name = "mariadb", specifier = ">=1.1.12" },
     { name = "numpy", specifier = ">=2.2.5" },
     { name = "pillow", specifier = ">=11.2.1" },
+    { name = "pygame", specifier = ">=2.6.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "rpi-lgpio", specifier = ">=0.6" },
+    { name = "smbus2", specifier = ">=0.5.0" },
     { name = "spidev", specifier = ">=3.7" },
 ]
 
@@ -378,6 +424,35 @@ wheels = [
 ]
 
 [[package]]
+name = "pygame"
+version = "2.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/cc/08bba60f00541f62aaa252ce0cfbd60aebd04616c0b9574f755b583e45ae/pygame-2.6.1.tar.gz", hash = "sha256:56fb02ead529cee00d415c3e007f75e0780c655909aaa8e8bf616ee09c9feb1f", size = 14808125, upload-time = "2024-09-29T13:41:34.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/ca/8f367cb9fe734c4f6f6400e045593beea2635cd736158f9fabf58ee14e3c/pygame-2.6.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:20349195326a5e82a16e351ed93465a7845a7e2a9af55b7bc1b2110ea3e344e1", size = 13113753, upload-time = "2024-09-29T14:26:13.751Z" },
+    { url = "https://files.pythonhosted.org/packages/83/47/6edf2f890139616b3219be9cfcc8f0cb8f42eb15efd59597927e390538cb/pygame-2.6.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:f3935459109da4bb0b3901da9904f0a3e52028a3332a355d298b1673a334cf21", size = 12378146, upload-time = "2024-09-29T14:26:22.456Z" },
+    { url = "https://files.pythonhosted.org/packages/00/9e/0d8aa8cf93db2d2ee38ebaf1c7b61d0df36ded27eb726221719c150c673d/pygame-2.6.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c31dbdb5d0217f32764797d21c2752e258e5fb7e895326538d82b5f75a0cd856", size = 13611760, upload-time = "2024-09-29T11:10:47.317Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/9e/d06adaa5cc65876bcd7a24f59f67e07f7e4194e6298130024ed3fb22c456/pygame-2.6.1-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:173badf82fa198e6888017bea40f511cb28e69ecdd5a72b214e81e4dcd66c3b1", size = 14298054, upload-time = "2024-09-29T11:39:53.891Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/a1/9ae2852ebd3a7cc7d9ae7ff7919ab983e4a5c1b7a14e840732f23b2b48f6/pygame-2.6.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce8cc108b92de9b149b344ad2e25eedbe773af0dc41dfb24d1f07f679b558c60", size = 13977107, upload-time = "2024-09-29T11:39:56.831Z" },
+    { url = "https://files.pythonhosted.org/packages/31/df/6788fd2e9a864d0496a77670e44a7c012184b7a5382866ab0e60c55c0f28/pygame-2.6.1-cp311-cp311-win32.whl", hash = "sha256:811e7b925146d8149d79193652cbb83e0eca0aae66476b1cb310f0f4226b8b5c", size = 10250863, upload-time = "2024-09-29T11:44:48.199Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/55/ca3eb851aeef4f6f2e98a360c201f0d00bd1ba2eb98e2c7850d80aabc526/pygame-2.6.1-cp311-cp311-win_amd64.whl", hash = "sha256:91476902426facd4bb0dad4dc3b2573bc82c95c71b135e0daaea072ed528d299", size = 10622016, upload-time = "2024-09-29T12:17:01.545Z" },
+    { url = "https://files.pythonhosted.org/packages/92/16/2c602c332f45ff9526d61f6bd764db5096ff9035433e2172e2d2cadae8db/pygame-2.6.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:4ee7f2771f588c966fa2fa8b829be26698c9b4836f82ede5e4edc1a68594942e", size = 13118279, upload-time = "2024-09-29T14:26:30.427Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/53/77ccbc384b251c6e34bfd2e734c638233922449a7844e3c7a11ef91cee39/pygame-2.6.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c8040ea2ab18c6b255af706ec01355c8a6b08dc48d77fd4ee783f8fc46a843bf", size = 12384524, upload-time = "2024-09-29T14:26:49.996Z" },
+    { url = "https://files.pythonhosted.org/packages/06/be/3ed337583f010696c3b3435e89a74fb29d0c74d0931e8f33c0a4246307a9/pygame-2.6.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c47a6938de93fa610accd4969e638c2aebcb29b2fca518a84c3a39d91ab47116", size = 13587123, upload-time = "2024-09-29T11:10:50.072Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/ca/b015586a450db59313535662991b34d24c1f0c0dc149cc5f496573900f4e/pygame-2.6.1-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:33006f784e1c7d7e466fcb61d5489da59cc5f7eb098712f792a225df1d4e229d", size = 14275532, upload-time = "2024-09-29T11:39:59.356Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/f2/d31e6ad42d657af07be2ffd779190353f759a07b51232b9e1d724f2cda46/pygame-2.6.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1206125f14cae22c44565c9d333607f1d9f59487b1f1432945dfc809aeaa3e88", size = 13952653, upload-time = "2024-09-29T11:40:01.781Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/42/8ea2a6979e6fa971702fece1747e862e2256d4a8558fe0da6364dd946c53/pygame-2.6.1-cp312-cp312-win32.whl", hash = "sha256:84fc4054e25262140d09d39e094f6880d730199710829902f0d8ceae0213379e", size = 10252421, upload-time = "2024-09-29T11:14:26.877Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/90/7d766d54bb95939725e9a9361f9c06b0cfbe3fe100aa35400f0a461a278a/pygame-2.6.1-cp312-cp312-win_amd64.whl", hash = "sha256:3a9e7396be0d9633831c3f8d5d82dd63ba373ad65599628294b7a4f8a5a01a65", size = 10624591, upload-time = "2024-09-29T11:52:54.489Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/91/718acf3e2a9d08a6ddcc96bd02a6f63c99ee7ba14afeaff2a51c987df0b9/pygame-2.6.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:ae6039f3a55d800db80e8010f387557b528d34d534435e0871326804df2a62f2", size = 13090765, upload-time = "2024-09-29T14:27:02.377Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/c6/9cb315de851a7682d9c7568a41ea042ee98d668cb8deadc1dafcab6116f0/pygame-2.6.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:2a3a1288e2e9b1e5834e425bedd5ba01a3cd4902b5c2bff8ed4a740ccfe98171", size = 12381704, upload-time = "2024-09-29T14:27:10.228Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/8f/617a1196e31ae3b46be6949fbaa95b8c93ce15e0544266198c2266cc1b4d/pygame-2.6.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:27eb17e3dc9640e4b4683074f1890e2e879827447770470c2aba9f125f74510b", size = 13581091, upload-time = "2024-09-29T11:30:27.653Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/87/2851a564e40a2dad353f1c6e143465d445dab18a95281f9ea458b94f3608/pygame-2.6.1-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:4c1623180e70a03c4a734deb9bac50fc9c82942ae84a3a220779062128e75f3b", size = 14273844, upload-time = "2024-09-29T11:40:04.138Z" },
+    { url = "https://files.pythonhosted.org/packages/85/b5/aa23aa2e70bcba42c989c02e7228273c30f3b44b9b264abb93eaeff43ad7/pygame-2.6.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ef07c0103d79492c21fced9ad68c11c32efa6801ca1920ebfd0f15fb46c78b1c", size = 13951197, upload-time = "2024-09-29T11:40:06.785Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/06/29e939b34d3f1354738c7d201c51c250ad7abefefaf6f8332d962ff67c4b/pygame-2.6.1-cp313-cp313-win32.whl", hash = "sha256:3acd8c009317190c2bfd81db681ecef47d5eb108c2151d09596d9c7ea9df5c0e", size = 10249309, upload-time = "2024-09-29T11:10:23.329Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/11/17f7f319ca91824b86557e9303e3b7a71991ef17fd45286bf47d7f0a38e6/pygame-2.6.1-cp313-cp313-win_amd64.whl", hash = "sha256:813af4fba5d0b2cb8e58f5d95f7910295c34067dcc290d34f1be59c48bd1ea6a", size = 10620084, upload-time = "2024-09-29T11:48:51.587Z" },
+]
+
+[[package]]
 name = "pyserial"
 version = "3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -434,6 +509,24 @@ wheels = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "80.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
+]
+
+[[package]]
+name = "smbus2"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/c9/6d85aa809e107adf85303010a59b340be109c8f815cbedc5c08c73bcffef/smbus2-0.5.0.tar.gz", hash = "sha256:4a5946fd82277870c2878befdb1a29bb28d15cda14ea4d8d2d54cf3d4bdcb035", size = 16950, upload-time = "2024-10-19T09:20:56.746Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/9f/2235ba9001e3c29fc342eeb222104420bcb7bac51555f0c034376a744075/smbus2-0.5.0-py2.py3-none-any.whl", hash = "sha256:1a15c3b9fa69357beb038cc0b5d37939702f8bfde1ddc89ca9f17d8461dbe949", size = 11527, upload-time = "2024-10-19T09:20:55.202Z" },
+]
+
+[[package]]
 name = "spidev"
 version = "3.7"
 source = { registry = "https://pypi.org/simple" }
@@ -447,11 +540,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/0c/d7/5d2f861155e9749f9
 
 [[package]]
 name = "typing-extensions"
-version = "4.13.2"
+version = "4.14.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f6/37/23083fcd6e35492953e8d2aaaa68b860eb422b34627b13f2ce3eb6106061/typing_extensions-4.13.2.tar.gz", hash = "sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef", size = 106967, upload-time = "2025-04-10T14:19:05.416Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/bc/51647cd02527e87d05cb083ccc402f93e441606ff1f01739a62c8ad09ba5/typing_extensions-4.14.0.tar.gz", hash = "sha256:8676b788e32f02ab42d9e7c61324048ae4c6d844a399eebace3d4979d75ceef4", size = 107423, upload-time = "2025-06-02T14:52:11.399Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/54/b1ae86c0973cc6f0210b53d508ca3641fb6d0c56823f288d108bc7ab3cc8/typing_extensions-4.13.2-py3-none-any.whl", hash = "sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c", size = 45806, upload-time = "2025-04-10T14:19:03.967Z" },
+    { url = "https://files.pythonhosted.org/packages/69/e0/552843e0d356fbb5256d21449fa957fa4eff3bbc135a74a691ee70c7c5da/typing_extensions-4.14.0-py3-none-any.whl", hash = "sha256:a1514509136dd0b477638fc68d6a91497af5076466ad0fa6c338e44e359944af", size = 43839, upload-time = "2025-06-02T14:52:10.026Z" },
 ]
 
 [[package]]
