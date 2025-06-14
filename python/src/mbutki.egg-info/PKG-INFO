@@ -12,3 +12,7 @@ Requires-Dist: rpi-lgpio>=0.6
 Requires-Dist: requests>=2.32.3
 Requires-Dist: spidev>=3.7
 Requires-Dist: rpi-gpio>=0.7.1
+Requires-Dist: pygame>=2.6.1
+Requires-Dist: gpiozero>=2.0.1
+Requires-Dist: adafruit-circuitpython-ht16k33>=4.6.12
+Requires-Dist: smbus2>=0.5.0

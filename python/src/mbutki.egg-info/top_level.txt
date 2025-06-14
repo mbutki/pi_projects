@@ -5,4 +5,5 @@ rfm69
 scripts
 security
 sensor_read
+slotcar
 weather

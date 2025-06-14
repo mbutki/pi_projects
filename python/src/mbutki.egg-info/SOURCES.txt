@@ -13,6 +13,7 @@ src/backup/sensorRead/readTemperature_analog.py
 src/displays/7SegClock.py
 src/displays/7SegClock_plain.py
 src/displays/dotstar/test.py
+src/displays/hyper/play-gifs.py
 src/displays/microdot/microdotClock.py
 src/displays/microdot-phat/examples/advanced-scrolling.py
 src/displays/microdot-phat/examples/clock.py
@@ -207,11 +208,13 @@ src/sensor_read/Adafruit_SHT31.py
 src/sensor_read/SHT31-D_read_temp_humid.py
 src/sensor_read/bmp280.py
 src/sensor_read/readAirQuality_PMS5003.py
+src/sensor_read/readDistance_VL6180x.py
 src/sensor_read/readLight_VEML7700.py
 src/sensor_read/readLight_analog.py
 src/sensor_read/readPressure_BMP280.py
 src/sensor_read/readTemperature_MCP9808.py
 src/sensor_read/readTemperature_analog.py
+src/slotcar/slotcar.py
 src/weather/dbReads.py
 src/weather/fetch_weather.py
 src/weather/fetch_weather_dark_sky.py

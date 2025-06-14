@@ -1,0 +1,18 @@
+OPTION ONE (should work)
+You can restart the entire USB controller. After that the speaker will be seen, as device #0.
+
+sudo modprobe -r dwc2
+sudo modprobe dwc2
+
+
+OPTION TWO (Didn't work)
+
+You can try copying this to /etc/asound.conf if you want to change the defualt sound driver (set to 1 here)
+- It should match the USB audio item number: cat /proc/asound/cards
+
+pcm.!default  {
+ type hw card 1
+}
+ctl.!default {
+ type hw card 1
+}

@@ -17,6 +17,7 @@ dependencies = [
     "gpiozero>=2.0.1",
     "adafruit-circuitpython-ht16k33>=4.6.12",
     "smbus2>=0.5.0",
+    "bleak>=0.22.3",
 ]
 
 [dependency-groups]
