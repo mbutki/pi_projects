@@ -3,6 +3,7 @@ import json
 import logging
 from bleak import BleakScanner, BleakClient
 import RPi.GPIO as GPIO
+import time
 
 # GPIO Setup
 RED_LED = 18
@@ -43,10 +44,9 @@ def notification_handler(sender, data):
         blink_rate = message.get("blink", blink_rate)
         led_on = message.get("enabled", led_on)
 
-        # Update LEDs immediately if not blinking
         if led_on:
-            pwm_red.ChangeDutyCycle(brightness_red)
-            pwm_green.ChangeDutyCycle(brightness_green)
+            pwm_red.ChangeDutyCycle(brightness_red * 100)
+            pwm_green.ChangeDutyCycle(brightness_green * 100)
         else:
             pwm_red.ChangeDutyCycle(0)
             pwm_green.ChangeDutyCycle(0)
@@ -54,66 +54,67 @@ def notification_handler(sender, data):
     except Exception as e:
         logger.error(f"Error processing message: {e}")
 
-async def run():
-    logger.info("Scanning for device...")
-    devices = await BleakScanner.discover()
-    pico = next((d for d in devices if d.name == "PicoPot"), None)
-
-    if not pico:
-        logger.error("PicoPot not found.")
-        return
-
-    logger.info(f"Found device: {pico.name}")
-    async with BleakClient(pico) as client:
+async def connect_and_run():
+    while True:
         try:
-            logger.info("Connected to Pico.")
-            logger.info("Discovering services...")
-            svcs = await client.get_services()
+            logger.info("🔍 Scanning for PicoPot...")
+            devices = await BleakScanner.discover()
+            pico = next((d for d in devices if d.name == "PicoPot"), None)
 
-            logger.info("Services and Characteristics:")
-            for service in svcs:
-                logger.info(f"Service {service.uuid}")
-                for char in service.characteristics:
-                    logger.info(f"  Char {char.uuid} Properties: {char.properties}")
+            if not pico:
+                logger.info("❌ PicoPot not found. Retrying in 0.5s...")
+                await asyncio.sleep(0.5)
+                continue
 
-            # Confirm UART_TX_UUID exists
-            found = False
-            for service in svcs:
-                for char in service.characteristics:
-                    if char.uuid.lower() == UART_TX_UUID.lower():
-                        found = True
+            logger.info(f"✅ Found device: {pico.name}. Connecting...")
+            async with BleakClient(pico) as client:
+                logger.info("🔗 Connected to PicoPot.")
+                #await client.start_notify(UART_TX_UUID, notification_handler)
+                logger.info("🔍 Discovering services...")
+                services = await client.get_services()
+
+                # Confirm the TX characteristic is present
+                if UART_TX_UUID.lower() not in [char.uuid.lower() for s in services for char in s.characteristics]:
+                    logger.error(f"Characteristic {UART_TX_UUID} was not found!")
+                    continue
+
+                await client.start_notify(UART_TX_UUID, notification_handler)
+                logger.info("📩 Notifications started.")
+                #logger.info("📩 Notifications started.")
+
+                while True:
+                    if client.is_connected:
+                        if led_on:
+                            pwm_red.ChangeDutyCycle(brightness_red * 100)
+                            pwm_green.ChangeDutyCycle(brightness_green * 100)
+                            await asyncio.sleep(blink_rate)
+                            pwm_red.ChangeDutyCycle(0)
+                            pwm_green.ChangeDutyCycle(0)
+                            await asyncio.sleep(blink_rate)
+                        else:
+                            pwm_red.ChangeDutyCycle(0)
+                            pwm_green.ChangeDutyCycle(0)
+                            await asyncio.sleep(0.1)
+                    else:
+                        logger.warning("⚠️ Lost connection to PicoPot.")
                         break
-            if not found:
-                logger.error(f"Characteristic {UART_TX_UUID} not found!")
-                return
-
-            await client.start_notify(UART_TX_UUID, notification_handler)
-            logger.info("Notifications started.")
-
-            # Run blink loop
-            while True:
-                if led_on:
-                    pwm_red.ChangeDutyCycle(brightness_red)
-                    pwm_green.ChangeDutyCycle(brightness_green)
-                    await asyncio.sleep(blink_rate)
-                    pwm_red.ChangeDutyCycle(0)
-                    pwm_green.ChangeDutyCycle(0)
-                    await asyncio.sleep(blink_rate)
-                else:
-                    pwm_red.ChangeDutyCycle(0)
-                    pwm_green.ChangeDutyCycle(0)
-                    await asyncio.sleep(0.1)
 
         except Exception as e:
-            logger.error(f"Disconnected or error: {e}")
+            logger.error(f"🔌 BLE error or disconnect: {e}")
+
+        # Cleanup before retrying
+        pwm_red.ChangeDutyCycle(0)
+        pwm_green.ChangeDutyCycle(0)
+        await asyncio.sleep(0.5)
 
 if __name__ == "__main__":
     try:
-        asyncio.run(run())
+        asyncio.run(connect_and_run())
     except KeyboardInterrupt:
         pass
     finally:
         pwm_red.stop()
         pwm_green.stop()
         GPIO.cleanup()
+        logger.info("🛑 Program exited.")
 
