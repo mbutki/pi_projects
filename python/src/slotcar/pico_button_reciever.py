@@ -3,7 +3,8 @@ import json
 import logging
 from bleak import BleakScanner, BleakClient
 import RPi.GPIO as GPIO
-import time
+import signal
+import sys
 
 # GPIO Setup
 RED_LED = 18
@@ -31,6 +32,9 @@ blink_rate = 1.0
 brightness_red = 0
 brightness_green = 0
 
+client = None
+running = True  # control flag for graceful shutdown
+
 def notification_handler(sender, data):
     global led_on, blink_rate, brightness_red, brightness_green
 
@@ -44,6 +48,7 @@ def notification_handler(sender, data):
         blink_rate = message.get("blink", blink_rate)
         led_on = message.get("enabled", led_on)
 
+        # Update LEDs immediately if not blinking
         if led_on:
             pwm_red.ChangeDutyCycle(brightness_red * 100)
             pwm_green.ChangeDutyCycle(brightness_green * 100)
@@ -54,67 +59,95 @@ def notification_handler(sender, data):
     except Exception as e:
         logger.error(f"Error processing message: {e}")
 
-async def connect_and_run():
-    while True:
-        try:
-            logger.info("🔍 Scanning for PicoPot...")
-            devices = await BleakScanner.discover()
-            pico = next((d for d in devices if d.name == "PicoPot"), None)
+async def run():
+    global client, running
+    while running:
+        logger.info("🔍 Scanning for PicoPot...")
+        devices = await BleakScanner.discover()
+        pico = next((d for d in devices if d.name == "PicoPot"), None)
 
-            if not pico:
-                logger.info("❌ PicoPot not found. Retrying in 0.5s...")
+        if not pico:
+            logger.error("❌ PicoPot not found, retrying in 0.5s...")
+            await asyncio.sleep(0.5)
+            continue
+
+        logger.info(f"✅ Found device: {pico.name}. Connecting...")
+        client = BleakClient(pico)
+
+        try:
+            await client.connect()
+            logger.info("🔗 Connected to PicoPot.")
+            svcs = await client.get_services()
+
+            # Verify characteristic exists
+            tx_char = None
+            for service in svcs:
+                for char in service.characteristics:
+                    if char.uuid.lower() == UART_TX_UUID.lower():
+                        tx_char = char
+                        break
+                if tx_char:
+                    break
+
+            if not tx_char:
+                logger.error(f"❌ Characteristic {UART_TX_UUID} not found! Disconnecting...")
+                await client.disconnect()
                 await asyncio.sleep(0.5)
                 continue
 
-            logger.info(f"✅ Found device: {pico.name}. Connecting...")
-            async with BleakClient(pico) as client:
-                logger.info("🔗 Connected to PicoPot.")
-                #await client.start_notify(UART_TX_UUID, notification_handler)
-                logger.info("🔍 Discovering services...")
-                services = await client.get_services()
+            await client.start_notify(UART_TX_UUID, notification_handler)
+            logger.info("▶ Notifications started.")
 
-                # Confirm the TX characteristic is present
-                if UART_TX_UUID.lower() not in [char.uuid.lower() for s in services for char in s.characteristics]:
-                    logger.error(f"Characteristic {UART_TX_UUID} was not found!")
-                    continue
-
-                await client.start_notify(UART_TX_UUID, notification_handler)
-                logger.info("📩 Notifications started.")
-                #logger.info("📩 Notifications started.")
-
-                while True:
-                    if client.is_connected:
-                        if led_on:
-                            pwm_red.ChangeDutyCycle(brightness_red * 100)
-                            pwm_green.ChangeDutyCycle(brightness_green * 100)
-                            await asyncio.sleep(blink_rate)
-                            pwm_red.ChangeDutyCycle(0)
-                            pwm_green.ChangeDutyCycle(0)
-                            await asyncio.sleep(blink_rate)
-                        else:
-                            pwm_red.ChangeDutyCycle(0)
-                            pwm_green.ChangeDutyCycle(0)
-                            await asyncio.sleep(0.1)
-                    else:
-                        logger.warning("⚠️ Lost connection to PicoPot.")
-                        break
+            while running and client.is_connected:
+                if led_on:
+                    pwm_red.ChangeDutyCycle(brightness_red * 100)
+                    pwm_green.ChangeDutyCycle(brightness_green * 100)
+                    await asyncio.sleep(blink_rate)
+                    pwm_red.ChangeDutyCycle(0)
+                    pwm_green.ChangeDutyCycle(0)
+                    await asyncio.sleep(blink_rate)
+                else:
+                    pwm_red.ChangeDutyCycle(0)
+                    pwm_green.ChangeDutyCycle(0)
+                    await asyncio.sleep(0.1)
 
         except Exception as e:
             logger.error(f"🔌 BLE error or disconnect: {e}")
 
-        # Cleanup before retrying
-        pwm_red.ChangeDutyCycle(0)
-        pwm_green.ChangeDutyCycle(0)
-        await asyncio.sleep(0.5)
+        finally:
+            if client and client.is_connected:
+                logger.info("Disconnecting from PicoPot...")
+                await client.disconnect()
+            client = None
+
+        if running:
+            logger.info("🔄 Reconnecting in 0.5s...")
+            await asyncio.sleep(0.5)
+
+def signal_handler(sig, frame):
+    global running
+    logger.info("🛑 Received exit signal, shutting down...")
+    running = False
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     try:
-        asyncio.run(connect_and_run())
-    except KeyboardInterrupt:
-        pass
+        asyncio.run(run())
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
     finally:
-        pwm_red.stop()
-        pwm_green.stop()
+        try:
+            if pwm_red:
+                pwm_red.stop()
+        except Exception:
+            pass
+        try:
+            if pwm_green:
+                pwm_green.stop()
+        except Exception:
+            pass
         GPIO.cleanup()
-        logger.info("🛑 Program exited.")
+        logger.info("Cleanup done, exiting.")
+        sys.exit(0)
 
