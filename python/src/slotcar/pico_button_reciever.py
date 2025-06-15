@@ -41,7 +41,7 @@ def notification_handler(sender, data):
     try:
         decoded = data.decode('utf-8')
         message = json.loads(decoded)
-        logger.info(f"Received: {message}")
+        #logger.info(f"Received: {message}")
 
         brightness_red = message.get("red", brightness_red)
         brightness_green = message.get("green", brightness_green)
@@ -50,8 +50,8 @@ def notification_handler(sender, data):
 
         # Update LEDs immediately if not blinking
         if led_on:
-            pwm_red.ChangeDutyCycle(brightness_red * 100)
-            pwm_green.ChangeDutyCycle(brightness_green * 100)
+            pwm_red.ChangeDutyCycle(brightness_red)
+            pwm_green.ChangeDutyCycle(brightness_green)
         else:
             pwm_red.ChangeDutyCycle(0)
             pwm_green.ChangeDutyCycle(0)
@@ -100,8 +100,8 @@ async def run():
 
             while running and client.is_connected:
                 if led_on:
-                    pwm_red.ChangeDutyCycle(brightness_red * 100)
-                    pwm_green.ChangeDutyCycle(brightness_green * 100)
+                    pwm_red.ChangeDutyCycle(brightness_red)
+                    pwm_green.ChangeDutyCycle(brightness_green)
                     await asyncio.sleep(blink_rate)
                     pwm_red.ChangeDutyCycle(0)
                     pwm_green.ChangeDutyCycle(0)
