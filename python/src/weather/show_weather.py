@@ -9,6 +9,10 @@ import traceback
 import json
 import logging as log
 import mariadb
+import random
+import copy
+import statistics
+import uuid
 
 from PIL import Image, ImageDraw
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
@@ -78,6 +82,12 @@ AQI_YELLOW_COLOR = graphics.Color(210, 210, 0)
 AQI_ORANGE_COLOR = graphics.Color(210, 143, 0)
 AQI_RED_COLOR = graphics.Color(180, 0, 0)
 AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
+
+# Conway
+CONWAY_COLOR = graphics.Color(255, 255, 255)
+
+# Clock
+CLOCK_COLOR = graphics.Color(170, 170, 170)
 ################## END COLORS ######################
 
 BAR_CHART_BOTTOM = 31
@@ -88,11 +98,11 @@ if TEMP_MODE == "low":
 
 CURRENT_BOTTOM = 28
 
-TICK_DUR = 0.25
+CONWAY_X_OFFSET = 68
+
+TICK_DUR = 0.042 # 0.042 = 24 fps
 READ_WEATHER_SECS = 60 * 5
 READ_LUX_SECS = 10
-
-CLOCK_COLOR = graphics.Color(170, 170, 170)
 
 MEDIUM_FONT = graphics.Font()
 SMALL_FONT = graphics.Font()
@@ -102,7 +112,7 @@ SMALL_FONT.LoadFont(WEATHER_DIR + '/fonts/4x6_mike_bigger.bdf')
 #### GLOBALS ####
 OFFSCREEN_CANVAS = MATRIX = None
 weather = daily_icons = indoor_temp = outdoor_temp = lux = None
-outdoorAqi = indoorAqi = None
+outdoorAqi = indoorAqi = world = dot_loc = None
 #################
 
 def main():
@@ -120,6 +130,7 @@ def main():
         drawWeather(tick)
         drawClock(tick)
         drawDate(tick)
+        draw_conway(tick)
         #drawAqi(tick)
 
         OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
@@ -127,6 +138,169 @@ def main():
         tick += 1
         if tick == sys.maxsize:
             tick = 0
+
+class Cell():
+    def __init__(self, color):
+        self.color = color
+        self.id = uuid.uuid4()
+
+    def __str__(self):
+        return "Cell"
+
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+class World():
+    adjacent = ((1, 1), (1, 0), (0, 1), (1, -1), (-1, 1), (-1, -1), (-1, 0), (0, -1))
+
+    def __init__(self, bounds, born, survive, seed):
+        self.cols, self.rows = bounds
+        self.world = self.get_new_matrix()
+        self.buffer = self.get_new_matrix()
+        self.born = born
+        self.survive = survive
+        self.seed = seed
+        self.age = 0
+        self.cell_cnt = 0
+        self.history = set()
+
+    def get_new_matrix(self):
+        return [[None] * self.cols for _ in range(self.rows)]
+
+    def reset(self):
+        self.history = set()
+        self.world = self.get_new_matrix()
+        self.buffer = self.get_new_matrix()
+        self.populate()
+        #self.world[1][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+        #self.world[2][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+        #self.world[3][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+    
+    def swap_buffer(self):
+        self.world = self.buffer
+        self.buffer = self.get_new_matrix()
+
+    def populate(self):
+        for r in range(len(self.world)):
+            for c in range(len(self.world[r])):
+                if random.random() <= self.seed:
+                    self.world[r][c] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+                else:
+                    self.world[r][c] = None
+
+    def gen_state(self):
+        state = []
+        for r in range(len(self.world)):
+            for c in range(len(self.world[r])):
+                if self.world[r][c]:
+                    state.append((r,c))
+        return tuple(state)
+
+    def tick(self):
+        self.age += 1
+        for r in range(len(self.world)):
+            for c in range(len(self.world[r])):
+                self.fate(r, c)
+
+        self.history.add(self.gen_state())
+        self.swap_buffer()
+
+    def fate(self, r, c):
+        is_alive = self.world[r][c]
+        local_alive_cnt = self.get_local_alive_cnt(r, c)
+
+        if is_alive:
+            if local_alive_cnt in self.survive:
+                self.buffer[r][c] = self.world[r][c]
+            else:
+                self.buffer[r][c] = None
+        else: # It was dead
+            if local_alive_cnt in self.born:
+                self.buffer[r][c] = Cell(self.get_baby_color(r,c))
+            else:
+                self.buffer[r][c] = None
+
+    # Baby's color is the mode of colors of neighbors
+    def get_baby_color(self, r, c):
+        colors = []
+        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
+        cells = filter(None, [self.world[r][c] for r, c in neighbor_locs])
+        colors = [cell.color for cell in cells]
+
+        return statistics.mode(colors)
+
+    def get_local_alive_cnt(self, r, c):
+        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
+        
+        return sum(1 if self.world[r][c] else 0 for r, c in neighbor_locs)
+        
+    def find_adjacent_with_wrapping(self, r, c):
+        result = []
+        for dr, dc in World.adjacent:
+            nr = r + dr
+            nc = c + dc
+            if nr == -1:
+                nr = self.rows - 1
+            elif nr == self.rows:
+                nr = 0
+            if nc == -1:
+                nc = self.cols - 1
+            elif nc == self.cols:
+                nc = 0
+            result.append((nr, nc))
+
+        return result
+
+    def draw(self):
+        global OFFSCREEN_CANVAS
+        l = []
+        for r in range(len(self.world)):
+            for c in range(len(self.world[r])):
+                cell = self.world[r][c]
+                if cell:
+                    x = c + CONWAY_X_OFFSET
+                    y = r
+                    OFFSCREEN_CANVAS.SetPixel(x, y, cell.color.red, cell.color.green, cell.color.blue)
+    
+    def count_living(self):
+        s = 0
+        for r in range(len(self.world)):
+            for c in range(len(self.world[r])):
+                 if self.world[r][c]:
+                    s += 1
+        return s
+
+    def __str__(self):
+        return '\n'.join(['\t'.join([str(cell) for cell in row]) for row in self.world])
+
+
+def draw_conway(tick):
+    global world
+
+    if not world:
+        world = World((64,32), {3}, {2,3}, 0.3)
+        #world = World((5,5), {3}, {2,3}, 0.3)
+        world.reset()
+
+    if should_trigger_ms(tick, 100):
+        world.tick()
+    world.draw()
+    
+    if (world.gen_state() in world.history) or should_trigger_secs(tick, 600):
+        world.reset()
+    
+def should_trigger_secs(tick, secs):
+    ticks_per_sec = 1 / TICK_DUR
+    return tick % (int(ticks_per_sec * secs)) == 0
+
+def should_trigger_ms(tick, ms):
+    ticks_per_sec = 1 / TICK_DUR
+    ticks_per_ms = ticks_per_sec / 1000
+    return tick % (int(ticks_per_ms * ms)) == 0
+
 '''
 def drawAqi(tick):
     global indoorAqi
@@ -184,13 +358,13 @@ def drawWeather(tick):
         log.error('main() exception: {}'.format(traceback.format_exc()))
 
 def updateData(tick):
-    if (tick % (READ_WEATHER_SECS * ( 1 / TICK_DUR))) == 0:
+    if should_trigger_secs(tick, READ_WEATHER_SECS):
         try:
             fetchDataThreaded()
         except Exception as e:
             log.error('fetchWeather() threaded exception: {}'.format(traceback.format_exc()))
 
-    if (tick % (READ_LUX_SECS * ( 1 / TICK_DUR))) == 0:
+    if should_trigger_secs(tick, READ_LUX_SECS):
         try:
             #adjustBrightnessThreaded()
             pass
@@ -324,6 +498,14 @@ def drawVertBars(epochs, weather, BAR_LEFT):
             graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
 
 def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
+    global dot_loc
+
+    if dot_loc == None:
+        dot_loc = 0
+    else:
+        if should_trigger_ms(tick, 100):
+            dot_loc = (dot_loc + 1) % CHART_WIDTH
+    
     for i, epoch in enumerate(epochs):
         hour = weather['hours'][epoch]
 
@@ -341,16 +523,15 @@ def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
         prev_temp_y2 = BAR_CHART_BOTTOM - prev_temp if prev_temp else None
 
         # Temperature Line
-        if i != tick % CHART_WIDTH:
-            base_temp = 80
-            low_temp = 50
-            OFFSCREEN_CANVAS.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
+        base_temp = 80
+        low_temp = 50
+        OFFSCREEN_CANVAS.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
 
-            if prev_temp:
-                drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, column, TEMP_LINE_COLOR)
+        if prev_temp:
+            drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, column, TEMP_LINE_COLOR)
 
         # Animated Dot
-        if i == tick % CHART_WIDTH:
+        if i == dot_loc:
             OFFSCREEN_CANVAS.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
 
 def drawCloudCoverLine(epochs, weather, POP_DIV, BAR_LEFT):
@@ -424,7 +605,6 @@ def createMatrix():
     options.chain_length = 6 if EXTENDED_WEATHER else 2
     options.gpio_slowdown = 2
     options.brightness = MAX_BRIGHTNESS
-    #options.hardware_mapping = 'adafruit-hat'
     options.hardware_mapping = 'adafruit-hat-pwm'
 
     return RGBMatrix(options = options)
