@@ -503,7 +503,7 @@ def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
     if dot_loc == None:
         dot_loc = 0
     else:
-        if should_trigger_ms(tick, 100):
+        if should_trigger_ms(tick, 250):
             dot_loc = (dot_loc + 1) % CHART_WIDTH
     
     for i, epoch in enumerate(epochs):
