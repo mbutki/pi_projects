@@ -5,6 +5,7 @@ python/build
 client_secret.json
 python/logs
 *.pyc
+python/src/mbutki.egg-info
 
 piWebserver/assets
 piWebserver/npm-debug.log

@@ -214,7 +214,10 @@ src/sensor_read/readLight_analog.py
 src/sensor_read/readPressure_BMP280.py
 src/sensor_read/readTemperature_MCP9808.py
 src/sensor_read/readTemperature_analog.py
+src/slotcar/pico_button_reciever.py
 src/slotcar/slotcar.py
+src/slotcar/pico_code/encoder.py
+src/slotcar/pico_code/main.py
 src/weather/dbReads.py
 src/weather/fetch_weather.py
 src/weather/fetch_weather_dark_sky.py
