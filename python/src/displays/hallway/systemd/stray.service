@@ -1,0 +1,14 @@
+[Unit]
+Description="play stray robot faces"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hallway/mp4-player.py 7 /home/mbutki/pi_projects/python/src/displays/hallway/stray
+User=mbutki
+Group=mbutki
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+[Install]
+WantedBy=multi-user.target

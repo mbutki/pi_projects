@@ -8,7 +8,7 @@ import json
 
 MPV_SOCKET = "/tmp/mpv-socket"
 
-def get_gif_files(directory):
+def get_mp4_files(directory):
     return [os.path.join(directory, f) for f in os.listdir(directory)
             if f.lower().endswith('.mp4') and os.path.isfile(os.path.join(directory, f))]
 
@@ -26,7 +26,7 @@ def start_mpv():
         "mpv",
         "--idle=yes",
         "--fs",
-        "--loop-file=inf",
+        "--loop-file=inf",   # 🔁 Loop video internally
         "--no-terminal",
         "--really-quiet",
         "--input-ipc-server=" + MPV_SOCKET
@@ -43,41 +43,54 @@ def start_mpv():
         time.sleep(0.1)
     raise RuntimeError("mpv socket did not become available.")
 
-def play_gif(file_path, duration):
+def play_mp4(file_path, duration):
     send_command_to_mpv({"command": ["loadfile", file_path, "replace"]})
     time.sleep(duration)
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python play_gifs.py <directory_with_gifs> <seconds_per_gif>")
+        print("Usage: python mp4-player.py <seconds_per_video> <parent_directory>")
         sys.exit(1)
 
-    gif_dir = sys.argv[1]
     try:
-        loop_time = int(sys.argv[2])
+        loop_time = int(sys.argv[1])
         if loop_time <= 0:
             raise ValueError
     except ValueError:
-        print("Error: <seconds_per_gif> must be a positive integer.")
+        print("Error: <seconds_per_video> must be a positive integer.")
         sys.exit(1)
 
-    if not os.path.isdir(gif_dir):
-        print(f"Error: '{gif_dir}' is not a valid directory.")
+    parent_dir = sys.argv[2]
+    if not os.path.isdir(parent_dir):
+        print(f"Error: '{parent_dir}' is not a valid directory.")
         sys.exit(1)
 
-    gif_files = get_gif_files(gif_dir)
-    if not gif_files:
-        print(f"No GIFs found in directory: {gif_dir}")
+    subdirs = sorted([
+        os.path.join(parent_dir, d)
+        for d in os.listdir(parent_dir)
+        if os.path.isdir(os.path.join(parent_dir, d))
+    ])
+
+    if not subdirs:
+        print(f"No subdirectories found in '{parent_dir}'.")
         sys.exit(1)
 
-    print(f"Starting fullscreen gif playback: {loop_time} seconds per GIF...")
+    print(f"🎬 Starting playback from subdirectories in '{parent_dir}'...")
 
     start_mpv()
 
     while True:
-        random.shuffle(gif_files)
-        for gif in gif_files:
-            play_gif(gif, loop_time)
+        for subdir in subdirs:
+            mp4_files = get_mp4_files(subdir)
+            if not mp4_files:
+                print(f"⚠️  No mp4 files found in {subdir}")
+                continue
+
+            print(f"\n▶ Now playing from: {subdir}")
+            random.shuffle(mp4_files)
+            for video in mp4_files:
+                print(f"🎞️  {os.path.basename(video)}")
+                play_mp4(video, loop_time)
 
 if __name__ == "__main__":
     main()
