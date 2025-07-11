@@ -18,6 +18,8 @@ dependencies = [
     "adafruit-circuitpython-ht16k33>=4.6.12",
     "smbus2>=0.5.0",
     "bleak>=0.22.3",
+    "gpiozero>=2.0.1",
+    "adafruit-circuitpython-mcp9808>=3.3.28",
     "paho-mqtt>=2.1.0",
 ]
 
