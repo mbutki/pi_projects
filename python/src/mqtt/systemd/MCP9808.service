@@ -1,0 +1,10 @@
+[Unit]
+Description="create bridge between mqtt and mysql"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/mqtt/MCP9808.py
+
+[Install]
+WantedBy=multi-user.target
