@@ -9,6 +9,7 @@ User=mbutki
 Group=mbutki
 Environment=DISPLAY=:0
 Environment=XDG_RUNTIME_DIR=/run/user/1000
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

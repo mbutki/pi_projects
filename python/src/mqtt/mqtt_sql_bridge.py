@@ -159,9 +159,9 @@ def delete_old_sensor_data():
         """)
         conn.commit()
         conn.close()
-        print("🧹 Old sensor data deleted.")
+        print("Old sensor data deleted.")
     except mariadb.Error as e:
-        print("❌ Error deleting old sensor data:", e)
+        print("Error deleting old sensor data:", e)
 
 def periodic_cleanup():
     while True:

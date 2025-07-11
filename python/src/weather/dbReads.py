@@ -51,7 +51,7 @@ def fetchOutdoorTemps(cur, args):
     value = -999
     
     if args.v:
-        print('Fetching indoor temp...')
+        print('Fetching outdoor temp...')
     try:
         res = cur.execute("SELECT time, location, value FROM temp_now WHERE location = 'outdoor'")
         if args.v:
