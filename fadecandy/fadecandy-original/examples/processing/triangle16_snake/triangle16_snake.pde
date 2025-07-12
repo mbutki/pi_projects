@@ -1,5 +1,5 @@
 // Parameters!
-int stepsPerSecond = 30;
+int stepsPerSecond = 10; //30;
 float maxEnergy = 20;
 float minEnergy = 4;
 float minSaturation = 10;

@@ -1,0 +1,17 @@
+[Unit]
+Description="Run processing script for triangle display"
+Wants=network-online.target
+Requires=fcserver.service
+After=network-online.target fcserver.service
+StartLimitInterval=300
+StartLimitBurst=5
+
+[Service]
+User=mbutki
+ExecStart=/usr/bin/xvfb-run /snap/bin/processing cli --sketch=/home/mbutki/pi_projects/fadecandy/fadecandy-original/examples/processing/triangle16_snake --run
+Restart=always
+RestartSec=60
+Environment=DISPLAY=:99
+
+[Install]
+WantedBy=multi-user.target

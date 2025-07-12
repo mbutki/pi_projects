@@ -1,0 +1,10 @@
+[Unit]
+Description="Run fadecandy server for triangle display"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/mbutki/pi_projects/fadecandy/working/fcserver /home/mbutki/pi_projects/fadecandy/working/fcserver.json
+
+[Install]
+WantedBy=multi-user.target
