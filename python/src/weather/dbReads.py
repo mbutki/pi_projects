@@ -1,4 +1,5 @@
 import json
+import mariadb
 
 def fetchLux(db, MAX_BRIGHTNESS):
     #if args.v:
@@ -37,7 +38,7 @@ def fetchIndoorTemps(cur, args):
     if args.v:
         print('Fetching indoor temp...')
     try:
-        res = cur.execute("SELECT time, location, value FROM temp_now WHERE location = 'kitchen'")
+        res = cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'living_room'")
         if args.v:
             print('SELECT Executed for indoor temp')
     except mariadb.Error as e:
@@ -53,7 +54,7 @@ def fetchOutdoorTemps(cur, args):
     if args.v:
         print('Fetching outdoor temp...')
     try:
-        res = cur.execute("SELECT time, location, value FROM temp_now WHERE location = 'outdoor'")
+        res = cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'outside'")
         if args.v:
             print('SELECT Executed for outdoor temp')
     except mariadb.Error as e:

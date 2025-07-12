@@ -59,7 +59,10 @@ WEATHER_DIR = PI_DIR + '/python/src/weather'
 # Number Colors
 DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
 POP_COLOR = graphics.Color(40, 110, 206)
-CURRENT_TEMP_COLOR = graphics.Color(11, 164, 11)
+WEEKEND_LINE_COLOR = graphics.Color(170, 170, 170)
+#INDOOR_TEMP_COLOR = graphics.Color(181, 101, 124)
+INDOOR_TEMP_COLOR = graphics.Color(168, 45, 164)
+OUTDOOR_TEMP_COLOR = graphics.Color(50, 166, 166)
 
 # Plot Bar Lines
 DAYLIGHT_BAR_COLOR = graphics.Color(30, 30, 30)
@@ -82,9 +85,6 @@ AQI_YELLOW_COLOR = graphics.Color(210, 210, 0)
 AQI_ORANGE_COLOR = graphics.Color(210, 143, 0)
 AQI_RED_COLOR = graphics.Color(180, 0, 0)
 AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
-
-# Conway
-CONWAY_COLOR = graphics.Color(255, 255, 255)
 
 # Clock
 CLOCK_COLOR = graphics.Color(170, 170, 170)
@@ -187,7 +187,7 @@ class World():
         for r in range(len(self.world)):
             for c in range(len(self.world[r])):
                 if random.random() <= self.seed:
-                    self.world[r][c] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+                    self.world[r][c] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
                 else:
                     self.world[r][c] = None
 
@@ -229,8 +229,13 @@ class World():
         neighbor_locs = self.find_adjacent_with_wrapping(r, c)
         cells = filter(None, [self.world[r][c] for r, c in neighbor_locs])
         colors = [cell.color for cell in cells]
-
-        return statistics.mode(colors)
+        result = statistics.mode(colors)
+        #result = (
+        #    statistics.mean(colors[0]),
+        #    statistics.mean(colors[1]),
+        #    statistics.mean(colors[2])
+        #)
+        return result
 
     def get_local_alive_cnt(self, r, c):
         neighbor_locs = self.find_adjacent_with_wrapping(r, c)
@@ -263,7 +268,7 @@ class World():
                 if cell:
                     x = c + CONWAY_X_OFFSET
                     y = r
-                    OFFSCREEN_CANVAS.SetPixel(x, y, cell.color.red, cell.color.green, cell.color.blue)
+                    OFFSCREEN_CANVAS.SetPixel(x, y, cell.color[0], cell.color[1], cell.color[2])
     
     def count_living(self):
         s = 0
@@ -282,7 +287,8 @@ def draw_conway(tick):
 
     if not world:
         world = World((64,32), {3}, {2,3}, 0.3)
-        #world = World((5,5), {3}, {2,3}, 0.3)
+        #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
+        #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
         world.reset()
 
     if should_trigger_ms(tick, 100):
@@ -444,9 +450,9 @@ def drawDailyText(weather):
         graphics.DrawText(OFFSCREEN_CANVAS, font, offset, y, display_color, number_str)
 
         if dt.weekday() == 5 or dt.weekday() == 6:
-            graphics.DrawLine(OFFSCREEN_CANVAS, offset-2, 12, offset-2 , 15, CURRENT_TEMP_COLOR)
+            graphics.DrawLine(OFFSCREEN_CANVAS, offset-2, 12, offset-2 , 15, WEEKEND_LINE_COLOR)
         if dt.weekday() == 0:
-            graphics.DrawLine(OFFSCREEN_CANVAS, offset-3, 12, offset-3 , 15, CURRENT_TEMP_COLOR)
+            graphics.DrawLine(OFFSCREEN_CANVAS, offset-3, 12, offset-3 , 15, WEEKEND_LINE_COLOR)
 
 def drawCurrent(api_current, outdoor):
     if outdoor < 100:
@@ -454,14 +460,14 @@ def drawCurrent(api_current, outdoor):
     else:
         font = SMALL_FONT
     temp = str(int(round(outdoor))) if outdoor != -999 else str(int(round(api_current['temp'])))
-    graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, temp)
+    graphics.DrawText(OFFSCREEN_CANVAS, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
 
 def drawIndoor(current):
     if current < 100:
         font = MEDIUM_FONT
     else:
         font = SMALL_FONT
-    graphics.DrawText(OFFSCREEN_CANVAS, font, 55, CURRENT_BOTTOM, CURRENT_TEMP_COLOR, str(int(round(current))))
+    graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(current))))
 
 def drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV):
     for i, epoch in enumerate(epochs):
