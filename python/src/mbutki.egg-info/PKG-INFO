@@ -17,3 +17,6 @@ Requires-Dist: gpiozero>=2.0.1
 Requires-Dist: adafruit-circuitpython-ht16k33>=4.6.12
 Requires-Dist: smbus2>=0.5.0
 Requires-Dist: bleak>=0.22.3
+Requires-Dist: gpiozero>=2.0.1
+Requires-Dist: adafruit-circuitpython-mcp9808>=3.3.28
+Requires-Dist: paho-mqtt>=2.1.0

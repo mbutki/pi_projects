@@ -28,36 +28,41 @@ sensor = adafruit_mcp9808.MCP9808(i2c_bus)
 # Initialize MQTT
 client = mqtt.Client(client_id=MQTT_CLIENT_ID)
 client.connect(MQTT_BROKER)
+client.loop_start()
 
 def main():
     readings = []
     last_publish_time = time.monotonic()
 
-    while True:
-        loop_start = time.monotonic()
+    try:
+        while True:
+            loop_start = time.monotonic()
 
-        temp_c = sensor.temperature
-        readings.append(temp_c)
+            temp_c = sensor.temperature
+            readings.append(temp_c)
 
-        now = time.monotonic()
-        if now - last_publish_time >= PUBLISH_INTERVAL_SEC:
-            if readings:
-                median_temp_c = median(readings)
-                temp_f = median_temp_c * 9 / 5 + 32
-                payload = {
-                    "timestamp": int(time.time()),
-                    "location": LOCATION,
-                    "temp": round(temp_f, 2)
-                }
-                client.publish(MQTT_TOPIC, json.dumps(payload))
-                print(f"Published: {json.dumps(payload)}")
-                readings.clear()
-            last_publish_time = now
+            now = time.monotonic()
+            if now - last_publish_time >= PUBLISH_INTERVAL_SEC:
+                if readings:
+                    median_temp_c = median(readings)
+                    temp_f = median_temp_c * 9 / 5 + 32
+                    payload = {
+                        "timestamp": int(time.time()),
+                        "location": LOCATION,
+                        "temp": round(temp_f, 2)
+                    }
+                    client.publish(MQTT_TOPIC, json.dumps(payload))
+                    print(f"Published: {json.dumps(payload)}")
+                    readings.clear()
+                last_publish_time = now
 
-        elapsed = time.monotonic() - loop_start
-        sleep_time = SAMPLE_INTERVAL_SEC - elapsed
-        if sleep_time > 0:
-            time.sleep(sleep_time)
+            elapsed = time.monotonic() - loop_start
+            sleep_time = SAMPLE_INTERVAL_SEC - elapsed
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+    except KeyboardInterrupt:
+        client.loop_stop()
+        client.disconnect()
 
 if __name__ == "__main__":
     try:

@@ -1,6 +1,7 @@
 backup
 db_test
 displays
+mqtt
 rfm69
 scripts
 security
