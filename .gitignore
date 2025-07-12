@@ -3,26 +3,6 @@ pi.config
 python/src/weather/matrix.config
 python/build
 client_secret.json
-python/logs
+python/src/logs
 *.pyc
 python/src/mbutki.egg-info
-
-piWebserver/assets
-piWebserver/npm-debug.log
-piWebserver/node_modules
-
-# compiled output
-piFrontend/pi-app/dist
-piFrontend/pi-app/tmp
-
-# dependencies
-piFrontend/pi-app/node_modules
-piFrontend/pi-app/bower_components
-
-# misc
-piFrontend/pi-app/.sass-cache
-piFrontend/pi-app/connect.lock
-piFrontend/pi-app/coverage/*
-piFrontend/pi-app/libpeerconnection.log
-piFrontend/pi-app/npm-debug.log*
-piFrontend/pi-app/testem.log
