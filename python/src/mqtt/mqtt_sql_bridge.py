@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 from statistics import median
 import argparse
 import threading
+from collections import defaultdict
 
 # --- Configuration ---
 DB_CONFIG = {
@@ -88,33 +89,49 @@ def compute_and_store_median():
     if not data_buffer:
         return
 
-    fields = ["temp", "humidity", "pressure", "lux", "aqi"]
-    median_values = {}
-    for field in fields:
-        values = [d[field] for d in data_buffer if d[field] is not None]
-        median_values[field] = median(values) if values else None
-
-    start_ts = int(data_buffer[0]["timestamp"])
-    end_ts = int(data_buffer[-1]["timestamp"])
-    location = data_buffer[0]["location"]
+    # Group data by location
+    location_buffers = defaultdict(list)
+    for entry in data_buffer:
+        loc = entry.get("location")
+        if loc:
+            location_buffers[loc].append(entry)
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO sensor_5min_median (start_ts, end_ts, location, temp, humidity, pressure, lux, aqi)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            start_ts, end_ts, location,
-            median_values["temp"], median_values["humidity"],
-            median_values["pressure"], median_values["lux"], median_values["aqi"]
-        ))
+
+        for location, entries in location_buffers.items():
+            if not entries:
+                continue
+
+            fields = ["temp", "humidity", "pressure", "lux", "aqi"]
+            median_values = {}
+            for field in fields:
+                values = [d[field] for d in entries if field in d and d[field] is not None]
+                median_values[field] = median(values) if values else None
+
+            start_ts = int(entries[0]["timestamp"])
+            end_ts = int(entries[-1]["timestamp"])
+
+            cursor.execute("""
+                INSERT INTO sensor_5min_median (start_ts, end_ts, location, temp, humidity, pressure, lux, aqi)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                start_ts, end_ts, location,
+                median_values["temp"], median_values["humidity"],
+                median_values["pressure"], median_values["lux"], median_values["aqi"]
+            ))
+
+            if args.v:
+                print(f"✅  Stored 5min median for {location} from {start_ts} to {end_ts}")
+
         conn.commit()
         conn.close()
-        if args.v:
-            print(f"✅ Stored 5min median for {location} from {start_ts} to {end_ts}")
     except mariadb.Error as e:
         print("DB Insert Error:", e)
+
+    # Clear buffer after storing
+    data_buffer.clear()
 
 # --- MQTT Callbacks ---
 def on_connect(client, userdata, flags, rc):
@@ -123,30 +140,30 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     global buffer_start, data_buffer
-    try:
-        data = json.loads(msg.payload)
-        if args.v:
-            print("Received:", data)
+    #try:
+    data = json.loads(msg.payload)
+    if args.v:
+        print("Received:", data)
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        insert_latest(cursor, data)
-        conn.commit()
-        conn.close()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    insert_latest(cursor, data)
+    conn.commit()
+    conn.close()
 
-        ts = int(data["timestamp"])
-        if buffer_start is None:
-            buffer_start = ts
+    ts = int(data["timestamp"])
+    if buffer_start is None:
+        buffer_start = ts
 
-        if ts - buffer_start < BUFFER_DURATION:
-            data_buffer.append(data)
-        else:
-            compute_and_store_median()
-            buffer_start = ts
-            data_buffer = [data]
+    if ts - buffer_start < BUFFER_DURATION:
+        data_buffer.append(data)
+    else:
+        compute_and_store_median()
+        buffer_start = ts
+        data_buffer = [data]
 
-    except Exception as e:
-        print("Error processing message:", e)
+    #except Exception as e:
+    #    print("Error processing message:", e)
 
 def delete_old_sensor_data():
     try:

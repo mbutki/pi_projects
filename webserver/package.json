@@ -1,0 +1,17 @@
+{
+  "name": "sensor-webserver",
+  "version": "1.0.0",
+  "description": "Express server to serve sensor dashboard frontend and API",
+  "main": "server.js",
+  "scripts": {
+    "start": "sudo node server.js"
+  },
+  "dependencies": {
+    "basic-auth": "^2.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "mariadb": "^3.1.0",
+    "ws": "^8.18.3"
+  }
+}
