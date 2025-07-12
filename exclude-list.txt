@@ -1,0 +1,6 @@
+webserver/node_modules/
+python/.venv/
+.git/
+pi.config
+db.config
+python/src/weather/matrix.config

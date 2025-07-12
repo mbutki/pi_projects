@@ -22,27 +22,44 @@ def send_command_to_mpv(command):
         print(f"Error sending command to mpv: {e}")
 
 def start_mpv():
-    subprocess.Popen([
+	# Remove any stale socket
+    if os.path.exists(MPV_SOCKET):
+        try:
+            os.remove(MPV_SOCKET)
+        except Exception as e:
+            print(f"Error removing old socket: {e}")
+            sys.exit(1)
+
+    mpv_proc = subprocess.Popen([
         "mpv",
         "--idle=yes",
         "--fs",
         "--loop-file=inf",
         "--no-terminal",
-        "--really-quiet",
-        "--input-ipc-server=" + MPV_SOCKET,
-        "--video-rotate=90"
-    ])
+        #"--really-quiet",
+        f"--input-ipc-server={MPV_SOCKET}",
+        "--video-rotate=270"
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Wait for socket to become available
-    for _ in range(20):
+	# Wait for the socket to become available
+    for i in range(300):  # wait up to 30 seconds
         if os.path.exists(MPV_SOCKET):
             try:
-                socket.socket(socket.AF_UNIX, socket.SOCK_STREAM).connect(MPV_SOCKET)
-                return
+                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                sock.connect(MPV_SOCKET)
+                sock.close()
+                return mpv_proc
             except:
                 pass
         time.sleep(0.1)
-    raise RuntimeError("mpv socket did not become available.")
+    # Read and decode stderr
+    stderr_output = mpv_proc.stderr.read().decode()
+    print("mpv stderr output:")
+    print(stderr_output)
+
+    print("Error: mpv socket did not become available.")
+    mpv_proc.terminate()
+    sys.exit(1)
 
 def play_gif(file_path, duration):
     send_command_to_mpv({"command": ["loadfile", file_path, "replace"]})
@@ -73,12 +90,21 @@ def main():
 
     print(f"Starting fullscreen gif playback: {loop_time} seconds per GIF...")
 
-    start_mpv()
+    mpv_proc = start_mpv()
 
-    while True:
-        random.shuffle(gif_files)
-        for gif in gif_files:
-            play_gif(gif, loop_time)
+    try:
+        while True:
+            random.shuffle(gif_files)
+            for gif in gif_files:
+                play_gif(gif, loop_time)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user. Exiting...")
+    finally:
+        print("Terminating mpv...")
+        mpv_proc.terminate()
+        mpv_proc.wait()
+        if os.path.exists(MPV_SOCKET):
+            os.remove(MPV_SOCKET)
 
 if __name__ == "__main__":
     main()
