@@ -4,3 +4,6 @@ python/.venv/
 pi.config
 db.config
 python/src/weather/matrix.config
+python/src/displays/eink_weather/images/
+python/logs
+python/src/weather/__pycache__

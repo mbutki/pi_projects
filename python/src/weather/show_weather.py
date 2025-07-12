@@ -20,8 +20,6 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from dbReads import *
 from iconUtils import *
 
-print('\n'.join(sys.path))
-
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
