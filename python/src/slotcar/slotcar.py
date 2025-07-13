@@ -440,7 +440,8 @@ async def run():
             state = RaceState.MENU
             SOUNDS['CONNECTING'].stop()
             SOUNDS['CONNECTED'].play()
-            svcs = await client.get_services()
+
+            svcs = client.services
 
             # Verify characteristic exists
             tx_char = None
