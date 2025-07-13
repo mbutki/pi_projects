@@ -21,6 +21,7 @@ dependencies = [
     "gpiozero>=2.0.1",
     "adafruit-circuitpython-mcp9808>=3.3.28",
     "paho-mqtt>=2.1.0",
+    "termcolor>=3.1.0",
 ]
 
 [dependency-groups]

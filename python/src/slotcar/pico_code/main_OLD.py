@@ -95,32 +95,32 @@ button = machine.Pin(6, machine.Pin.IN, machine.Pin.PULL_UP)
 pot = machine.ADC(26)
 
 # === Shared State ===
-button_delta = 0
+led_enabled = True
 last_button_state = button.value()
-red_delta = 0
-green_delta = 0
+red_value = 0
+green_value = 0
 ble_uart = BLEUART()
 
 # === Encoder Callbacks ===
 def red_callback(val, delta):
-    global red_delta
-    red_delta = delta
-    print("🔴 Red encoder changed, delta:", delta)
+    global red_value
+    red_value = val
+    print("🔴 Red encoder changed:", val, "delta:", delta)
 
 def green_callback(val, delta):
-    global green_delta
-    green_delta = delta
-    print("🟢 Green encoder changed, delta:", delta)
+    global green_value
+    green_value = val
+    print("🟢 Green encoder changed:", val, "delta:", delta)
 
-# === Setup Encoders ===
-Encoder(encoder_red_pin_a, encoder_red_pin_b, callback=red_callback, div=1)
-Encoder(encoder_green_pin_a, encoder_green_pin_b, callback=green_callback, div=1)
+# === Setup Encoders with limits ===
+Encoder(encoder_red_pin_a, encoder_red_pin_b, callback=red_callback, vmin=0, vmax=100, div=1)
+Encoder(encoder_green_pin_a, encoder_green_pin_b, callback=green_callback, vmin=0, vmax=100, div=1)
 
-def read_select():
+def read_blink_rate():
     return pot.read_u16() / 65535
 
 async def main_loop():
-    global last_button_state
+    global last_button_state, led_enabled
 
     last_no_connection_check = time.ticks_ms()
 
@@ -128,26 +128,26 @@ async def main_loop():
         # Button toggle
         current_button = button.value()
         if last_button_state == 1 and current_button == 0:
-            button_delta += 1
-            print("🔘 Button pressed")
+            led_enabled = not led_enabled
+            print("🔘 Button pressed, led_enabled =", led_enabled)
         last_button_state = current_button
 
         # Prepare data
         data = {
-            "red_delta": red_delta,       # Send 0 to 10 directly
-            "green_delta": green_delta,
-            "select": read_select(),
-            "button_delta": button_delta
+            "red": red_value,       # Send 0 to 10 directly
+            "green": green_value,
+            "blink": read_blink_rate(),
+            "enabled": led_enabled
         }
 
         json_data = ujson.dumps(data) + "\n"
 
         if ble_uart.is_connected():
             ble_uart.send(json_data)
-            print("📤 Sent:", json_data.strip())
+            #print("📤 Sent:", json_data.strip())
             last_no_connection_check = time.ticks_ms()
         else:
-            print("⏳ Not connected, waiting for central...")
+            #print("⏳ Not connected, waiting for central...")
             if time.ticks_diff(time.ticks_ms(), last_no_connection_check) > ble_uart._advertise_timeout_s * 1000:
                 print("🔄 No connection for a while, restarting advertising...")
                 ble_uart._advertise()

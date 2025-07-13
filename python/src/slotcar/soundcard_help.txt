@@ -1,3 +1,13 @@
+SHOW ALL SOUNDS CARDS
+cat /proc/asound/cards
+aplay -l 
+
+CHANGE VOLUME
+alsamixer
+
+SET DEFAULT SOUNDCARD NUMBER
+sudo vim /etc/asound.conf
+
 OPTION ONE (should work)
 You can restart the entire USB controller. After that the speaker will be seen, as device #0.
 
