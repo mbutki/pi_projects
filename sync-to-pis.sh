@@ -3,7 +3,7 @@
 DEST_PATH="/home/mbutki/pi_projects/"
 SRC_PATH="/home/mbutki/pi_projects/"
 
-PI_HOSTS=("pi-desk.local" "pi-weather.local" "pi-hyper.local" "pi-triangle.local" "pi-kateeink.local" "pi-quinneink")
+PI_HOSTS=("pi-desk.local" "pi-weather.local" "pi-hyper.local" "pi-triangle.local" "pi-kateeink.local" "pi-quinneink" "pi-slotcar.local")
 
 for HOST in "${PI_HOSTS[@]}"; do
     echo "Syncing to $HOST..."
