@@ -1,0 +1,13 @@
+[Unit]
+Description="start pi webserver"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=yarn start
+User=mbutki
+Group=mbutki
+WorkingDirectory=/home/mbutki/pi_projects/webserver
+
+[Install]
+WantedBy=multi-user.target
