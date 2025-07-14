@@ -1,12 +1,13 @@
+// secrets.js
 module.exports = {
-  db: {
-    host: 'pi-desk',
-    user: 'mbutki',
-    password: 'example',
-    database: 'sensor_data',
+  DB_HOST: 'pi-desk',
+  DB_USER: 'example',
+  DB_PASSWORD: 'example',
+  DB_NAME: 'example',
+
+  // Basic auth users: username: password pairs
+  AUTH_USERS: {
+    'example': 'example',
+    'anotheruser': 'anotherpassword',
   },
-  auth: {
-    username: 'your_username',
-    password: 'your_password',
-  }
 };

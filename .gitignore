@@ -1,8 +1,13 @@
+*.pyc
+client_secret.json
+
 db.config
 pi.config
-python/src/weather/matrix.config
+
 python/build
-client_secret.json
 python/src/logs
-*.pyc
 python/src/mbutki.egg-info
+
+python/src/weather/matrix.config
+
+webserver/secrets.js
