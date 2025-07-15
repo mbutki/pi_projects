@@ -56,11 +56,10 @@ WEATHER_DIR = PI_DIR + '/python/src/weather'
 ###################### COLORS ######################
 # Number Colors
 DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
+WEEKEND_LINE_COLOR = graphics.Color(170, 100, 40)
 POP_COLOR = graphics.Color(40, 110, 206)
-WEEKEND_LINE_COLOR = graphics.Color(170, 170, 170)
-#INDOOR_TEMP_COLOR = graphics.Color(181, 101, 124)
-INDOOR_TEMP_COLOR = graphics.Color(168, 45, 164)
-OUTDOOR_TEMP_COLOR = graphics.Color(50, 166, 166)
+INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
+OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)
 
 # Plot Bar Lines
 DAYLIGHT_BAR_COLOR = graphics.Color(30, 30, 30)
@@ -228,11 +227,6 @@ class World():
         cells = filter(None, [self.world[r][c] for r, c in neighbor_locs])
         colors = [cell.color for cell in cells]
         result = statistics.mode(colors)
-        #result = (
-        #    statistics.mean(colors[0]),
-        #    statistics.mean(colors[1]),
-        #    statistics.mean(colors[2])
-        #)
         return result
 
     def get_local_alive_cnt(self, r, c):
@@ -279,7 +273,6 @@ class World():
     def __str__(self):
         return '\n'.join(['\t'.join([str(cell) for cell in row]) for row in self.world])
 
-
 def draw_conway(tick):
     global world
 
@@ -305,20 +298,6 @@ def should_trigger_ms(tick, ms):
     ticks_per_ms = ticks_per_sec / 1000
     return tick % (int(ticks_per_ms * ms)) == 0
 
-'''
-def drawAqi(tick):
-    global indoorAqi
-    global outdoorAqi
-    if tick == 0 or (tick % (READ_WEATHER_SECS * ( 1 / TICK_DUR))) == 0:
-        client = MongoClient(db_config['host'])
-        db = client.piData
-        outdoorAqi = fetchOutdoorAqi(db)
-        indoorAqi = fetchIndoorAqi(db)
-        client.close()
-
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 13, aqiColor(outdoorAqi), 'O AQI:' + str(outdoorAqi))
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, 64+8, 25, aqiColor(indoorAqi), 'I AQI:' + str(indoorAqi))
-'''
 def aqiColor(aqi):
     color = None
     if aqi < 50:
@@ -351,11 +330,11 @@ def drawWeather(tick):
         drawDailyIcons(daily_icons, new_frame, tick, weather)
         new_frame = new_frame.convert('RGB')
         OFFSCREEN_CANVAS.SetImage(new_frame, 0, 0)
-
-        drawDailyText(weather)
+        
         drawCurrent(weather['current'], outdoor_temp)
         drawIndoor(indoor_temp)
         drawGraph(weather, tick)
+        drawDailyText(weather)
     except Exception as e:
         if args.v:
             print(('main() exception: {}'.format(traceback.format_exc())))
@@ -418,39 +397,21 @@ def drawDailyText(weather):
         else:
             offset = 1
 
-        display_num = 0
-        display_color = None
-        if day['pop'] == 100 and PERFER_RAIN_POP:
-            display_color = POP_COLOR
-            display_num = day['pop']
-            font = SMALL_FONT
-        elif day['pop'] > 20 and PERFER_RAIN_POP:
-            display_color = POP_COLOR
-            display_num = day['pop']
-            font = MEDIUM_FONT
-        else:
-            display_color = DAY_TEMP_COLOR
-            display_num = day['high']
-            font = MEDIUM_FONT
-        
-        number_str = str(display_num)
-
+        number_str = str(day['high'])
         if len(number_str) == 1:
             offset += 0
         elif len(number_str) == 2:
             offset += 0
         elif len(number_str) == 3:
             offset -= 1
-            
+        
+        font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
+        display_color = DAY_TEMP_COLOR
         y = 6+9+2
-        if display_num >= 100:
-            font = SMALL_FONT
         graphics.DrawText(OFFSCREEN_CANVAS, font, offset, y, display_color, number_str)
 
-        if dt.weekday() == 5 or dt.weekday() == 6:
-            graphics.DrawLine(OFFSCREEN_CANVAS, offset-2, 12, offset-2 , 15, WEEKEND_LINE_COLOR)
-        if dt.weekday() == 0:
-            graphics.DrawLine(OFFSCREEN_CANVAS, offset-3, 12, offset-3 , 15, WEEKEND_LINE_COLOR)
+        if dt.weekday() in {5, 6}:
+            graphics.DrawLine(OFFSCREEN_CANVAS, offset-1, y, offset+9 , y, WEEKEND_LINE_COLOR)
 
 def drawCurrent(api_current, outdoor):
     if outdoor < 100:
