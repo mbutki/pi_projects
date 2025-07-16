@@ -1,0 +1,38 @@
+[Unit]
+Description=1041uuu GIF Player Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hyper/play-gifs.py /home/mbutki/pi_projects/python/src/displays/hyper/1041uuu 600 0
+WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/hyper
+User=mbutki
+Group=mbutki
+
+# Graceful shutdown settings
+TimeoutStopSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gif-player
+
+# Security and resource limits
+PrivateTmp=true
+NoNewPrivileges=true
+LimitNOFILE=1024
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=multi-user.target
