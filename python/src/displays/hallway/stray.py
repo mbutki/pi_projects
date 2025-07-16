@@ -158,12 +158,16 @@ class GifPlayerService:
         logger.info("GIF Player Service starting...")
         
         if not os.path.isdir(self.gif_dir):
-            logger.error(f"Error: '{self.gif_dir}' is not a valid directory.")
+            print(f"Error: '{self.gif_dir}' is not a valid directory.")
             sys.exit(1)
 
-        gif_files = self.get_gif_files(self.gif_dir)
-        if not gif_files:
-            logger.error(f"No GIFs found in directory: {self.gif_dir}")
+        subdirs = sorted([
+            os.path.join((self.gif_dir), d)
+            for d in os.listdir(self.gif_dir)
+            if os.path.isdir(os.path.join(self.gif_dir, d))])
+
+        if not subdirs:
+            print(f"No subdirectories found in '{self.gif_dir}'.")
             sys.exit(1)
 
         logger.info(f"Starting fullscreen gif playback: {self.loop_time} seconds per GIF...")
@@ -174,12 +178,29 @@ class GifPlayerService:
                 return  # mpv failed to start or we got shutdown signal
             
             while self.running:
+                '''
                 random.shuffle(gif_files)
                 for gif in gif_files:
                     if not self.running:
                         break
                     logger.info(f"Playing: {os.path.basename(gif)}")
                     self.play_gif(gif, self.loop_time)
+                '''
+                for subdir in subdirs:
+                    if not self.running:
+                        break
+                    mp4_files = self.get_gif_files(subdir)
+                    if not mp4_files:
+                        print(f"⚠️  No mp4 files found in {subdir}")
+                        continue
+
+                    print(f"\n▶ Now playing from: {subdir}")
+                    random.shuffle(mp4_files)
+                    for video in mp4_files:
+                        print(f"🎞️  {os.path.basename(video)}")
+                        self.play_gif(video, self.loop_time)
+                if not self.running:
+                    break
                     
         except Exception as e:
             logger.error(f"Error in main loop: {e}")

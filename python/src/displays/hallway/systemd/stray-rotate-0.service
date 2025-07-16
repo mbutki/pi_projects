@@ -1,12 +1,12 @@
 [Unit]
-Description=1041uuu GIF Player Service
+Description=Stray mp4 Player Service
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hyper/play-gifs.py /home/mbutki/pi_projects/python/src/displays/hyper/1041uuu/horizontal 600 0
-WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/hyper
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hallway/stray.py /home/mbutki/pi_projects/python/src/displays/hallway/stray 7 0
+WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/hallway
 User=mbutki
 Group=mbutki
 
