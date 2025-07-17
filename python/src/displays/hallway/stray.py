@@ -101,7 +101,13 @@ class GifPlayerService:
             #"--really-quiet",
             f"--input-ipc-server={MPV_SOCKET}",
             f"--video-rotate={self.rotation}",
-            '--msg-level=all=trace'
+            '--msg-level=all=trace',
+            '-no-config',
+            '-dither=no',
+            '-sigmoid-upscaling=no',
+            '-scale=nearest',
+            '-cscale=nearest',
+            '-dscale=nearest'
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info(f"Started mpv with command: {' '.join(mpv_proc.args)}")
 

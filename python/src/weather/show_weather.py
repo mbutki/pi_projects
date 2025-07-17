@@ -56,6 +56,7 @@ WEATHER_DIR = PI_DIR + '/python/src/weather'
 ###################### COLORS ######################
 # Number Colors
 DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
+WEEKEND_TEMP_COLOR = graphics.Color(160, 90, 35)
 WEEKEND_LINE_COLOR = graphics.Color(170, 100, 40)
 POP_COLOR = graphics.Color(40, 110, 206)
 INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
@@ -406,12 +407,12 @@ def drawDailyText(weather):
             offset -= 1
         
         font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
-        display_color = DAY_TEMP_COLOR
+        display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
         y = 6+9+2
         graphics.DrawText(OFFSCREEN_CANVAS, font, offset, y, display_color, number_str)
 
-        if dt.weekday() in {5, 6}:
-            graphics.DrawLine(OFFSCREEN_CANVAS, offset-1, y, offset+9 , y, WEEKEND_LINE_COLOR)
+        #if dt.weekday() in {5, 6}:
+        #    graphics.DrawLine(OFFSCREEN_CANVAS, offset-1, y, offset+9 , y, WEEKEND_LINE_COLOR)
 
 def drawCurrent(api_current, outdoor):
     if outdoor < 100:

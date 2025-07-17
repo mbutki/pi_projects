@@ -5,7 +5,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hyper/play-gifs.py /home/mbutki/pi_projects/python/src/displays/hyper/1041uuu/horizontal 600 0
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/hyper/play-gifs.py /home/mbutki/pi_projects/python/src/displays/hyper/1041uuu 600 0
 WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/hyper
 User=mbutki
 Group=mbutki
