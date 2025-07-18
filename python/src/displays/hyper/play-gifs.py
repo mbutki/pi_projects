@@ -73,6 +73,7 @@ class GifPlayerService:
     def get_gif_files(self, directory):
         return [os.path.join(directory, f) for f in os.listdir(directory)
                 if os.path.isfile(os.path.join(directory, f))]
+        
 
     def send_command_to_mpv(self, command):
         try:
@@ -108,6 +109,7 @@ class GifPlayerService:
             '-scale=nearest',
             '-cscale=nearest',
             '-dscale=nearest'
+
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info(f"Started mpv with command: {' '.join(mpv_proc.args)}")
 
