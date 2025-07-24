@@ -56,7 +56,6 @@ WEATHER_DIR = PI_DIR + '/python/src/weather'
 # Number Colors
 DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
 WEEKEND_TEMP_COLOR = graphics.Color(204, 102, 0)
-WEEKEND_LINE_COLOR = graphics.Color(170, 100, 40)
 POP_COLOR = graphics.Color(40, 110, 206)
 INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
 OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)
