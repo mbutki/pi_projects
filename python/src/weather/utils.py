@@ -18,6 +18,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
         print float(value - leftMin)
         print float(leftSpan)
     '''
+    
     # Convert the left range into a 0-1 range (float)
     valueScaled = float(value - leftMin) / float(leftSpan)
 

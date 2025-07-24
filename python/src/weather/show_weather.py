@@ -3,22 +3,22 @@ import time
 import sys
 import argparse
 import datetime
-from multiprocessing import Process
 import threading
 import traceback
 import json
 import logging as log
+
 import mariadb
+from PIL import Image, ImageDraw
+from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
+
 import conway
 import clock_date
 import line_graph
 import utils
+import icon_utils
+import db_reads
 
-from PIL import Image, ImageDraw
-from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
-
-from db_reads import *
-from icon_utils import *
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -26,15 +26,15 @@ args = parser.parse_args()
 
 PI_DIR = '/home/mbutki/pi_projects'
 
-db_config = json.load(open('{}/db.config'.format(PI_DIR)))
-pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-matrix_config = json.load(open('{}/python/src/weather/matrix.config'.format(PI_DIR)))
+db_config = json.load(open(f'{PI_DIR}/db.config'))
+pi_config = json.load(open(f'{PI_DIR}/pi.config'))
+matrix_config = json.load(open(f'{PI_DIR}/python/src/weather/matrix.config'))
 
 LOG_NAME = 'show_weather.log'
 LOG_DIR = pi_config['log_dir']
 
-PERFER_RAIN_POP = True if matrix_config['perfer_rain_pop'] == 'True' else False
-EXTENDED_WEATHER = True if matrix_config['extended_weather'] == 'True' else False
+PERFER_RAIN_POP = matrix_config['perfer_rain_pop'] == 'True'
+EXTENDED_WEATHER = matrix_config['extended_weather'] == 'True'
 
 MAX_LUX = matrix_config['max_lux']
 MIN_LUX = matrix_config['min_lux']
@@ -84,197 +84,193 @@ MEDIUM_FONT.LoadFont(WEATHER_DIR + '/fonts/5x7_mike.bdf')
 SMALL_FONT.LoadFont(WEATHER_DIR + '/fonts/4x6_mike_bigger.bdf')
 
 #### GLOBALS ####
-OFFSCREEN_CANVAS = MATRIX = None
-weather = daily_icons = indoor_temp = outdoor_temp = lux = None
+global_weather = global_daily_icons = global_indoor_temp = global_outdoor_temp = None
 #################
 
-def main():
-    global OFFSCREEN_CANVAS
-    global MATRIX
+class Display():
+    def __init__(self):
+        self.matrix = self.create_matrix()
+        self.canvas = self.matrix.CreateFrameCanvas()
 
-    MATRIX = createMatrix()
-    OFFSCREEN_CANVAS = MATRIX.CreateFrameCanvas()
+        self.world = conway.World((64,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
+        self.world.reset()
+        #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
+        #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
 
-    world = conway.World((64,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
-    world.reset()
-    #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
-    #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
+        self.clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
+        self.graph = line_graph.Graph()
 
-    clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
-    graph = line_graph.Graph()
+        self.weatherSetup() # Blocking fetch of weather data
+        self.tick = 0
 
-    weatherSetup() # Blocking fetch of weather data
+    def run(self):
+        while True:
+            self.canvas.Clear()
+            self.drawWeather()
+            self.clock.draw(self.canvas)
+            self.draw_conway()
 
-    tick = 0
-    while True:
-        OFFSCREEN_CANVAS.Clear()
-        drawWeather(graph, tick)
-        clock.draw(OFFSCREEN_CANVAS)
-        draw_conway(OFFSCREEN_CANVAS, world, tick)
+            self.canvas = self.matrix.SwapOnVSync(self.canvas)
+            time.sleep(utils.get_tick_dur_ms() / 1000)
+            self.tick += 1
+            if self.tick == sys.maxsize - 1000:
+                self.tick = 0
 
-        OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
-        time.sleep(utils.get_tick_dur_ms() / 1000)
-        tick += 1
-        if tick == sys.maxsize:
-            tick = 0
-
-def draw_conway(canvas, world, tick):
-    if utils.should_trigger_ms(tick, 100):
-        world.advance()
-    world.draw(canvas)
-    
-    if (world.gen_state() in world.history) or utils.should_trigger_secs(tick, 600):
-        world.reset()
-
-def aqiColor(aqi):
-    color = None
-    if aqi < 50:
-        color = AQI_GREEN_COLOR
-    elif aqi < 100:
-        color = AQI_YELLOW_COLOR
-    elif aqi < 150:
-        color = AQI_ORANGE_COLOR
-    elif aqi < 200:
-        color = AQI_RED_COLOR
-    else:
-        color = AQI_PURPLE_COLOR
-    return color
-
-def drawWeather(graph, tick):
-    try:
-        updateData(tick)
-
-        frame = Image.new('RGBA', (64,32))
-        drawDailyIcons(frame, tick, weather)
-        OFFSCREEN_CANVAS.SetImage(frame.convert('RGB'), 0, 0)
+    def draw_conway(self):
+        if utils.should_trigger_ms(self.tick, 100):
+            self.world.advance()
+        self.world.draw(self.canvas)
         
-        drawCurrent(weather['current'], outdoor_temp)
-        drawIndoor(indoor_temp)
-        graph.draw(OFFSCREEN_CANVAS, weather, tick)
-        drawDailyText(weather)
-    except Exception as e:
-        if args.v:
-            print(('main() exception: {}'.format(traceback.format_exc())))
-        log.error('main() exception: {}'.format(traceback.format_exc()))
+        if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
+            self.world.reset()
 
-def updateData(tick):
-    if utils.should_trigger_secs(tick, READ_WEATHER_SECS):
-        try:
-            fetchDataThreaded()
-        except Exception as e:
-            log.error('fetchWeather() threaded exception: {}'.format(traceback.format_exc()))
-
-    '''
-    if utils.should_trigger_secs(tick, READ_LUX_SECS):
-        try:
-            adjustBrightnessThreaded()
-            pass
-        except Exception as e:
-            log.error('fetchLux() threaded exception: {}'.format(traceback.format_exc()))
-    '''
-
-def drawDailyIcons(frame, tick, weather):
-    # draw using current icon frame
-    for day_index, icon_set in enumerate(daily_icons):
-        for icon_frame in icon_set.get_frames():
-            x_offset = day_index * 13
-            frame.paste(icon_frame, (x_offset,0), icon_frame)
-
-        # advance icon frame if needed
-        if utils.should_trigger_ms(tick, ICON_SPEED_MS):
-            icon_set.advance()
-
-def drawDailyText(weather):
-    for j, epoch in enumerate(sorted(weather['days'])[:5]):
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-        day = weather['days'][epoch]
-        offset = 0
-        if j > 0:
-            offset = 1+(j*13)
+    def aqiColor(self, aqi):
+        color = None
+        if aqi < 50:
+            color = AQI_GREEN_COLOR
+        elif aqi < 100:
+            color = AQI_YELLOW_COLOR
+        elif aqi < 150:
+            color = AQI_ORANGE_COLOR
+        elif aqi < 200:
+            color = AQI_RED_COLOR
         else:
-            offset = 1
+            color = AQI_PURPLE_COLOR
+        return color
 
-        number_str = str(day['high'])
-        if len(number_str) == 1:
-            offset += 0
-        elif len(number_str) == 2:
-            offset += 0
-        elif len(number_str) == 3:
-            offset -= 1
+    def drawWeather(self):
+        try:
+            self.updateData()
+
+            frame = Image.new('RGBA', (64,32))
+            self.drawDailyIcons(frame, global_daily_icons)
+            self.canvas.SetImage(frame.convert('RGB'), 0, 0)
+            
+            self.drawCurrent(global_weather['current'], global_outdoor_temp)
+            self.drawIndoor(global_indoor_temp)
+            self.graph.draw(self.canvas, global_weather, self.tick)
+            self.drawDailyText(global_weather)
+        except Exception:
+            if args.v:
+                print(f'main() exception: {traceback.format_exc()}')
+            log.error(f'main() exception: {traceback.format_exc()}')
+
+    def updateData(self):
+        if utils.should_trigger_secs(self.tick, READ_WEATHER_SECS):
+            try:
+                self.fetchDataThreaded()
+            except Exception:
+                log.error(f'fetchWeather() threaded exception: {traceback.format_exc()}')
+
+    def drawDailyIcons(self, frame, daily_icons):
+        # draw using current icon frame
+        for day_index, icon_set in enumerate(daily_icons):
+            for icon_frame in icon_set.get_frames():
+                x_offset = day_index * 13
+                frame.paste(icon_frame, (x_offset,0), icon_frame)
+
+            # advance icon frame if needed
+            if utils.should_trigger_ms(self.tick, ICON_SPEED_MS):
+                icon_set.advance()
+
+    def drawDailyText(self, weather):
+        for j, epoch in enumerate(sorted(weather['days'])[:5]):
+            dt =  datetime.datetime.fromtimestamp(float(epoch))
+            day = weather['days'][epoch]
+            offset = 0
+            if j > 0:
+                offset = 1+(j*13)
+            else:
+                offset = 1
+
+            number_str = str(day['high'])
+            if len(number_str) == 1:
+                offset += 0
+            elif len(number_str) == 2:
+                offset += 0
+            elif len(number_str) == 3:
+                offset -= 1
+            
+            font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
+            display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
+            y = 6+9+1
+            graphics.DrawText(self.canvas, font, offset, y, display_color, number_str)
+
+    def drawCurrent(self, api_outdoor_temp, local_outdoor_temp):
+        if local_outdoor_temp < 100:
+            font = MEDIUM_FONT
+        else:
+            font = SMALL_FONT
+        temp = str(int(round(local_outdoor_temp))) if local_outdoor_temp != -999 else str(int(round(api_outdoor_temp['temp'])))
+        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
+
+    def drawIndoor(self, indoor_temp):
+        if indoor_temp < 100:
+            font = MEDIUM_FONT
+        else:
+            font = SMALL_FONT
+        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(indoor_temp))))
+
+    def create_matrix(self):
+        options = RGBMatrixOptions()
+        options.chain_length = 6 if EXTENDED_WEATHER else 2
+        options.gpio_slowdown = 2
+        options.brightness = MAX_BRIGHTNESS
+        options.hardware_mapping = 'adafruit-hat-pwm'
+
+        return RGBMatrix(options = options)
+
+    def weatherSetup(self):
+        try:
+            self.fetchData()
+            #adjustBrightness()
+        except Exception as e:
+            log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
+
+    def fetchDataThreaded(self):
+        x = threading.Thread(target=self.fetchData, args=())
+        x.start()
+
+    def fetchData(self):
+        global global_weather, global_daily_icons, global_indoor_temp, global_outdoor_temp
+        if args.v:
+            print('Opening DB...')
         
-        font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
-        display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
-        y = 6+9+1
-        graphics.DrawText(OFFSCREEN_CANVAS, font, offset, y, display_color, number_str)
+        conn = None
+        if args.v:
+            print('Starting db put')
+        try:
+            conn = mariadb.connect(
+                user="mbutki",
+                host="pi-desk",
+                database="pidata"
+            )
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
 
-def drawCurrent(api_current, outdoor):
-    if outdoor < 100:
-        font = MEDIUM_FONT
-    else:
-        font = SMALL_FONT
-    temp = str(int(round(outdoor))) if outdoor != -999 else str(int(round(api_current['temp'])))
-    graphics.DrawText(OFFSCREEN_CANVAS, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
+        conn.autocommit = True
+        if args.v:
+            print('Get Cursor')
+        cur = conn.cursor()
+        
+        global_weather = db_reads.fetchWeather(cur, args)
+        global_daily_icons = icon_utils.getDailyIcons(global_weather)
+        global_indoor_temp = db_reads.fetchIndoorTemps(cur, args)
+        global_outdoor_temp = db_reads.fetchOutdoorTemps(cur, args)
 
-def drawIndoor(current):
-    if current < 100:
-        font = MEDIUM_FONT
-    else:
-        font = SMALL_FONT
-    graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(current))))
+        conn.commit()
+        conn.close()
 
-def createMatrix():
-    options = RGBMatrixOptions()
-    options.chain_length = 6 if EXTENDED_WEATHER else 2
-    options.gpio_slowdown = 2
-    options.brightness = MAX_BRIGHTNESS
-    options.hardware_mapping = 'adafruit-hat-pwm'
+        if args.v:
+            print('DB client closed')
 
-    return RGBMatrix(options = options)
+def main():
+    display = Display()
+    display.run()
 
-def weatherSetup():
-    try:
-        fetchData()
-        #adjustBrightness()
-    except Exception as e:
-        log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
-
-def fetchDataThreaded():
-    x = threading.Thread(target=fetchData, args=())
-    x.start()
-
-def fetchData():
-    global weather, daily_icons, indoor_temp, outdoor_temp
-    if args.v:
-        print('Opening DB...')
-    
-    conn = None
-    if args.v:
-        print('Starting db put')
-    try:
-        conn = mariadb.connect(
-            user="mbutki",
-            host="pi-desk",
-            database="pidata"
-        )
-    except mariadb.Error as e:
-        print(f"Error connecting to MariaDB Platform: {e}")
-        sys.exit(1)
-
-    conn.autocommit = True
-    if args.v:
-        print('Get Cursor')
-    cur = conn.cursor()
-    
-    weather = fetchWeather(cur, args)
-    daily_icons = getDailyIcons(weather)
-    indoor_temp = fetchIndoorTemps(cur, args)
-    outdoor_temp = fetchOutdoorTemps(cur, args)
-
-    conn.commit()
-    conn.close()
-
-    if args.v:
-        print('DB client closed')
+if __name__ == "__main__":
+    main()
 
 '''
 def adjustBrightnessThreaded():
@@ -306,7 +302,5 @@ def setBrightness(lux):
     #if args.v:
     print('LUX After Min/Max:{}'.format(lux))
     print('brightness:{}'.format(brightness))
-    MATRIX.brightness = brightness
+    self.matrix.brightness = brightness
 '''
-if __name__ == "__main__":
-    main()
