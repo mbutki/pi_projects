@@ -4,8 +4,9 @@ import argparse
 import json
 import datetime
 import logging as log
-import requests
 import os
+
+import requests
 import mariadb
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
@@ -16,17 +17,17 @@ args = parser.parse_args()
 PI_DIR = '/home/mbutki/pi_projects'
 LOG_NAME = 'fetch_weather.log'
 
-db_config = json.load(open('{}/db.config'.format(PI_DIR)))
-pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
-matrix_config = json.load(open('{}/python/src/weather/matrix.config'.format(PI_DIR)))
+db_config = json.load(open(f'{PI_DIR}/db.config'))
+pi_config = json.load(open(f'{PI_DIR}/pi.config'))
+matrix_config = json.load(open(f'{PI_DIR}/python/src/weather/matrix.config'))
 LOCATION = pi_config['location']
 LOG_DIR = pi_config['log_dir']
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
-log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level,
-                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+LOG_LEVEL = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=LOG_LEVEL,
+                filename=f'{LOG_DIR}/{LOG_NAME}',
                 format='%(asctime)s %(levelname)s %(message)s',
                 filemode='a')
 log.getLogger("requests").setLevel(log.WARNING)
@@ -42,20 +43,7 @@ def fetchWeather():
         print('fetching: ', url)
     data = requests.get(url).json()
     return data
-'''
-def fetchAqi():
-    url = 'https://www.purpleair.com/json?key=DA9PGOKPSWDB5I5J&show=15049'
-    if args.v:
-        print('fetching: ', url)
-    data = requests.get(url).json()['results'][0]
-    stats = json.loads(data['Stats'])
-    print(stats)
-    myAqi = aqi.to_aqi([
-        (aqi.POLLUTANT_PM25, stats['v1'])
-    ])
 
-    return int(myAqi)
-'''
 def KToF(k):
     return (k - 273.15) * 9/5 + 32
 
@@ -156,13 +144,6 @@ def storeWeather(weather):
         print(f"Error: {e}")
     conn.commit()
     conn.close()
-
-    if args.v:
-        print('DB client closed')
-
-def storeAqi(data):
-    if args.v:
-        print('Starting db put')
 
     if args.v:
         print('DB client closed')

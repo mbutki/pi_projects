@@ -1,21 +1,16 @@
-import json
 import random
-from PIL import Image
 import datetime
-import numpy
 from collections import defaultdict
 
-def processImage(path):
-    im = Image.open(path)
+import numpy
+from PIL import Image
 
+def process_image(path):
+    im = Image.open(path)
     frames = []
-    p = im.getpalette()
-    
+
     try:
-        while True:            
-            #if not im.getpalette():
-            #    im.putpalette(p)
-            
+        while True:
             new_frame = Image.new('RGBA', im.size)
             new_frame.paste(im, (0,0), im.convert('RGBA'))
             frames.append(new_frame)
@@ -25,32 +20,32 @@ def processImage(path):
 
     return frames
 
-def getMoonPhaseIcon(phase):
+def get_moon_phase_icon(phase):
     if phase < 0.125:
         return NEW_MOON
-    elif phase < 0.25:
+    if phase < 0.25:
         return CRESCENT_MOON
-    elif phase < 0.375:
+    if phase < 0.375:
         return QUARTER_MOON
-    elif phase < 0.5:
+    if phase < 0.5:
         return GIBBOUS_MOON
-    elif phase < 0.625:
+    if phase < 0.625:
         return FULL_MOON
-    elif phase < 0.75:
+    if phase < 0.75:
         return GIBBOUS_MOON
-    elif phase < 0.875:
+    if phase < 0.875:
         return QUARTER_MOON
-    elif phase <= 1:
+    if phase <= 1:
         return CRESCENT_MOON
 
 class Icon():
     def __init__(self, icon):
         self.icon = icon
         self.frame_num = random.randint(0, len(icon)-1)
-    
+
     def advance(self):
         self.frame_num = (self.frame_num + 1) % len(self.icon)
-    
+
     def get_frame(self):
         return self.icon[self.frame_num]
 
@@ -60,13 +55,13 @@ class IconSet():
 
     def get_frames(self):
         return [icon.get_frame() for icon in self.icons]
-    
+
     def advance(self):
         for icon in self.icons:
             icon.advance()
 
 # For each day, returns which icons to render (i.e. party_cloudy = [sun, clouds])
-def getDailyIcons(weather):
+def get_daily_icons(weather):
     daily_icons = []
     for i, epoch in enumerate(sorted(weather['days'])):
         day = weather['days'][epoch]
@@ -74,87 +69,73 @@ def getDailyIcons(weather):
         icon_set = None
 
         now = datetime.datetime.now()
-        sun_rise = datetime.datetime.fromtimestamp(day['rise'])
         sun_set = datetime.datetime.fromtimestamp(day['set'])
         if i == 0 and (now > sun_set):
             # night time
-            moon_img = getMoonPhaseIcon(day['moonPhase'])
+            moon_img = get_moon_phase_icon(day['moonPhase'])
             icon_set = IconSet([moon_img])
         else:
             # daytime
-            condition = rainIconLogic(weather, epoch)
+            condition = rain_icon_logic(weather, epoch)
             icon_set = TEXT_TO_ICON_DAY[condition] # default dict handles unknown conditions
         daily_icons.append(icon_set)
     return daily_icons
 
-def rainIconLogic(weather, epoch):
+def rain_icon_logic(weather, epoch):
     day = weather['days'][epoch]
     condition = day['condition']
-    ## Only reconsider rain icons
-    #if condition in PERCIPITATION:
 
-    ## Reconsider ALL icons
-    if True:
-        riseTime = day['rise'] - (day['rise'] % 3600)
-        setTime = day['set'] - (day['set'] % 3600) + 3600
-        
-        startHour = 0
-        endHour = 0
-        hours = sorted(weather['hours'].keys())
-        if int(hours[0]) < riseTime:
-            startHour = riseTime
-            endHour = setTime
-        elif int(hours[0]) > setTime:
-            return condition
-        else:
-            startHour = int(hours[0])
-            endHour = setTime
+    rise_time = day['rise'] - (day['rise'] % 3600)
+    set_time = day['set'] - (day['set'] % 3600) + 3600
 
-        maxPop = 0
-        CCs = []
-        for hourEpoch in range(startHour, endHour + 3600, 3600):
-            if str(hourEpoch) not in weather['hours']:
-                break
-            hour = weather['hours'][str(hourEpoch)]
-            maxPop = max(maxPop, hour['pop'])
-            CCs.append(hour['cloudCover'])
-        CC = numpy.median(numpy.array(CCs))
+    start_hour = 0
+    end_hour = 0
+    hours = sorted(weather['hours'].keys())
+    if int(hours[0]) < rise_time:
+        start_hour = rise_time
+        end_hour = set_time
+    elif int(hours[0]) > set_time:
+        return condition
+    else:
+        start_hour = int(hours[0])
+        end_hour = set_time
 
-        if maxPop < MIN_POP_FOR_RAIN:
-            if CC > MIN_CC_FOR_CLOUDY:
-                #if args.v:
-                #    print 'Changed to cloudy. Max pop:{}, Max CC:{}, daily icon: {}'.format(maxPop, maxCC, condition)
-                return 'cloudy'
-            elif CC > MIN_CC_FOR_PARTLY_CLOUDY:
-                #if args.v:
-                #    print 'Changed to partly cloudy. Max pop:{}, Max CC:{}, daily icon: {}'.format(maxPop, maxCC, condition)
-                return 'partly-cloudy'
-            else:
-                #if args.v:
-                #    print 'Changed to clear. Max pop:{}, Max CC:{}, daily icon: {}'.format(maxPop, maxCC, condition)
-                return 'clear'
-    #if args.v:
-    #    print 'keeping at {}'.format(condition)
+    max_pop = 0
+    ccs = []
+    for hour_epoch in range(start_hour, end_hour + 3600, 3600):
+        if str(hour_epoch) not in weather['hours']:
+            break
+        hour = weather['hours'][str(hour_epoch)]
+        max_pop = max(max_pop, hour['pop'])
+        ccs.append(hour['cloudCover'])
+    cc = numpy.median(numpy.array(ccs))
+
+    if max_pop < MIN_POP_FOR_RAIN:
+        if cc > MIN_CC_FOR_CLOUDY:
+            return 'cloudy'
+        if cc > MIN_CC_FOR_PARTLY_CLOUDY:
+            return 'partly-cloudy'
+        return 'clear'
     return condition
 
 PI_DIR = '/home/mbutki/pi_projects'
-pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
+
 WEATHER_DIR = PI_DIR + '/python/src/weather'
-RAIN = processImage(WEATHER_DIR + '/imgs/rain.gif')
-SUN = processImage(WEATHER_DIR + '/imgs/sun.gif')
-CLOUD = processImage(WEATHER_DIR + '/imgs/cloud.gif')
-MOSTLY_CLOUD = processImage(WEATHER_DIR + '/imgs/mostly_cloud.gif')
-MOSTLY_SUN = processImage(WEATHER_DIR + '/imgs/mostly_sun.gif')
-UNKNOWN = processImage(WEATHER_DIR + '/imgs/unknown.gif')
+RAIN = process_image(WEATHER_DIR + '/imgs/rain.gif')
+SUN = process_image(WEATHER_DIR + '/imgs/sun.gif')
+CLOUD = process_image(WEATHER_DIR + '/imgs/cloud.gif')
+MOSTLY_CLOUD = process_image(WEATHER_DIR + '/imgs/mostly_cloud.gif')
+MOSTLY_SUN = process_image(WEATHER_DIR + '/imgs/mostly_sun.gif')
+UNKNOWN = process_image(WEATHER_DIR + '/imgs/unknown.gif')
 
-NEW_MOON = processImage(WEATHER_DIR + '/imgs/new_moon.gif')
-CRESCENT_MOON = processImage(WEATHER_DIR + '/imgs/crescent_moon.gif')
-QUARTER_MOON = processImage(WEATHER_DIR + '/imgs/quarter_moon.gif')
-GIBBOUS_MOON = processImage(WEATHER_DIR + '/imgs/gibbous_moon.gif')
-FULL_MOON = processImage(WEATHER_DIR + '/imgs/full_moon.gif')
+NEW_MOON = process_image(WEATHER_DIR + '/imgs/new_moon.gif')
+CRESCENT_MOON = process_image(WEATHER_DIR + '/imgs/crescent_moon.gif')
+QUARTER_MOON = process_image(WEATHER_DIR + '/imgs/quarter_moon.gif')
+GIBBOUS_MOON = process_image(WEATHER_DIR + '/imgs/gibbous_moon.gif')
+FULL_MOON = process_image(WEATHER_DIR + '/imgs/full_moon.gif')
 
-JUST_CLOUDS = processImage(WEATHER_DIR + '/imgs/just_clouds.gif')
-JUST_CLOUDS_NIGHT = processImage(WEATHER_DIR + '/imgs/just_clouds_night.gif')
+JUST_CLOUDS = process_image(WEATHER_DIR + '/imgs/just_clouds.gif')
+JUST_CLOUDS_NIGHT = process_image(WEATHER_DIR + '/imgs/just_clouds_night.gif')
 
 unknown_icon_set = IconSet([UNKNOWN])
 TEXT_TO_ICON_DAY = defaultdict(lambda: unknown_icon_set, {

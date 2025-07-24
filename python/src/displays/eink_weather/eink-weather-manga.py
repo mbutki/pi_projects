@@ -1,7 +1,5 @@
 #!/usr/bin/python
-import sys
 import time
-import traceback
 from datetime import datetime
 import json
 import argparse
@@ -68,7 +66,7 @@ def fetchData():
             print('Get Cursor')
         cur = conn.cursor()
         
-        weather = db_reads.fetchWeather(cur, args)
+        weather = db_reads.fetch_weather(cur, args)
 
         conn.commit()
         conn.close()
@@ -180,7 +178,7 @@ def prepare_manga_page_crop_sides_only(img_path, target_size=(480, 800), brightn
     then scale to the target resolution, preserving top and bottom.
     """
     img = Image.open(img_path).convert("L")
-    target_w, target_h = target_size
+    target_h = target_size
 
     img = img.resize((img.width, target_h), Image.LANCZOS)  # scale to screen height
 

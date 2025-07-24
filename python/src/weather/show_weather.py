@@ -19,7 +19,6 @@ import utils
 import icon_utils
 import db_reads
 
-
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
@@ -45,9 +44,9 @@ TEMP_MODE = matrix_config['temp_mode']
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
-log_level = log.DEBUG if args.v else log.INFO
-log.basicConfig(level=log_level,
-                filename='{}/{}'.format(LOG_DIR, LOG_NAME),
+LOG_LEVEL = log.DEBUG if args.v else log.INFO
+log.basicConfig(level=LOG_LEVEL,
+                filename=f'{LOG_DIR}/{LOG_NAME}',
                 format='%(asctime)s %(levelname)s %(message)s',
                 filemode='w')
 
@@ -93,9 +92,9 @@ class Display():
         self.canvas = self.matrix.CreateFrameCanvas()
 
         self.world = conway.World((64,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
+        #self.world = conway.World((64,32), {3,6}, {2,3}, 0.3) # highlife
+        #self.world = conway.World((5,5), {3}, {2,3}, 0.3) # debug blinker
         self.world.reset()
-        #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
-        #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
 
         self.clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
         self.graph = line_graph.Graph()
@@ -118,13 +117,13 @@ class Display():
             self.tick += 1
             if self.tick == sys.maxsize - 1000:
                 self.tick = 0
-    
+
     def fetch_weather_sync(self):
         try:
             self.fetch_data()
             #adjustBrightness()
-        except Exception as e:
-            log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
+        except Exception:
+            log.error(f'fetchWeather() exception: {traceback.format_exc()}')
 
     def fetch_data_threaded(self):
         x = threading.Thread(target=self.fetch_data, args=())
@@ -134,7 +133,7 @@ class Display():
         global global_weather, global_daily_icons, global_indoor_temp, global_outdoor_temp
         if args.v:
             print('Opening DB...')
-        
+
         conn = None
         if args.v:
             print('Starting db put')
@@ -152,11 +151,11 @@ class Display():
         if args.v:
             print('Get Cursor')
         cur = conn.cursor()
-        
-        global_weather = db_reads.fetchWeather(cur, args)
-        global_daily_icons = icon_utils.getDailyIcons(global_weather)
-        global_indoor_temp = db_reads.fetchIndoorTemps(cur, args)
-        global_outdoor_temp = db_reads.fetchOutdoorTemps(cur, args)
+
+        global_weather = db_reads.fetch_weather(cur, args)
+        global_daily_icons = icon_utils.get_daily_icons(global_weather)
+        global_indoor_temp = db_reads.fetch_indoor_temps(cur, args)
+        global_outdoor_temp = db_reads.fetch_outdoor_temps(cur, args)
 
         conn.commit()
         conn.close()
@@ -168,7 +167,7 @@ class Display():
         if utils.should_trigger_ms(self.tick, 100):
             self.world.advance()
         self.world.draw(self.canvas)
-        
+
         if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
             self.world.reset()
 
@@ -191,7 +190,7 @@ class Display():
             frame = Image.new('RGBA', (64,32))
             self.draw_daily_icons(frame, global_daily_icons)
             self.canvas.SetImage(frame.convert('RGB'), 0, 0)
-            
+
             self.draw_current(global_weather['current'], global_outdoor_temp)
             self.draw_indoor(global_indoor_temp)
             self.graph.draw(self.canvas, global_weather, self.tick)
@@ -236,7 +235,7 @@ class Display():
                 offset += 0
             elif len(number_str) == 3:
                 offset -= 1
-            
+
             font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
             display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
             y = 6+9+1

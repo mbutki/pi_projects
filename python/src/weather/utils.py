@@ -1,29 +1,15 @@
 TICK_DUR_MS = 100
 
-def translate(value, leftMin, leftMax, rightMin, rightMax):
+def translate(value, left_min, left_max, right_min, right_max):
     # Figure out how 'wide' each range is
-    '''
-    if args.v:
-        print value
-        print leftMin
-        print leftMax
-        print rightMin
-        print rightMax
-    '''
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
+    left_span = left_max - left_min
+    right_span = right_max - right_min
 
-    '''
-    if args.v:
-        print float(value - leftMin)
-        print float(leftSpan)
-    '''
-    
     # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
+    value_scaled = float(value - left_min) / float(left_span)
 
     # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
+    return right_min + (value_scaled * right_span)
 
 def get_tick_dur_ms():
     return TICK_DUR_MS

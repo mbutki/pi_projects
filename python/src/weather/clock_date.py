@@ -12,18 +12,17 @@ class Clock:
     def draw(self, canvas):
         self.draw_date(canvas)
         self.draw_clock(canvas)
-        
+
     def draw_date(self, canvas):
         now = datetime.datetime.now()
-        timeStr = now.strftime("%-m/%-d/%y")
+        time_str = now.strftime("%-m/%-d/%y")
         x_offset = self.x_offset + 4
         y_offset = Clock.y_offset
-        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, timeStr)
+        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, time_str)
 
     def draw_clock(self, canvas):
         now = datetime.datetime.now()
-        timeStr = now.strftime("%-I:%M:%S")
+        time_str = now.strftime("%-I:%M:%S")
         x_offset = self.x_offset
         y_offset = Clock.y_offset + 11
-        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, timeStr)
-
+        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, time_str)

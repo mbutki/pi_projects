@@ -44,7 +44,7 @@ class World():
         #self.world[1][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
         #self.world[2][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
         #self.world[3][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-    
+
     def swap_buffer(self):
         self.world = self.buffer
         self.buffer = self.get_new_matrix()
@@ -100,9 +100,9 @@ class World():
 
     def get_local_alive_cnt(self, r, c):
         neighbor_locs = self.find_adjacent_with_wrapping(r, c)
-        
+
         return sum(1 if self.world[r][c] else 0 for r, c in neighbor_locs)
-        
+
     def find_adjacent_with_wrapping(self, r, c):
         result = []
         for dr, dc in World.adjacent:
@@ -121,7 +121,6 @@ class World():
         return result
 
     def draw(self, canvas):
-        l = []
         for r in range(len(self.world)):
             for c in range(len(self.world[r])):
                 cell = self.world[r][c]
@@ -129,12 +128,12 @@ class World():
                     x = c + self.x_offset
                     y = r
                     canvas.SetPixel(x, y, cell.color[0], cell.color[1], cell.color[2])
-    
+
     def count_living(self):
         s = 0
         for r in range(len(self.world)):
             for c in range(len(self.world[r])):
-                 if self.world[r][c]:
+                if self.world[r][c]:
                     s += 1
         return s
 
