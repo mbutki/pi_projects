@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import time
 from datetime import datetime
 import json
@@ -16,13 +15,11 @@ from weather import db_reads
 
 PI_DIR = '/home/mbutki/pi_projects'
 
-db_config = json.load(open('{}/db.config'.format(PI_DIR)))
+db_config = json.load(open(f'{PI_DIR}/db.config'))
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
 args = parser.parse_args()
-
-anime = []
 
 class Anime:
     def __init__(self, name, dither, dir_name):
@@ -30,7 +27,7 @@ class Anime:
         self.dither = dither
         self.dir_path = os.path.abspath(dir_name)
         self.filenames = [os.path.join(self.dir_path, f) for f in os.listdir(self.dir_path) if os.path.isfile(os.path.join(self.dir_path, f))]
-    
+
     def get_rand_img(self):
         filename = random.choice(self.filenames)
         img = prepare_manga_page_crop_to_aspect(filename)
@@ -43,9 +40,8 @@ def main():
         run()
     except IOError as e:
         print(e)
-    except KeyboardInterrupt:    
+    except KeyboardInterrupt:
         print("ctrl + c:")
-        epdconfig.module_exit()
         exit()
 
 def fetchData():
@@ -65,7 +61,7 @@ def fetchData():
         if args.v:
             print('Get Cursor')
         cur = conn.cursor()
-        
+
         weather = db_reads.fetch_weather(cur, args)
 
         conn.commit()
@@ -78,10 +74,6 @@ def fetchData():
         return None
 
     return weather
-
-def currentDateStr():
-    now = datetime.now()
-    return now.strftime('%b %-d, %a')
 
 def clean_refresh(epd):
     """Flushes the screen with white, resets ghosting, and re-initializes grayscale mode."""
@@ -157,7 +149,8 @@ def stretch_contrast(image):
     min_val, max_val = image.getextrema()
     if max_val - min_val < 30:
         return image  # Avoid divide-by-zero for low contrast
-    def scale(x): return int(255 * (x - min_val) / (max_val - min_val))
+    def scale(x):
+        return int(255 * (x - min_val) / (max_val - min_val))
     return image.point(scale)
 
 def reinforce_black_text(original_gray, dithered_image, threshold=60):
@@ -333,13 +326,13 @@ def run():
     epd = epd7in5_V2.EPD()
 
     # Drawing on the image
-    font = ImageFont.truetype('{}/python/src/displays/eink_weather/fonts/Helvetica.ttc'.format(PI_DIR), 24)
+    font = ImageFont.truetype(f'{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc', 24)
 
     # Drawing on the Vertical image
-    LBlackimage = Image.new('L', (epd.height, epd.width), 255)
-    drawblack = ImageDraw.Draw(LBlackimage)
+    black_image = Image.new('L', (epd.height, epd.width), 255)
+    draw_black = ImageDraw.Draw(black_image)
     img = random.choice(anime).get_rand_img()
-    LBlackimage.paste(img, (0, 0))
+    black_image.paste(img, (0, 0))
 
     data = fetchData()
     if data:
@@ -349,7 +342,6 @@ def run():
         tomorrow = weather['days'][sorted(weather['days'])[1]]
         now = datetime.now()
         day = today if now.hour >= 17 else tomorrow
-        print(day)
 
         high = today['high']
         pop = today['pop']
@@ -369,28 +361,29 @@ def run():
         text3 = f'{pop}'
         direction = 'ttb'
 
-        bbox = drawblack.textbbox(pos1, text1, font = font, direction=direction)
+        bbox = draw_black.textbbox(pos1, text1, font = font, direction=direction)
         bbox = (bbox[0]-3, bbox[1]-3, bbox[2]+3, bbox[3]+1)
-        drawblack.rectangle(bbox, fill = 255)
-        drawblack.rectangle(bbox)
-        drawblack.text(pos1, text1, font = font, fill = 0, direction=direction)
+        draw_black.rectangle(bbox, fill = 255)
+        draw_black.rectangle(bbox)
+        draw_black.text(pos1, text1, font = font, fill = 0, direction=direction)
 
-        bbox = drawblack.textbbox(pos2, text2, font = font, direction=direction)
+        bbox = draw_black.textbbox(pos2, text2, font = font, direction=direction)
         bbox = (bbox[0]-3, bbox[1]-3, bbox[2]+1, bbox[3]+1)
-        drawblack.rectangle(bbox, fill = 255)
-        drawblack.rectangle(bbox)
-        drawblack.text(pos2, text2, font = font, fill = 0, direction=direction)
+        draw_black.rectangle(bbox, fill = 255)
+        draw_black.rectangle(bbox)
+        draw_black.text(pos2, text2, font = font, fill = 0, direction=direction)
 
         if pop > 20:
-            bbox = drawblack.textbbox(pos3, text3, font = font, direction=direction)
+            bbox = draw_black.textbbox(pos3, text3, font = font, direction=direction)
             bbox = (bbox[0]-3, bbox[1]-3, bbox[2]+1, bbox[3]+1)
-            drawblack.rectangle(bbox, fill = 255)
-            drawblack.rectangle(bbox)
-            drawblack.text(pos3, text3, font = font, fill = 0, direction=direction)
+            draw_black.rectangle(bbox, fill = 255)
+            draw_black.rectangle(bbox)
+            draw_black.text(pos3, text3, font = font, fill = 0, direction=direction)
 
     clean_refresh(epd)
-    epd.display_4Gray(epd.getbuffer_4Gray(LBlackimage))
-        
+    #epd.init_4Gray()
+    epd.display_4Gray(epd.getbuffer_4Gray(black_image))
+
     print("Goto Sleep...")
     epd.sleep()
 
