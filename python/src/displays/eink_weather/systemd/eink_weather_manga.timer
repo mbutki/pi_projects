@@ -1,11 +1,11 @@
 [Unit]
-Description="Run eink-weather-manga service every 15th min"
+Description="Run eink_weather_manga service every 15th min"
 Wants=network-online.target
 After=network-online.target
 
 [Timer]
 OnCalendar=*:0/10
-Unit=eink-weather-manga.service
+Unit=eink_weather_manga.service
 
 [Install]
 WantedBy=multi-user.target

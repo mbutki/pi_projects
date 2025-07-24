@@ -5,7 +5,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/eink_weather/eink-weather-manga.py
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/displays/eink_weather/eink_weather_manga.py
 User=mbutki
 WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/eink_weather
 
