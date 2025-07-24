@@ -25,7 +25,6 @@ class Clock:
     def draw_dow(self, canvas):
         now = datetime.datetime.now()
         time_str = now.strftime("%A")
-        time_str = "Wednesday"
 
         char_diff = math.ceil((8 - len(time_str)) / 2)
         correction = 0 if char_diff <= 0 else (char_diff * Clock.char_width) + (char_diff * Clock.char_x_spacer)
