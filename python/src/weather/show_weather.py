@@ -100,13 +100,16 @@ class Display():
         self.clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
         self.graph = line_graph.Graph()
 
-        self.weatherSetup() # Blocking fetch of weather data
+        self.fetch_weather_sync()
         self.tick = 0
 
     def run(self):
         while True:
+            if self.tick != 0:
+                self.fetch_weather_async()
+
             self.canvas.Clear()
-            self.drawWeather()
+            self.draw_weather()
             self.clock.draw(self.canvas)
             self.draw_conway()
 
@@ -115,123 +118,19 @@ class Display():
             self.tick += 1
             if self.tick == sys.maxsize - 1000:
                 self.tick = 0
-
-    def draw_conway(self):
-        if utils.should_trigger_ms(self.tick, 100):
-            self.world.advance()
-        self.world.draw(self.canvas)
-        
-        if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
-            self.world.reset()
-
-    def aqiColor(self, aqi):
-        color = None
-        if aqi < 50:
-            color = AQI_GREEN_COLOR
-        elif aqi < 100:
-            color = AQI_YELLOW_COLOR
-        elif aqi < 150:
-            color = AQI_ORANGE_COLOR
-        elif aqi < 200:
-            color = AQI_RED_COLOR
-        else:
-            color = AQI_PURPLE_COLOR
-        return color
-
-    def drawWeather(self):
+    
+    def fetch_weather_sync(self):
         try:
-            self.updateData()
-
-            frame = Image.new('RGBA', (64,32))
-            self.drawDailyIcons(frame, global_daily_icons)
-            self.canvas.SetImage(frame.convert('RGB'), 0, 0)
-            
-            self.drawCurrent(global_weather['current'], global_outdoor_temp)
-            self.drawIndoor(global_indoor_temp)
-            self.graph.draw(self.canvas, global_weather, self.tick)
-            self.drawDailyText(global_weather)
-        except Exception:
-            if args.v:
-                print(f'main() exception: {traceback.format_exc()}')
-            log.error(f'main() exception: {traceback.format_exc()}')
-
-    def updateData(self):
-        if utils.should_trigger_secs(self.tick, READ_WEATHER_SECS):
-            try:
-                self.fetchDataThreaded()
-            except Exception:
-                log.error(f'fetchWeather() threaded exception: {traceback.format_exc()}')
-
-    def drawDailyIcons(self, frame, daily_icons):
-        # draw using current icon frame
-        for day_index, icon_set in enumerate(daily_icons):
-            for icon_frame in icon_set.get_frames():
-                x_offset = day_index * 13
-                frame.paste(icon_frame, (x_offset,0), icon_frame)
-
-            # advance icon frame if needed
-            if utils.should_trigger_ms(self.tick, ICON_SPEED_MS):
-                icon_set.advance()
-
-    def drawDailyText(self, weather):
-        for j, epoch in enumerate(sorted(weather['days'])[:5]):
-            dt =  datetime.datetime.fromtimestamp(float(epoch))
-            day = weather['days'][epoch]
-            offset = 0
-            if j > 0:
-                offset = 1+(j*13)
-            else:
-                offset = 1
-
-            number_str = str(day['high'])
-            if len(number_str) == 1:
-                offset += 0
-            elif len(number_str) == 2:
-                offset += 0
-            elif len(number_str) == 3:
-                offset -= 1
-            
-            font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
-            display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
-            y = 6+9+1
-            graphics.DrawText(self.canvas, font, offset, y, display_color, number_str)
-
-    def drawCurrent(self, api_outdoor_temp, local_outdoor_temp):
-        if local_outdoor_temp < 100:
-            font = MEDIUM_FONT
-        else:
-            font = SMALL_FONT
-        temp = str(int(round(local_outdoor_temp))) if local_outdoor_temp != -999 else str(int(round(api_outdoor_temp['temp'])))
-        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
-
-    def drawIndoor(self, indoor_temp):
-        if indoor_temp < 100:
-            font = MEDIUM_FONT
-        else:
-            font = SMALL_FONT
-        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(indoor_temp))))
-
-    def create_matrix(self):
-        options = RGBMatrixOptions()
-        options.chain_length = 6 if EXTENDED_WEATHER else 2
-        options.gpio_slowdown = 2
-        options.brightness = MAX_BRIGHTNESS
-        options.hardware_mapping = 'adafruit-hat-pwm'
-
-        return RGBMatrix(options = options)
-
-    def weatherSetup(self):
-        try:
-            self.fetchData()
+            self.fetch_data()
             #adjustBrightness()
         except Exception as e:
             log.error('fetchWeather() exception: {}'.format(traceback.format_exc()))
 
-    def fetchDataThreaded(self):
-        x = threading.Thread(target=self.fetchData, args=())
+    def fetch_data_threaded(self):
+        x = threading.Thread(target=self.fetch_data, args=())
         x.start()
 
-    def fetchData(self):
+    def fetch_data(self):
         global global_weather, global_daily_icons, global_indoor_temp, global_outdoor_temp
         if args.v:
             print('Opening DB...')
@@ -264,6 +163,108 @@ class Display():
 
         if args.v:
             print('DB client closed')
+
+    def draw_conway(self):
+        if utils.should_trigger_ms(self.tick, 100):
+            self.world.advance()
+        self.world.draw(self.canvas)
+        
+        if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
+            self.world.reset()
+
+    def aqi_color(self, aqi):
+        color = None
+        if aqi < 50:
+            color = AQI_GREEN_COLOR
+        elif aqi < 100:
+            color = AQI_YELLOW_COLOR
+        elif aqi < 150:
+            color = AQI_ORANGE_COLOR
+        elif aqi < 200:
+            color = AQI_RED_COLOR
+        else:
+            color = AQI_PURPLE_COLOR
+        return color
+
+    def draw_weather(self):
+        try:
+            frame = Image.new('RGBA', (64,32))
+            self.draw_daily_icons(frame, global_daily_icons)
+            self.canvas.SetImage(frame.convert('RGB'), 0, 0)
+            
+            self.draw_current(global_weather['current'], global_outdoor_temp)
+            self.draw_indoor(global_indoor_temp)
+            self.graph.draw(self.canvas, global_weather, self.tick)
+            self.draw_daily_text(global_weather)
+        except Exception:
+            if args.v:
+                print(f'main() exception: {traceback.format_exc()}')
+            log.error(f'main() exception: {traceback.format_exc()}')
+
+    def fetch_weather_async(self):
+        if utils.should_trigger_secs(self.tick, READ_WEATHER_SECS):
+            try:
+                self.fetch_data_threaded()
+            except Exception:
+                log.error(f'fetchWeather() threaded exception: {traceback.format_exc()}')
+
+    def draw_daily_icons(self, frame, daily_icons):
+        # draw using current icon frame
+        for day_index, icon_set in enumerate(daily_icons):
+            for icon_frame in icon_set.get_frames():
+                x_offset = day_index * 13
+                frame.paste(icon_frame, (x_offset,0), icon_frame)
+
+            # advance icon frame if needed
+            if utils.should_trigger_ms(self.tick, ICON_SPEED_MS):
+                icon_set.advance()
+
+    def draw_daily_text(self, weather):
+        for j, epoch in enumerate(sorted(weather['days'])[:5]):
+            dt =  datetime.datetime.fromtimestamp(float(epoch))
+            day = weather['days'][epoch]
+            offset = 0
+            if j > 0:
+                offset = 1+(j*13)
+            else:
+                offset = 1
+
+            number_str = str(day['high'])
+            if len(number_str) == 1:
+                offset += 0
+            elif len(number_str) == 2:
+                offset += 0
+            elif len(number_str) == 3:
+                offset -= 1
+            
+            font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
+            display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
+            y = 6+9+1
+            graphics.DrawText(self.canvas, font, offset, y, display_color, number_str)
+
+    def draw_current(self, api_outdoor_temp, local_outdoor_temp):
+        if local_outdoor_temp < 100:
+            font = MEDIUM_FONT
+        else:
+            font = SMALL_FONT
+        temp = str(int(round(local_outdoor_temp))) if local_outdoor_temp != -999 else str(int(round(api_outdoor_temp['temp'])))
+        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
+
+    def draw_indoor(self, indoor_temp):
+        if indoor_temp < 100:
+            font = MEDIUM_FONT
+        else:
+            font = SMALL_FONT
+        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(indoor_temp))))
+
+    def create_matrix(self):
+        options = RGBMatrixOptions()
+        options.chain_length = 6 if EXTENDED_WEATHER else 2
+        options.gpio_slowdown = 2
+        options.brightness = MAX_BRIGHTNESS
+        options.hardware_mapping = 'adafruit-hat-pwm'
+
+        return RGBMatrix(options = options)
 
 def main():
     display = Display()
