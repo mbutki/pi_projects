@@ -380,8 +380,8 @@ def run():
             draw_black.rectangle(bbox)
             draw_black.text(pos3, text3, font = font, fill = 0, direction=direction)
 
-    clean_refresh(epd)
-    #epd.init_4Gray()
+    #clean_refresh(epd) # turn out not needed
+    epd.init_4Gray()
     epd.display_4Gray(epd.getbuffer_4Gray(black_image))
 
     print("Goto Sleep...")
