@@ -4,10 +4,8 @@ import argparse
 import json
 import datetime
 import logging as log
-import pickle 
 import requests
 import os
-#import aqi
 import mariadb
 
 parser = argparse.ArgumentParser(description='Read motion sensors and trigger alert')

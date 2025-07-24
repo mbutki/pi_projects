@@ -1,0 +1,36 @@
+[Unit]
+Description=Slotcar gate
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/mbutki/pi_projects/python/.venv/bin/python /home/mbutki/pi_projects/python/src/slotcar/slotcar.py
+WorkingDirectory=/home/mbutki/pi_projects/python/src/slotcar
+User=mbutki
+Group=mbutki
+
+# Graceful shutdown settings
+TimeoutStopSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=slotcar
+
+# Security and resource limits
+PrivateTmp=true
+NoNewPrivileges=true
+LimitNOFILE=1024
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

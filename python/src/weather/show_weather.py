@@ -9,16 +9,16 @@ import traceback
 import json
 import logging as log
 import mariadb
-import random
-import copy
-import statistics
-import uuid
+import conway
+import clock_date
+import line_graph
+import utils
 
 from PIL import Image, ImageDraw
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 
-from dbReads import *
-from iconUtils import *
+from db_reads import *
+from icon_utils import *
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -62,45 +62,21 @@ POP_COLOR = graphics.Color(40, 110, 206)
 INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
 OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)
 
-# Plot Bar Lines
-DAYLIGHT_BAR_COLOR = graphics.Color(30, 30, 30)
-NOON_BAR_COLOR = graphics.Color(100, 100, 100)
-MIDNIGHT_BAR_COLOR = graphics.Color(50, 50, 50)
-TEMP_INCREMENT_LINE_COLOR = graphics.Color(40, 40, 40)
-
-# Plot Data Points
-TEMP_LINE_COLOR = graphics.Color(140, 140, 140)
-POP_LINE_COLOR = graphics.Color(0, 130, 255)
-CLOUD_COVER_LINE_COLOR = graphics.Color(140, 0, 0)
-PERCIP_INTENSITY_LINE_COLOR = graphics.Color(134, 36, 214)
-
-# Plot Dot Animation
-RUNNER_DOT_COLOR = graphics.Color(255, 255, 255)
-
 # AQI
 AQI_GREEN_COLOR = graphics.Color(11, 164, 11)
 AQI_YELLOW_COLOR = graphics.Color(210, 210, 0)
 AQI_ORANGE_COLOR = graphics.Color(210, 143, 0)
 AQI_RED_COLOR = graphics.Color(180, 0, 0)
 AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
-
-# Clock
-CLOCK_COLOR = graphics.Color(170, 170, 170)
 ################## END COLORS ######################
 
-BAR_CHART_BOTTOM = 31
-
-BAR_MIN_TEMP = 30
-if TEMP_MODE == "low":
-    BAR_MIN_TEMP = 10
-
 CURRENT_BOTTOM = 28
-
 CONWAY_X_OFFSET = 68
 
-TICK_DUR = 0.042 # 0.042 = 24 fps
-READ_WEATHER_SECS = 60 * 5
-READ_LUX_SECS = 10
+#TICK_DUR_MS is in utils.py
+ICON_SPEED_MS = 200
+READ_WEATHER_SECS = 5 * 60 # 5 mins
+READ_LUX_SECS = 10 # 10 secs
 
 MEDIUM_FONT = graphics.Font()
 SMALL_FONT = graphics.Font()
@@ -110,7 +86,6 @@ SMALL_FONT.LoadFont(WEATHER_DIR + '/fonts/4x6_mike_bigger.bdf')
 #### GLOBALS ####
 OFFSCREEN_CANVAS = MATRIX = None
 weather = daily_icons = indoor_temp = outdoor_temp = lux = None
-outdoorAqi = indoorAqi = world = dot_loc = None
 #################
 
 def main():
@@ -120,184 +95,36 @@ def main():
     MATRIX = createMatrix()
     OFFSCREEN_CANVAS = MATRIX.CreateFrameCanvas()
 
+    world = conway.World((64,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
+    world.reset()
+    #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
+    #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
+
+    clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
+    graph = line_graph.Graph()
+
     weatherSetup() # Blocking fetch of weather data
 
     tick = 0
     while True:
         OFFSCREEN_CANVAS.Clear()
-        drawWeather(tick)
-        drawClock(tick)
-        drawDate(tick)
-        draw_conway(tick)
-        #drawAqi(tick)
+        drawWeather(graph, tick)
+        clock.draw(OFFSCREEN_CANVAS)
+        draw_conway(OFFSCREEN_CANVAS, world, tick)
 
         OFFSCREEN_CANVAS = MATRIX.SwapOnVSync(OFFSCREEN_CANVAS)
-        time.sleep(TICK_DUR)
+        time.sleep(utils.get_tick_dur_ms() / 1000)
         tick += 1
         if tick == sys.maxsize:
             tick = 0
 
-class Cell():
-    def __init__(self, color):
-        self.color = color
-        self.id = uuid.uuid4()
-
-    def __str__(self):
-        return "Cell"
-
-    def __hash__(self):
-        return self.id
-
-    def __eq__(self, other):
-        return self.id == other.id
-
-class World():
-    adjacent = ((1, 1), (1, 0), (0, 1), (1, -1), (-1, 1), (-1, -1), (-1, 0), (0, -1))
-
-    def __init__(self, bounds, born, survive, seed):
-        self.cols, self.rows = bounds
-        self.world = self.get_new_matrix()
-        self.buffer = self.get_new_matrix()
-        self.born = born
-        self.survive = survive
-        self.seed = seed
-        self.age = 0
-        self.cell_cnt = 0
-        self.history = set()
-
-    def get_new_matrix(self):
-        return [[None] * self.cols for _ in range(self.rows)]
-
-    def reset(self):
-        self.history = set()
-        self.world = self.get_new_matrix()
-        self.buffer = self.get_new_matrix()
-        self.populate()
-        #self.world[1][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-        #self.world[2][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-        #self.world[3][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+def draw_conway(canvas, world, tick):
+    if utils.should_trigger_ms(tick, 100):
+        world.advance()
+    world.draw(canvas)
     
-    def swap_buffer(self):
-        self.world = self.buffer
-        self.buffer = self.get_new_matrix()
-
-    def populate(self):
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                if random.random() <= self.seed:
-                    self.world[r][c] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-                else:
-                    self.world[r][c] = None
-
-    def gen_state(self):
-        state = []
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                if self.world[r][c]:
-                    state.append((r,c))
-        return tuple(state)
-
-    def tick(self):
-        self.age += 1
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                self.fate(r, c)
-
-        self.history.add(self.gen_state())
-        self.swap_buffer()
-
-    def fate(self, r, c):
-        is_alive = self.world[r][c]
-        local_alive_cnt = self.get_local_alive_cnt(r, c)
-
-        if is_alive:
-            if local_alive_cnt in self.survive:
-                self.buffer[r][c] = self.world[r][c]
-            else:
-                self.buffer[r][c] = None
-        else: # It was dead
-            if local_alive_cnt in self.born:
-                self.buffer[r][c] = Cell(self.get_baby_color(r,c))
-            else:
-                self.buffer[r][c] = None
-
-    # Baby's color is the mode of colors of neighbors
-    def get_baby_color(self, r, c):
-        colors = []
-        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
-        cells = filter(None, [self.world[r][c] for r, c in neighbor_locs])
-        colors = [cell.color for cell in cells]
-        result = statistics.mode(colors)
-        return result
-
-    def get_local_alive_cnt(self, r, c):
-        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
-        
-        return sum(1 if self.world[r][c] else 0 for r, c in neighbor_locs)
-        
-    def find_adjacent_with_wrapping(self, r, c):
-        result = []
-        for dr, dc in World.adjacent:
-            nr = r + dr
-            nc = c + dc
-            if nr == -1:
-                nr = self.rows - 1
-            elif nr == self.rows:
-                nr = 0
-            if nc == -1:
-                nc = self.cols - 1
-            elif nc == self.cols:
-                nc = 0
-            result.append((nr, nc))
-
-        return result
-
-    def draw(self):
-        global OFFSCREEN_CANVAS
-        l = []
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                cell = self.world[r][c]
-                if cell:
-                    x = c + CONWAY_X_OFFSET
-                    y = r
-                    OFFSCREEN_CANVAS.SetPixel(x, y, cell.color[0], cell.color[1], cell.color[2])
-    
-    def count_living(self):
-        s = 0
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                 if self.world[r][c]:
-                    s += 1
-        return s
-
-    def __str__(self):
-        return '\n'.join(['\t'.join([str(cell) for cell in row]) for row in self.world])
-
-def draw_conway(tick):
-    global world
-
-    if not world:
-        world = World((64,32), {3}, {2,3}, 0.3)
-        #world = World((64,32), {3,6}, {2,3}, 0.3) # highlife
-        #world = World((5,5), {3}, {2,3}, 0.3) # debug blinker
+    if (world.gen_state() in world.history) or utils.should_trigger_secs(tick, 600):
         world.reset()
-
-    if should_trigger_ms(tick, 100):
-        world.tick()
-    world.draw()
-    
-    if (world.gen_state() in world.history) or should_trigger_secs(tick, 600):
-        world.reset()
-    
-def should_trigger_secs(tick, secs):
-    ticks_per_sec = 1 / TICK_DUR
-    return tick % (int(ticks_per_sec * secs)) == 0
-
-def should_trigger_ms(tick, ms):
-    ticks_per_sec = 1 / TICK_DUR
-    ticks_per_ms = ticks_per_sec / 1000
-    return tick % (int(ticks_per_ms * ms)) == 0
 
 def aqiColor(aqi):
     color = None
@@ -313,28 +140,17 @@ def aqiColor(aqi):
         color = AQI_PURPLE_COLOR
     return color
 
-def drawClock(tick):
-    now = datetime.datetime.now()
-    timeStr = now.strftime("%-I:%M:%S")
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+9, 13+11, CLOCK_COLOR, timeStr)
-
-def drawDate(tick):
-    now = datetime.datetime.now()
-    timeStr = now.strftime("%-m/%-d/%y")
-    graphics.DrawText(OFFSCREEN_CANVAS, MEDIUM_FONT, (64*2)+13, 13, CLOCK_COLOR, timeStr)
-
-def drawWeather(tick):
+def drawWeather(graph, tick):
     try:
         updateData(tick)
 
-        new_frame = Image.new('RGBA', (64,32))
-        drawDailyIcons(daily_icons, new_frame, tick, weather)
-        new_frame = new_frame.convert('RGB')
-        OFFSCREEN_CANVAS.SetImage(new_frame, 0, 0)
+        frame = Image.new('RGBA', (64,32))
+        drawDailyIcons(frame, tick, weather)
+        OFFSCREEN_CANVAS.SetImage(frame.convert('RGB'), 0, 0)
         
         drawCurrent(weather['current'], outdoor_temp)
         drawIndoor(indoor_temp)
-        drawGraph(weather, tick)
+        graph.draw(OFFSCREEN_CANVAS, weather, tick)
         drawDailyText(weather)
     except Exception as e:
         if args.v:
@@ -342,51 +158,31 @@ def drawWeather(tick):
         log.error('main() exception: {}'.format(traceback.format_exc()))
 
 def updateData(tick):
-    if should_trigger_secs(tick, READ_WEATHER_SECS):
+    if utils.should_trigger_secs(tick, READ_WEATHER_SECS):
         try:
             fetchDataThreaded()
         except Exception as e:
             log.error('fetchWeather() threaded exception: {}'.format(traceback.format_exc()))
 
-    if should_trigger_secs(tick, READ_LUX_SECS):
+    '''
+    if utils.should_trigger_secs(tick, READ_LUX_SECS):
         try:
-            #adjustBrightnessThreaded()
+            adjustBrightnessThreaded()
             pass
         except Exception as e:
             log.error('fetchLux() threaded exception: {}'.format(traceback.format_exc()))
+    '''
 
-def drawGraph(weather, tick):
-    TEMP_DIV = 5.0
-    POP_DIV = 7.0
-    PERCIP_INTENSITY_DIV = 0.02
-    MAX_PERCIP_INTENSITY = 0.3
-    CHART_WIDTH = 44
-    BAR_LEFT = 10
+def drawDailyIcons(frame, tick, weather):
+    # draw using current icon frame
+    for day_index, icon_set in enumerate(daily_icons):
+        for icon_frame in icon_set.get_frames():
+            x_offset = day_index * 13
+            frame.paste(icon_frame, (x_offset,0), icon_frame)
 
-    horizontal_temps = [40, 60, 80, 100]
-    if TEMP_MODE == "low":
-        horizontal_temps = [20, 40, 60, 80]
-    epochs = sorted(weather['hours'].keys())[:CHART_WIDTH]
-
-    drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV)
-
-    drawHorBars(horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH)
-    drawVertBars(epochs, weather, BAR_LEFT)
-    drawCloudCoverLine(epochs, weather, POP_DIV, BAR_LEFT)
-    drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick)
-    drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX_PERCIP_INTENSITY)
-    drawPopLine(epochs, weather, POP_DIV, BAR_LEFT)
-
-def drawDailyIcons(daily_icons, new_frame, tick, weather):
-    for j, icons in enumerate(daily_icons):
-        for icon in icons:
-            offset = 0
-            if j > 0:
-                offset = j * 13
-            else:
-                offset = 0
-            this_day_frame_index = (tick + j*4) % len(icon)
-            new_frame.paste(icon[this_day_frame_index], (offset,0), icon[this_day_frame_index])
+        # advance icon frame if needed
+        if utils.should_trigger_ms(tick, ICON_SPEED_MS):
+            icon_set.advance()
 
 def drawDailyText(weather):
     for j, epoch in enumerate(sorted(weather['days'])[:5]):
@@ -426,143 +222,6 @@ def drawIndoor(current):
         font = SMALL_FONT
     graphics.DrawText(OFFSCREEN_CANVAS, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(current))))
 
-def drawDaylight(epochs, weather, BAR_LEFT, TEMP_DIV):
-    for i, epoch in enumerate(epochs):
-        hour = weather['hours'][epoch]
-        riseTime = weather['days'][sorted(weather['days'])[0]]['rise']
-        setTime = weather['days'][sorted(weather['days'])[0]]['set']
-        sun_rise = datetime.datetime.fromtimestamp(riseTime).hour
-        sun_set = datetime.datetime.fromtimestamp(setTime).hour
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-        column = BAR_LEFT + i
-
-        # Only Area under the curve
-        temp = int(round( (hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
-        temp_y2 = BAR_CHART_BOTTOM - temp
-
-        if dt.hour >= sun_rise and dt.hour <= sun_set:
-            #graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, temp_y2 + 1, DAYLIGHT_BAR_COLOR)
-            graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, DAYLIGHT_BAR_COLOR)
-
-def drawHorBars(horizontal_temps, TEMP_DIV, BAR_LEFT, CHART_WIDTH):
-    for h_temp in horizontal_temps:
-        y = BAR_CHART_BOTTOM - ((h_temp - BAR_MIN_TEMP) / TEMP_DIV)
-        y = int(y)
-        graphics.DrawLine(OFFSCREEN_CANVAS, BAR_LEFT, y, BAR_LEFT + CHART_WIDTH - 1, y, TEMP_INCREMENT_LINE_COLOR)
-
-def drawVertBars(epochs, weather, BAR_LEFT):
-    for i, epoch in enumerate(epochs):
-        column = BAR_LEFT + i
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-
-        if dt.hour == 12:
-            graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, NOON_BAR_COLOR)
-        if dt.hour == 0:
-            graphics.DrawLine(OFFSCREEN_CANVAS, column, BAR_CHART_BOTTOM, column, BAR_CHART_BOTTOM - 14, MIDNIGHT_BAR_COLOR)
-
-def drawTempLine(epochs, weather, TEMP_DIV, BAR_LEFT, CHART_WIDTH, tick):
-    global dot_loc
-
-    if dot_loc == None:
-        dot_loc = 0
-    else:
-        if should_trigger_ms(tick, 250):
-            dot_loc = (dot_loc + 1) % CHART_WIDTH
-    
-    for i, epoch in enumerate(epochs):
-        hour = weather['hours'][epoch]
-
-        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-
-        temp = int(round( (hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
-
-        prev_temp = None
-        if prev_hour:
-            prev_temp = int(round( (prev_hour['temp'] - BAR_MIN_TEMP) / TEMP_DIV ))
-
-        column = BAR_LEFT + i
-        temp_y2 = BAR_CHART_BOTTOM - temp
-        prev_temp_y2 = BAR_CHART_BOTTOM - prev_temp if prev_temp else None
-
-        # Temperature Line
-        base_temp = 80
-        low_temp = 50
-        OFFSCREEN_CANVAS.SetPixel(column, temp_y2, TEMP_LINE_COLOR.red, TEMP_LINE_COLOR.green, TEMP_LINE_COLOR.blue)
-
-        if prev_temp:
-            drawConnectingLine(prev_temp, temp, prev_temp_y2, temp_y2, column, TEMP_LINE_COLOR)
-
-        # Animated Dot
-        if i == dot_loc:
-            OFFSCREEN_CANVAS.SetPixel(column, temp_y2, RUNNER_DOT_COLOR.red, RUNNER_DOT_COLOR.green, RUNNER_DOT_COLOR.blue)
-
-def drawCloudCoverLine(epochs, weather, POP_DIV, BAR_LEFT):
-    for i, epoch in enumerate(epochs):
-        hour = weather['hours'][epoch]
-
-        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-
-        pop = int(round(hour['cloudCover'] / POP_DIV)) - 1
-        prev_pop = int(round( prev_hour['cloudCover'] / POP_DIV )) - 1 if prev_hour else None
-
-        column = BAR_LEFT + i
-        pop_y2 = BAR_CHART_BOTTOM - pop
-        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
-
-        if True:
-            OFFSCREEN_CANVAS.SetPixel(column, pop_y2, CLOUD_COVER_LINE_COLOR.red, CLOUD_COVER_LINE_COLOR.green, CLOUD_COVER_LINE_COLOR.blue)
-            if prev_pop:
-                drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, column, CLOUD_COVER_LINE_COLOR)
-
-def drawPopLine(epochs, weather, POP_DIV, BAR_LEFT):
-    for i, epoch in enumerate(epochs):
-        hour = weather['hours'][epoch]
-
-        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-
-        pop = int(round(hour['pop'] / POP_DIV)) - 1
-        prev_pop = int(round( prev_hour['pop'] / POP_DIV )) - 1 if prev_hour else None
-
-        column = BAR_LEFT + i
-        pop_y2 = BAR_CHART_BOTTOM - pop
-        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
-
-        if True:
-            OFFSCREEN_CANVAS.SetPixel(column, pop_y2, POP_LINE_COLOR.red, POP_LINE_COLOR.green, POP_LINE_COLOR.blue)
-            if prev_pop:
-                drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, column, POP_LINE_COLOR)
-
-def drawPercipIntensityLine(epochs, weather, PERCIP_INTENSITY_DIV, BAR_LEFT, MAX_PERCIP_INTENSITY):
-    for i, epoch in enumerate(epochs):
-        hour = weather['hours'][epoch]
-
-        prev_hour = weather['hours'][epochs[i-1]] if i > 0 else None
-        dt =  datetime.datetime.fromtimestamp(float(epoch))
-
-        # cap intensity to MAX_PERCIP_INTENSITY
-        hour['precipIntensity'] = MAX_PERCIP_INTENSITY if hour['precipIntensity'] > MAX_PERCIP_INTENSITY else hour['precipIntensity'] 
-
-        pop = int(round(hour['precipIntensity'] / PERCIP_INTENSITY_DIV)) - 1
-        prev_pop = int(round( prev_hour['precipIntensity'] / PERCIP_INTENSITY_DIV )) - 1 if prev_hour else None
-
-        column = BAR_LEFT + i
-        pop_y2 = BAR_CHART_BOTTOM - pop
-        prev_pop_y2 = BAR_CHART_BOTTOM - prev_pop if prev_pop else None
-
-        if True:
-            OFFSCREEN_CANVAS.SetPixel(column, pop_y2, PERCIP_INTENSITY_LINE_COLOR.red, PERCIP_INTENSITY_LINE_COLOR.green, PERCIP_INTENSITY_LINE_COLOR.blue)
-            if prev_pop:
-                drawConnectingLine(prev_pop, pop, prev_pop_y2, pop_y2, column, PERCIP_INTENSITY_LINE_COLOR)
-
-def drawConnectingLine(prev, cur, prev_y2, y2, column, color):
-    if prev > cur + 1:
-        graphics.DrawLine(OFFSCREEN_CANVAS, column - 1, prev_y2 , column - 1, y2 - 1, color)
-    elif prev < cur - 1:
-        graphics.DrawLine(OFFSCREEN_CANVAS, column,     y2,     column,     prev_y2 - 1, color)
-
 def createMatrix():
     options = RGBMatrixOptions()
     options.chain_length = 6 if EXTENDED_WEATHER else 2
@@ -587,13 +246,10 @@ def fetchData():
     global weather, daily_icons, indoor_temp, outdoor_temp
     if args.v:
         print('Opening DB...')
-    #client = MongoClient(db_config['host'])
-    #db = client.piData
     
     conn = None
     if args.v:
         print('Starting db put')
-    #doc = {'time': datetime.datetime.utcnow(), 'weather': weather}
     try:
         conn = mariadb.connect(
             user="mbutki",
@@ -620,12 +276,13 @@ def fetchData():
     if args.v:
         print('DB client closed')
 
+'''
 def adjustBrightnessThreaded():
     print('about to call threaded lux')
     x = threading.Thread(target=adjustBrightness, args=())
     x.start()
 
-'''
+
 def adjustBrightness():
     #if args.v:
     print('Opening DB...')
@@ -640,16 +297,16 @@ def adjustBrightness():
     print('Closing DB...')
 
     setBrightness(lux)
-'''
+
 
 def setBrightness(lux):
     lux = max(lux, MIN_LUX)
     lux = min(lux, MAX_LUX)
-    brightness = translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
+    brightness = utils.translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
     #if args.v:
     print('LUX After Min/Max:{}'.format(lux))
     print('brightness:{}'.format(brightness))
     MATRIX.brightness = brightness
-
+'''
 if __name__ == "__main__":
     main()

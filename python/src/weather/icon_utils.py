@@ -1,7 +1,9 @@
 import json
-from PIL import Image, ImageDraw
+import random
+from PIL import Image
 import datetime
 import numpy
+from collections import defaultdict
 
 def processImage(path):
     im = Image.open(path)
@@ -40,27 +42,49 @@ def getMoonPhaseIcon(phase):
         return QUARTER_MOON
     elif phase <= 1:
         return CRESCENT_MOON
-    
 
+class Icon():
+    def __init__(self, icon):
+        self.icon = icon
+        self.frame_num = random.randint(0, len(icon)-1)
+    
+    def advance(self):
+        self.frame_num = (self.frame_num + 1) % len(self.icon)
+    
+    def get_frame(self):
+        return self.icon[self.frame_num]
+
+class IconSet():
+    def __init__(self, icon_imgs):
+        self.icons = [Icon(icon) for icon in icon_imgs]
+
+    def get_frames(self):
+        return [icon.get_frame() for icon in self.icons]
+    
+    def advance(self):
+        for icon in self.icons:
+            icon.advance()
+
+# For each day, returns which icons to render (i.e. party_cloudy = [sun, clouds])
 def getDailyIcons(weather):
     daily_icons = []
-    print(f'Is weather a list? {weather}')
     for i, epoch in enumerate(sorted(weather['days'])):
         day = weather['days'][epoch]
         condition = day['condition']
-        icons = []
+        icon_set = None
 
         now = datetime.datetime.now()
         sun_rise = datetime.datetime.fromtimestamp(day['rise'])
         sun_set = datetime.datetime.fromtimestamp(day['set'])
         if i == 0 and (now > sun_set):
             # night time
-            icons = [getMoonPhaseIcon(day['moonPhase'])]
+            moon_img = getMoonPhaseIcon(day['moonPhase'])
+            icon_set = IconSet([moon_img])
         else:
             # daytime
             condition = rainIconLogic(weather, epoch)
-            icons = TEXT_TO_ICON_DAY[condition] if condition in TEXT_TO_ICON_DAY else [UNKNOWN]
-        daily_icons.append(icons)
+            icon_set = TEXT_TO_ICON_DAY[condition] # default dict handles unknown conditions
+        daily_icons.append(icon_set)
     return daily_icons
 
 def rainIconLogic(weather, epoch):
@@ -88,7 +112,7 @@ def rainIconLogic(weather, epoch):
 
         maxPop = 0
         CCs = []
-        for hourEpoch in xrange(startHour, endHour + 3600, 3600):
+        for hourEpoch in range(startHour, endHour + 3600, 3600):
             if str(hourEpoch) not in weather['hours']:
                 break
             hour = weather['hours'][str(hourEpoch)]
@@ -116,7 +140,6 @@ def rainIconLogic(weather, epoch):
 PI_DIR = '/home/mbutki/pi_projects'
 pi_config = json.load(open('{}/pi.config'.format(PI_DIR)))
 WEATHER_DIR = PI_DIR + '/python/src/weather'
-print(WEATHER_DIR + '/imgs/rain.gif')
 RAIN = processImage(WEATHER_DIR + '/imgs/rain.gif')
 SUN = processImage(WEATHER_DIR + '/imgs/sun.gif')
 CLOUD = processImage(WEATHER_DIR + '/imgs/cloud.gif')
@@ -133,13 +156,14 @@ FULL_MOON = processImage(WEATHER_DIR + '/imgs/full_moon.gif')
 JUST_CLOUDS = processImage(WEATHER_DIR + '/imgs/just_clouds.gif')
 JUST_CLOUDS_NIGHT = processImage(WEATHER_DIR + '/imgs/just_clouds_night.gif')
 
-TEXT_TO_ICON_DAY = {
-    'clear': [SUN],
-    'cloudy': [CLOUD],
-    'partly-cloudy': [SUN, JUST_CLOUDS],
-    'rain': [RAIN],
-    'snow': [RAIN]
-}
+unknown_icon_set = IconSet([UNKNOWN])
+TEXT_TO_ICON_DAY = defaultdict(lambda: unknown_icon_set, {
+    'clear': IconSet([SUN]),
+    'cloudy': IconSet([CLOUD]),
+    'partly-cloudy': IconSet([SUN, JUST_CLOUDS]),
+    'rain': IconSet([RAIN]),
+    'snow': IconSet([RAIN])
+})
 
 PERCIPITATION = set(['rain', 'snow'])
 

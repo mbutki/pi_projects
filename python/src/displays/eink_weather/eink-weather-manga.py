@@ -14,7 +14,7 @@ from PIL import Image,ImageDraw,ImageFont,ImageFilter, ImageOps
 import mariadb
 import numpy as np
 
-from weather import dbReads
+from weather import db_reads
 
 PI_DIR = '/home/mbutki/pi_projects'
 
@@ -68,7 +68,7 @@ def fetchData():
             print('Get Cursor')
         cur = conn.cursor()
         
-        weather = dbReads.fetchWeather(cur, args)
+        weather = db_reads.fetchWeather(cur, args)
 
         conn.commit()
         conn.close()
