@@ -69,7 +69,8 @@ AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
 ################## END COLORS ######################
 
 CURRENT_BOTTOM = 28
-CONWAY_X_OFFSET = 68
+CONWAY_X_OFFSET = 65
+CLOCK_X_OFFSET = 211
 
 #TICK_DUR_MS is in utils.py
 ICON_SPEED_MS = 200
@@ -90,12 +91,14 @@ class Display():
         self.matrix = self.create_matrix()
         self.canvas = self.matrix.CreateFrameCanvas()
 
-        self.world = conway.World((64,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
-        #self.world = conway.World((64,32), {3,6}, {2,3}, 0.3) # highlife
-        #self.world = conway.World((5,5), {3}, {2,3}, 0.3) # debug blinker
+        self.world = conway.World((81,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET+32)
+        #self.world = conway.World((145,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
+        #self.world = conway.World((81,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
+        #self.world = conway.World((64,32), {3,6}, {2,3}, 0.3, CONWAY_X_OFFSET) # highlife
+        #self.world = conway.World((5,5), {3}, {2,3}, 0.3, CONWAY_X_OFFSET) # debug blinker
         self.world.reset()
 
-        self.clock = clock_date.Clock(MEDIUM_FONT, (64 * 2) + 9)
+        self.clock = clock_date.Clock(MEDIUM_FONT, CLOCK_X_OFFSET)
         self.graph = line_graph.Graph()
 
         self.fetch_weather_sync()
@@ -103,16 +106,22 @@ class Display():
 
     def run(self):
         while True:
+            start_time = time.perf_counter()
+
             if self.tick != 0:
                 self.fetch_weather_async()
-
             self.canvas.Clear()
             self.draw_weather()
             self.clock.draw(self.canvas)
             self.draw_conway()
-
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
-            time.sleep(utils.get_tick_dur_ms() / 1000)
+
+            end_time = time.perf_counter()
+            elapsed_ms = ((end_time - start_time) / 1000) 
+            sleep_ms = utils.get_tick_dur_ms() - elapsed_ms
+            sleep_sec = sleep_ms / 1000
+            time.sleep(sleep_sec)
+
             self.tick += 1
             if self.tick == sys.maxsize - 1000:
                 self.tick = 0
@@ -257,10 +266,11 @@ class Display():
 
     def create_matrix(self):
         options = RGBMatrixOptions()
-        options.chain_length = 6 if EXTENDED_WEATHER else 2
+        options.chain_length = 8 if EXTENDED_WEATHER else 2
         options.gpio_slowdown = 2
         options.brightness = MAX_BRIGHTNESS
         options.hardware_mapping = 'adafruit-hat-pwm'
+        #options.limit_refresh_rate_hz = 1000
 
         return RGBMatrix(options = options)
 

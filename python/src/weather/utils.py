@@ -1,4 +1,4 @@
-TICK_DUR_MS = 100
+TICK_DUR_MS = 50
 
 def translate(value, left_min, left_max, right_min, right_max):
     # Figure out how 'wide' each range is

@@ -1,6 +1,7 @@
 import random
-import statistics
+import time
 import uuid
+from collections import Counter
 
 class Cell():
     def __init__(self, color):
@@ -11,7 +12,7 @@ class Cell():
         return "Cell"
 
     def __hash__(self):
-        return self.id
+        return hash(self.id)
 
     def __eq__(self, other):
         return self.id == other.id
@@ -21,121 +22,196 @@ class World():
 
     def __init__(self, bounds, born, survive, seed, x_offset):
         self.cols, self.rows = bounds
-        self.world = self.get_new_matrix()
-        self.buffer = self.get_new_matrix()
+        # Optimization 1: Sparse representation - only store living cells
+        self.living_cells = {}  # {(r, c): Cell} - only living cells
         self.born = born
         self.survive = survive
         self.seed = seed
         self.x_offset = x_offset
         self.age = 0
         self.cell_cnt = 0
+        
+        # Optimization 7: Smart history management
         self.history = set()
-
-    def get_new_matrix(self):
-        return [[None] * self.cols for _ in range(self.rows)]
+        self.max_history_size = 100
+        self.history_trim_size = 50
+        
+        # Optimization 8: Performance profiling
+        self.last_advance_time = 0
+        self.total_advance_time = 0
+        self.advance_count = 0
 
     def reset(self):
+        # Optimization 7: Smart history management
         self.history = set()
-        self.world = self.get_new_matrix()
-        self.buffer = self.get_new_matrix()
+        self.living_cells = {}
+        self.age = 0
+        self.last_advance_time = 0
+        self.total_advance_time = 0
+        self.advance_count = 0
         self.populate()
 
         # Debug blinker
-        #self.world[1][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-        #self.world[2][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-        #self.world[3][2] = Cell(graphics.Color(random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-
-    def swap_buffer(self):
-        self.world = self.buffer
-        self.buffer = self.get_new_matrix()
+        #self.living_cells[(1, 2)] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+        #self.living_cells[(2, 2)] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+        #self.living_cells[(3, 2)] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
 
     def populate(self):
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
+        for r in range(self.rows):
+            for c in range(self.cols):
                 if random.random() <= self.seed:
-                    self.world[r][c] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-                else:
-                    self.world[r][c] = None
+                    self.living_cells[(r, c)] = Cell((random.randint(0,255), random.randint(0,255), random.randint(0,255)))
+
+    def wrap_coordinates(self, r, c):
+        """Helper method to handle coordinate wrapping"""
+        if r == -1:
+            r = self.rows - 1
+        elif r == self.rows:
+            r = 0
+        if c == -1:
+            c = self.cols - 1
+        elif c == self.cols:
+            c = 0
+        return (r, c)
+
+    # Optimization 2: Active region processing
+    def get_active_region(self):
+        """Get all cells that need to be evaluated (living + their neighbors)"""
+        active = set()
+        for r, c in self.living_cells:
+            active.add((r, c))  # Living cell
+            # Add all neighbors
+            for dr, dc in World.adjacent:
+                nr, nc = self.wrap_coordinates(r + dr, c + dc)
+                active.add((nr, nc))
+        return active
+
+    # Optimization 3: Efficient neighbor counting
+    def get_neighbor_counts(self, active_cells):
+        """Get neighbor counts for all active cells at once"""
+        neighbor_counts = {}
+        
+        # Initialize all active cells with 0 count
+        for cell_pos in active_cells:
+            neighbor_counts[cell_pos] = 0
+        
+        # Count neighbors efficiently
+        for r, c in self.living_cells:
+            for dr, dc in World.adjacent:
+                nr, nc = self.wrap_coordinates(r + dr, c + dc)
+                if (nr, nc) in active_cells:
+                    neighbor_counts[(nr, nc)] += 1
+        
+        return neighbor_counts
 
     def gen_state(self):
-        state = []
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                if self.world[r][c]:
-                    state.append((r,c))
-        return tuple(state)
+        """Generate a state representation compatible with original loop detection"""
+        # Sort coordinates to ensure consistent ordering for comparison
+        living_coords = sorted(self.living_cells.keys())
+        return tuple(living_coords)
 
     def advance(self):
+        # Optimization 8: Performance profiling
+        start_time = time.time()
+        
+        # First add current state to history BEFORE making any changes
+        current_state = self.gen_state()
+        self.history.add(current_state)
+        
         self.age += 1
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                self.fate(r, c)
+        
+        # Optimization 2: Only evaluate active region
+        active_cells = self.get_active_region()
+        
+        # Optimization 3: Efficient neighbor counting
+        neighbor_counts = self.get_neighbor_counts(active_cells)
+        
+        new_living_cells = {}
+        
+        for (r, c) in active_cells:
+            is_alive = (r, c) in self.living_cells
+            local_alive_cnt = neighbor_counts[(r, c)]
+            
+            if is_alive:
+                if local_alive_cnt in self.survive:
+                    new_living_cells[(r, c)] = self.living_cells[(r, c)]
+            else:  # It was dead
+                if local_alive_cnt in self.born:
+                    new_living_cells[(r, c)] = Cell(self.get_baby_color_fast(r, c))
+        
+        # Update to new state
+        self.living_cells = new_living_cells
+        
+        # Generate new state and check if we've seen it before
+        new_state = self.gen_state()
+        loop_detected = new_state in self.history
+        
+        # Optimization 7: Smart history management
+        if len(self.history) > self.max_history_size:
+            # Keep only recent states
+            recent_history = list(self.history)[-self.history_trim_size:]
+            self.history = set(recent_history)
+        
+        # Optimization 8: Performance profiling
+        self.last_advance_time = time.time() - start_time
+        self.total_advance_time += self.last_advance_time
+        self.advance_count += 1
+        
+        if self.age % 100 == 0:  # Log every 100 generations
+            avg_time = self.total_advance_time / self.advance_count
+            print(f"Generation {self.age}: {self.last_advance_time:.4f}s (avg: {avg_time:.4f}s, living: {len(self.living_cells)})")
+        
+        return loop_detected
 
-        self.history.add(self.gen_state())
-        self.swap_buffer()
-
-    def fate(self, r, c):
-        is_alive = self.world[r][c]
-        local_alive_cnt = self.get_local_alive_cnt(r, c)
-
-        if is_alive:
-            if local_alive_cnt in self.survive:
-                self.buffer[r][c] = self.world[r][c]
-            else:
-                self.buffer[r][c] = None
-        else: # It was dead
-            if local_alive_cnt in self.born:
-                self.buffer[r][c] = Cell(self.get_baby_color(r,c))
-            else:
-                self.buffer[r][c] = None
-
-    # Baby's color is the mode of colors of neighbors
-    def get_baby_color(self, r, c):
+    # Optimization 5: Optimized color calculation
+    def get_baby_color_fast(self, r, c):
+        """Optimized color calculation using Counter instead of statistics.mode"""
         colors = []
-        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
-        cells = filter(None, [self.world[r][c] for r, c in neighbor_locs])
-        colors = [cell.color for cell in cells]
-        result = statistics.mode(colors)
-        return result
-
-    def get_local_alive_cnt(self, r, c):
-        neighbor_locs = self.find_adjacent_with_wrapping(r, c)
-
-        return sum(1 if self.world[r][c] else 0 for r, c in neighbor_locs)
-
-    def find_adjacent_with_wrapping(self, r, c):
-        result = []
         for dr, dc in World.adjacent:
-            nr = r + dr
-            nc = c + dc
-            if nr == -1:
-                nr = self.rows - 1
-            elif nr == self.rows:
-                nr = 0
-            if nc == -1:
-                nc = self.cols - 1
-            elif nc == self.cols:
-                nc = 0
-            result.append((nr, nc))
-
-        return result
+            nr, nc = self.wrap_coordinates(r + dr, c + dc)
+            if (nr, nc) in self.living_cells:
+                colors.append(self.living_cells[(nr, nc)].color)
+        
+        if not colors:
+            return (255, 255, 255)  # Default color if no neighbors
+        
+        # Use Counter instead of statistics.mode for better performance
+        most_common_color = Counter(colors).most_common(1)[0][0]
+        return most_common_color
 
     def draw(self, canvas):
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                cell = self.world[r][c]
-                if cell:
-                    x = c + self.x_offset
-                    y = r
-                    canvas.SetPixel(x, y, cell.color[0], cell.color[1], cell.color[2])
+        for (r, c), cell in self.living_cells.items():
+            x = c + self.x_offset
+            y = r
+            canvas.SetPixel(x, y, cell.color[0], cell.color[1], cell.color[2])
 
     def count_living(self):
-        s = 0
-        for r in range(len(self.world)):
-            for c in range(len(self.world[r])):
-                if self.world[r][c]:
-                    s += 1
-        return s
+        return len(self.living_cells)
+
+    def get_performance_stats(self):
+        """Get performance statistics"""
+        if self.advance_count == 0:
+            return "No generations processed yet"
+        
+        avg_time = self.total_advance_time / self.advance_count
+        return {
+            'total_generations': self.age,
+            'total_time': self.total_advance_time,
+            'average_time_per_generation': avg_time,
+            'last_generation_time': self.last_advance_time,
+            'current_living_cells': len(self.living_cells),
+            'history_size': len(self.history)
+        }
 
     def __str__(self):
-        return '\n'.join(['\t'.join([str(cell) for cell in row]) for row in self.world])
+        # Convert sparse representation back to matrix format for display
+        result = []
+        for r in range(self.rows):
+            row = []
+            for c in range(self.cols):
+                if (r, c) in self.living_cells:
+                    row.append(str(self.living_cells[(r, c)]))
+                else:
+                    row.append("None")
+            result.append('\t'.join(row))
+        return '\n'.join(result)

@@ -383,6 +383,7 @@ def run():
     #clean_refresh(epd) # turn out not needed
     epd.init_4Gray()
     epd.display_4Gray(epd.getbuffer_4Gray(black_image))
+    time.sleep(1) # hopefully fix random "out-of-ink" pages
 
     print("Goto Sleep...")
     epd.sleep()
