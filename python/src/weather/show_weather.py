@@ -32,15 +32,10 @@ matrix_config = json.load(open(f'{PI_DIR}/python/src/weather/matrix.config'))
 LOG_NAME = 'show_weather.log'
 LOG_DIR = pi_config['log_dir']
 
-PERFER_RAIN_POP = matrix_config['perfer_rain_pop'] == 'True'
-EXTENDED_WEATHER = matrix_config['extended_weather'] == 'True'
-
 MAX_LUX = matrix_config['max_lux']
 MIN_LUX = matrix_config['min_lux']
 MAX_BRIGHTNESS = matrix_config['max_brightness']
 MIN_BRIGHTNESS = matrix_config['min_brightness']
-
-TEMP_MODE = matrix_config['temp_mode']
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -69,8 +64,8 @@ AQI_PURPLE_COLOR = graphics.Color(210, 0, 210)
 ################## END COLORS ######################
 
 CURRENT_BOTTOM = 28
-CONWAY_X_OFFSET = 65
-CLOCK_X_OFFSET = 211
+CONWAY_X_OFFSET = 67
+CLOCK_X_OFFSET = 209
 
 #TICK_DUR_MS is in utils.py
 ICON_SPEED_MS = 200
@@ -91,7 +86,7 @@ class Display():
         self.matrix = self.create_matrix()
         self.canvas = self.matrix.CreateFrameCanvas()
 
-        self.world = conway.World((81,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET+32)
+        self.world = conway.World((139,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
         #self.world = conway.World((145,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
         #self.world = conway.World((81,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
         #self.world = conway.World((64,32), {3,6}, {2,3}, 0.3, CONWAY_X_OFFSET) # highlife
@@ -174,10 +169,9 @@ class Display():
     def draw_conway(self):
         if utils.should_trigger_ms(self.tick, 100):
             self.world.advance()
+            if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
+                self.world.reset()
         self.world.draw(self.canvas)
-
-        if (self.world.gen_state() in self.world.history) or utils.should_trigger_secs(self.tick, 600):
-            self.world.reset()
 
     def aqi_color(self, aqi):
         color = None
@@ -266,11 +260,10 @@ class Display():
 
     def create_matrix(self):
         options = RGBMatrixOptions()
-        options.chain_length = 8 if EXTENDED_WEATHER else 2
-        options.gpio_slowdown = 2
+        options.chain_length = 8
+        options.gpio_slowdown = 5
         options.brightness = MAX_BRIGHTNESS
         options.hardware_mapping = 'adafruit-hat-pwm'
-        #options.limit_refresh_rate_hz = 1000
 
         return RGBMatrix(options = options)
 

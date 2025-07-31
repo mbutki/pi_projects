@@ -5,6 +5,8 @@ db.config
 python/.venv/
 python/logs
 
+python/rpi-rgb-led-matrix/bindings/python/build
+
 python/src/weather/matrix.config
 python/src/weather/__pycache__
 
@@ -12,3 +14,4 @@ python/src/displays/eink_weather/images/
 
 webserver/node_modules/
 webserver/frontend/node_modules/
+
