@@ -79,7 +79,7 @@ class Graph:
                 graphics.DrawLine(canvas, column, Graph.BAR_CHART_BOTTOM, column, Graph.BAR_CHART_BOTTOM - 14, Graph.MIDNIGHT_BAR_COLOR)
 
     def draw_temp_line(self, canvas, epochs, weather, tick):
-        if utils.should_trigger_ms(tick, 100):
+        if utils.should_trigger_ms(tick, 150):
             self.dot_loc = (self.dot_loc + 1) % Graph.CHART_WIDTH
 
         for i, epoch in enumerate(epochs):

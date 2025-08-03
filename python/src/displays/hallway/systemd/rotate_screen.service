@@ -1,0 +1,14 @@
+[Unit]
+Description=Rotate HDMI display and touchscreen on login
+After=display-manager.service
+Requires=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'xrandr --output HDMI-1 --rotate inverted && "/home/mbutki/pi_projects/python/src/displays/hallway/setup_scripts/rotate_touchscreen.sh"'
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/mbutki/.Xauthority
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

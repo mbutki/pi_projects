@@ -11,6 +11,8 @@ import logging as log
 import mariadb
 from PIL import Image, ImageDraw
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
+import board
+import adafruit_veml7700
 
 import conway
 import clock_date
@@ -18,6 +20,7 @@ import line_graph
 import utils
 import icon_utils
 import db_reads
+import led_color
 
 parser = argparse.ArgumentParser(description='Display Weather')
 parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
@@ -47,13 +50,22 @@ log.basicConfig(level=LOG_LEVEL,
 
 WEATHER_DIR = PI_DIR + '/python/src/weather'
 
+i2c = board.I2C()  # uses board.SCL and board.SDA
+veml7700 = adafruit_veml7700.VEML7700(i2c)
+
 ###################### COLORS ######################
 # Number Colors
-DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
+DAY_TEMP_COLOR = led_color.Color(0, 0, 219)
+WEEKEND_TEMP_COLOR = led_color.Color(0.08, 1, 253)
+POP_COLOR = led_color.Color(0.6, 0.8, 255)
+INDOOR_TEMP_COLOR = led_color.Color(0.3, 0.8, 229)
+OUTDOOR_TEMP_COLOR = led_color.Color(0.5, 0.76, 219)
+
+'''DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
 WEEKEND_TEMP_COLOR = graphics.Color(204, 102, 0)
 POP_COLOR = graphics.Color(40, 110, 206)
 INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
-OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)
+OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)'''
 
 # AQI
 AQI_GREEN_COLOR = graphics.Color(11, 164, 11)
@@ -81,6 +93,43 @@ SMALL_FONT.LoadFont(WEATHER_DIR + '/fonts/4x6_mike_bigger.bdf')
 global_weather = global_daily_icons = global_indoor_temp = global_outdoor_temp = None
 #################
 
+class Brightness_Adjust():
+    def __init__(self, matrix):
+        self.value = 0
+        self.matrix = matrix
+        self.conn = None
+
+    def run(self):
+        self.adjustBrightnessThreaded()
+
+    def adjustBrightnessThreaded(self):
+        if args.v:
+            print('about to call threaded lux')
+        x = threading.Thread(target=self.adjustBrightness, args=())
+        x.start()
+
+    def adjustBrightness(self):
+        while True:
+            try:
+                lux = veml7700.light
+                if args.v:
+                    print(f'lux={lux}')
+
+                self.setBrightness(lux)
+            except Exception:
+                log.error(f'fetch brightness exception: {traceback.format_exc()}')
+
+            time.sleep(0.1)
+
+    def setBrightness(self, lux):
+        lux = max(lux, MIN_LUX)
+        lux = min(lux, MAX_LUX)
+        brightness = utils.translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
+        if args.v:
+            print(f'LUX After Min/Max:{lux}')
+            print(f'brightness:{brightness}')
+        self.matrix.brightness = brightness
+
 class Display():
     def __init__(self):
         self.matrix = self.create_matrix()
@@ -100,6 +149,8 @@ class Display():
         self.tick = 0
 
     def run(self):
+        brightness = Brightness_Adjust(self.matrix)
+        brightness.run()
         while True:
             start_time = time.perf_counter()
 
@@ -124,7 +175,6 @@ class Display():
     def fetch_weather_sync(self):
         try:
             self.fetch_data()
-            #adjustBrightness()
         except Exception:
             log.error(f'fetchWeather() exception: {traceback.format_exc()}')
 
@@ -241,7 +291,7 @@ class Display():
             font = SMALL_FONT if day['high'] >= 100 else MEDIUM_FONT
             display_color = DAY_TEMP_COLOR if not dt.weekday() in {5, 6} else WEEKEND_TEMP_COLOR
             y = 6+9+1
-            graphics.DrawText(self.canvas, font, offset, y, display_color, number_str)
+            graphics.DrawText(self.canvas, font, offset, y, display_color.led(), number_str)
 
     def draw_current(self, api_outdoor_temp, local_outdoor_temp):
         if local_outdoor_temp < 100:
@@ -249,14 +299,14 @@ class Display():
         else:
             font = SMALL_FONT
         temp = str(int(round(local_outdoor_temp))) if local_outdoor_temp != -999 else str(int(round(api_outdoor_temp['temp'])))
-        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR, temp)
+        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR.led(), temp)
 
     def draw_indoor(self, indoor_temp):
         if indoor_temp < 100:
             font = MEDIUM_FONT
         else:
             font = SMALL_FONT
-        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR, str(int(round(indoor_temp))))
+        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR.led(), str(int(round(indoor_temp))))
 
     def create_matrix(self):
         options = RGBMatrixOptions()
@@ -273,36 +323,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-'''
-def adjustBrightnessThreaded():
-    print('about to call threaded lux')
-    x = threading.Thread(target=adjustBrightness, args=())
-    x.start()
-
-
-def adjustBrightness():
-    #if args.v:
-    print('Opening DB...')
-    client = MongoClient(db_config['host'])
-    db = client.piData
-
-    lux = fetchLux(db, MAX_BRIGHTNESS)
-
-    client.close()
-    #if args.v:
-    print('lux={}'.format(lux))
-    print('Closing DB...')
-
-    setBrightness(lux)
-
-
-def setBrightness(lux):
-    lux = max(lux, MIN_LUX)
-    lux = min(lux, MAX_LUX)
-    brightness = utils.translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
-    #if args.v:
-    print('LUX After Min/Max:{}'.format(lux))
-    print('brightness:{}'.format(brightness))
-    self.matrix.brightness = brightness
-'''

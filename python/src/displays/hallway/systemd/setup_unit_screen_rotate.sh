@@ -1,10 +1,6 @@
 sudo cp stray-rotate-0.service /etc/systemd/system/
-sudo cp rotate_screen.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
-
-sudo systemctl enable stray-rotate-0.service
-sudo systemctl start stray-rotate-0.service
 
 sudo systemctl enable rotate_screen.service
 sudo systemctl start rotate_screen.service

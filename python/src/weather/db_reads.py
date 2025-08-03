@@ -17,6 +17,22 @@ def fetch_weather(cur, args):
         weather = json.loads(w)
     return weather
 
+def fetch_brightness(cur):
+    v = True
+    if v:
+        print('Fetching brightness...')
+    try:
+        cur.execute("SELECT timestamp, lux FROM sensor_latest WHERE location = 'living_room'")
+        if v:
+            print('SELECT Executed for brightness')
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+
+    lux = 0
+    for _, l in cur:
+        lux = int(l)
+    return lux
+
 def fetch_indoor_temps(cur, args):
     value = 0
 

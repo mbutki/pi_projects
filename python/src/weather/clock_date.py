@@ -1,10 +1,11 @@
 import datetime
 import math
+import led_color
 
 from rgbmatrix import graphics
 
 class Clock:
-    color = graphics.Color(170, 170, 170)
+    color = led_color.Color(0, 0, 219)
     y_offset = 10
     y_spacer = 3
 
@@ -32,7 +33,7 @@ class Clock:
 
         y_offset = Clock.y_offset
 
-        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, time_str)
+        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color.led(), time_str)
 
     def draw_date(self, canvas):
         now = datetime.datetime.now()
@@ -42,7 +43,7 @@ class Clock:
         x_offset += 0 if now.month > 9 else (Clock.char_width + Clock.char_x_spacer)
         y_offset = Clock.y_offset + Clock.char_height + Clock.y_spacer
 
-        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, time_str)
+        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color.led(), time_str)
 
     def draw_clock(self, canvas):
         now = datetime.datetime.now()
@@ -52,4 +53,4 @@ class Clock:
         x_offset += 0 if now.hour in {10, 11, 12, 22, 23, 24} else (Clock.char_width + Clock.char_x_spacer)
         y_offset = Clock.y_offset + Clock.char_height*2 + Clock.y_spacer*2
 
-        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color, time_str)
+        graphics.DrawText(canvas, self.font, x_offset, y_offset, self.color.led(), time_str)
