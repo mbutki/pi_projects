@@ -5,7 +5,7 @@ import led_color
 from rgbmatrix import graphics
 
 class Clock:
-    color = led_color.Color(0, 0, 219)
+    color = led_color.Color(0, 0, 190)
     y_offset = 10
     y_spacer = 3
 

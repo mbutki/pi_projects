@@ -50,9 +50,14 @@ def KToF(k):
 def iconToCondition(icon):
     conditions = [
         [{'01d', '01n'}, 'clear'],
-        [{'02d', '02n', '04d', '04n'}, 'partly-cloudy'],
-        [{'03d', '03n'}, 'cloudy'],
-        [{'09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n', '50n', '50d'}, 'rain']
+        [{'02d', '02n'}, 'light_cloud'],
+        [{'03d', '03n'}, 'medium_cloudy'],
+        [{'04d', '04n'}, 'heavy_cloud'],
+        [{'09d', '09n'}, 'light_rain'],
+        [{'10d', '10n'}, 'heavy_rain'],
+        [{'11d', '11n'}, 'thunder'],
+        [{'50n', '50d'}, 'atmo'],
+        [{'13d', '13n'}, 'snow']
     ]
     for item in conditions:
         if icon in item[0]:

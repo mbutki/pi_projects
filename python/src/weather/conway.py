@@ -157,9 +157,9 @@ class World():
         self.total_advance_time += self.last_advance_time
         self.advance_count += 1
         
-        if self.age % 100 == 0:  # Log every 100 generations
-            avg_time = self.total_advance_time / self.advance_count
-            print(f"Generation {self.age}: {self.last_advance_time:.4f}s (avg: {avg_time:.4f}s, living: {len(self.living_cells)})")
+        #if self.age % 100 == 0:  # Log every 100 generations
+        #    avg_time = self.total_advance_time / self.advance_count
+        #    print(f"Generation {self.age}: {self.last_advance_time:.4f}s (avg: {avg_time:.4f}s, living: {len(self.living_cells)})")
         
         return loop_detected
 

@@ -77,7 +77,7 @@ def get_daily_icons(weather):
         else:
             # daytime
             condition = rain_icon_logic(weather, epoch)
-            icon_set = TEXT_TO_ICON_DAY[condition] # default dict handles unknown conditions
+            icon_set = IconSet(TEXT_TO_ICON_DAY[condition]) # default dict handles unknown conditions
         daily_icons.append(icon_set)
     return daily_icons
 
@@ -112,20 +112,28 @@ def rain_icon_logic(weather, epoch):
 
     if max_pop < MIN_POP_FOR_RAIN:
         if cc > MIN_CC_FOR_CLOUDY:
-            return 'cloudy'
+            return 'heavy_cloudy'
         if cc > MIN_CC_FOR_PARTLY_CLOUDY:
-            return 'partly-cloudy'
+            return 'light_cloud'
         return 'clear'
     return condition
 
 PI_DIR = '/home/mbutki/pi_projects'
 
 WEATHER_DIR = PI_DIR + '/python/src/weather'
-RAIN = process_image(WEATHER_DIR + '/imgs/rain.gif')
+
 SUN = process_image(WEATHER_DIR + '/imgs/sun.gif')
-CLOUD = process_image(WEATHER_DIR + '/imgs/cloud.gif')
-MOSTLY_CLOUD = process_image(WEATHER_DIR + '/imgs/mostly_cloud.gif')
-MOSTLY_SUN = process_image(WEATHER_DIR + '/imgs/mostly_sun.gif')
+
+LIGHT_RAIN = process_image(WEATHER_DIR + '/imgs/light_rain.gif')
+HEAVY_RAIN = process_image(WEATHER_DIR + '/imgs/heavy_rain.gif')
+SNOW = process_image(WEATHER_DIR + '/imgs/snow.gif')
+THUNDER = process_image(WEATHER_DIR + '/imgs/thunder.gif')
+
+LIGHT_CLOUD = process_image(WEATHER_DIR + '/imgs/light_cloud.gif')
+MEDIUM_CLOUD = process_image(WEATHER_DIR + '/imgs/medium_cloud.gif')
+HEAVY_CLOUD = process_image(WEATHER_DIR + '/imgs/heavy_cloud.gif')
+
+ATMO = process_image(WEATHER_DIR + '/imgs/atmo.gif')
 UNKNOWN = process_image(WEATHER_DIR + '/imgs/unknown.gif')
 
 NEW_MOON = process_image(WEATHER_DIR + '/imgs/new_moon.gif')
@@ -134,19 +142,22 @@ QUARTER_MOON = process_image(WEATHER_DIR + '/imgs/quarter_moon.gif')
 GIBBOUS_MOON = process_image(WEATHER_DIR + '/imgs/gibbous_moon.gif')
 FULL_MOON = process_image(WEATHER_DIR + '/imgs/full_moon.gif')
 
-JUST_CLOUDS = process_image(WEATHER_DIR + '/imgs/just_clouds.gif')
 JUST_CLOUDS_NIGHT = process_image(WEATHER_DIR + '/imgs/just_clouds_night.gif')
 
 unknown_icon_set = IconSet([UNKNOWN])
 TEXT_TO_ICON_DAY = defaultdict(lambda: unknown_icon_set, {
-    'clear': IconSet([SUN]),
-    'cloudy': IconSet([CLOUD]),
-    'partly-cloudy': IconSet([SUN, JUST_CLOUDS]),
-    'rain': IconSet([RAIN]),
-    'snow': IconSet([RAIN])
+    'clear': [SUN],
+    'light_cloud': [SUN, LIGHT_CLOUD],
+    'medium_cloud': [SUN, MEDIUM_CLOUD],
+    'heavy_cloud': [HEAVY_CLOUD],
+    'light_rain': [LIGHT_RAIN],
+    'heavy_rain': [HEAVY_RAIN],
+    'thunder': [THUNDER],
+    'atmo': [ATMO],
+    'snow': [SNOW]
 })
 
-PERCIPITATION = set(['rain', 'snow'])
+PERCIPITATION = set(['light_rain', 'heavy_rain', 'snow', 'thunder'])
 
 MIN_POP_FOR_RAIN = 40
 MIN_CC_FOR_PARTLY_CLOUDY = 30

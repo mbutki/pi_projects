@@ -55,17 +55,10 @@ veml7700 = adafruit_veml7700.VEML7700(i2c)
 
 ###################### COLORS ######################
 # Number Colors
-DAY_TEMP_COLOR = led_color.Color(0, 0, 219)
-WEEKEND_TEMP_COLOR = led_color.Color(0.08, 1, 253)
-POP_COLOR = led_color.Color(0.6, 0.8, 255)
-INDOOR_TEMP_COLOR = led_color.Color(0.3, 0.8, 229)
-OUTDOOR_TEMP_COLOR = led_color.Color(0.5, 0.76, 219)
-
-'''DAY_TEMP_COLOR = graphics.Color(170, 170, 170)
-WEEKEND_TEMP_COLOR = graphics.Color(204, 102, 0)
-POP_COLOR = graphics.Color(40, 110, 206)
-INDOOR_TEMP_COLOR = graphics.Color(30, 180, 30)
-OUTDOOR_TEMP_COLOR = graphics.Color(40, 170, 170)'''
+DAY_TEMP_COLOR = led_color.Color(0, 0, 205)
+WEEKEND_TEMP_COLOR = led_color.Color(0.08, 1, 235)
+INDOOR_TEMP_COLOR = led_color.Color(0.3, 0.8, 210)
+OUTDOOR_TEMP_COLOR = led_color.Color(0.5, 0.76, 200)
 
 # AQI
 AQI_GREEN_COLOR = graphics.Color(11, 164, 11)
@@ -80,7 +73,7 @@ CONWAY_X_OFFSET = 67
 CLOCK_X_OFFSET = 209
 
 #TICK_DUR_MS is in utils.py
-ICON_SPEED_MS = 200
+ICON_SPEED_MS = 100
 READ_WEATHER_SECS = 5 * 60 # 5 mins
 READ_LUX_SECS = 10 # 10 secs
 
@@ -122,8 +115,7 @@ class Brightness_Adjust():
             time.sleep(0.1)
 
     def setBrightness(self, lux):
-        lux = max(lux, MIN_LUX)
-        lux = min(lux, MAX_LUX)
+        lux = min(MAX_LUX, max(lux, MIN_LUX))
         brightness = utils.translate(lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS)
         if args.v:
             print(f'LUX After Min/Max:{lux}')

@@ -1,4 +1,4 @@
-sudo cp stray-rotate-0.service /etc/systemd/system/
+sudo cp rotate_screen.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
 

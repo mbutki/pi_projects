@@ -62,5 +62,6 @@ def fetch_outdoor_temps(cur, args):
         print(f"Error: {e}")
 
     for _, _, v in cur:
-        value = int(v)
+        if v != None:
+            value = int(v)
     return value
