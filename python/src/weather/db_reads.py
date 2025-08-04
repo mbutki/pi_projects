@@ -55,7 +55,7 @@ def fetch_outdoor_temps(cur, args):
     if args.v:
         print('Fetching outdoor temp...')
     try:
-        cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'outside'")
+        cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'backyard'")
         if args.v:
             print('SELECT Executed for outdoor temp')
     except mariadb.Error as e:
