@@ -324,9 +324,16 @@ def run():
     ]
 
     epd = epd7in5_V2.EPD()
+    now = datetime.now()
 
     # Drawing on the image
-    font = ImageFont.truetype(f'{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc', 42)
+    SMALL_FONT_SIZE = 24
+    LARGE_FONT_SIZE = 42
+    IS_EVENING = now.hour >= 17
+    IS_MORNING = now.hour <= 10
+    DRAW_SMALL = not IS_MORNING
+    font_size = SMALL_FONT_SIZE if DRAW_SMALL else LARGE_FONT_SIZE
+    font = ImageFont.truetype(f'{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc', font_size)
 
     # Drawing on the Vertical image
     black_image = Image.new('L', (epd.height, epd.width), 255)
@@ -340,15 +347,12 @@ def run():
 
         today = weather['days'][sorted(weather['days'])[0]]
         tomorrow = weather['days'][sorted(weather['days'])[1]]
-        now = datetime.now()
-        day = today if now.hour >= 17 else tomorrow
+        day = tomorrow if IS_EVENING else today
 
         high = today['high']
         pop = today['pop']
         condition = day['condition']
         match condition:
-            case 'clear':
-                condition = 'sun'
             case 'light_cloud':
                 condition = 'mixed'
             case 'medium_cloud':
@@ -372,9 +376,9 @@ def run():
         '''
         condition = condition.upper()
 
-        pos1 = (429, 20)
-        pos2 = (454, 20)
-        pos3 = (429, 75)
+        pos1 = (429, 20) if DRAW_SMALL else (410, 20)
+        pos2 = (454, 20) if DRAW_SMALL else (445, 20)
+        pos3 = (429, 75) if DRAW_SMALL else (410, 120)
         text1 = f'{high}'
         text2 = f'{condition}'
         text3 = f'{pop}'

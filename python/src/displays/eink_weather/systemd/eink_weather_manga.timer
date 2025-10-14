@@ -1,5 +1,5 @@
 [Unit]
-Description="Run eink_weather_manga service every 15th min"
+Description="Run eink_weather_manga service every 10th min"
 Wants=network-online.target
 After=network-online.target
 
