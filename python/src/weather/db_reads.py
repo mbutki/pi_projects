@@ -17,51 +17,25 @@ def fetch_weather(cur, args):
         weather = json.loads(w)
     return weather
 
-def fetch_brightness(cur):
-    v = True
-    if v:
-        print('Fetching brightness...')
-    try:
-        cur.execute("SELECT timestamp, lux FROM sensor_latest WHERE location = 'living_room'")
-        if v:
-            print('SELECT Executed for brightness')
-    except mariadb.Error as e:
-        print(f"Error: {e}")
+def fetch_indoor_temp(cur, args):
+    return fetch_local_temp(cur, args, 'living_room')
 
-    lux = 0
-    for _, l in cur:
-        lux = int(l)
-    return lux
+def fetch_outdoor_temp(cur, args):
+    return fetch_local_temp(cur, args, 'backyard')
 
-def fetch_indoor_temps(cur, args):
-    value = 0
+def fetch_local_temp(cur, args, location):
+    value = float('-inf')
 
     if args.v:
-        print('Fetching indoor temp...')
+        print(f'Fetching {location} temp...')
     try:
-        cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'living_room'")
+        cur.execute(f'SELECT timestamp, location, temp FROM sensor_latest WHERE location = "{location}"')
         if args.v:
-            print('SELECT Executed for indoor temp')
+            print(f'SELECT Executed for {location} temp')
     except mariadb.Error as e:
         print(f"Error: {e}")
 
     for _, _, v in cur:
-        value = int(v)
-    return value
-
-def fetch_outdoor_temps(cur, args):
-    value = -999
-
-    if args.v:
-        print('Fetching outdoor temp...')
-    try:
-        cur.execute("SELECT timestamp, location, temp FROM sensor_latest WHERE location = 'backyard'")
-        if args.v:
-            print('SELECT Executed for outdoor temp')
-    except mariadb.Error as e:
-        print(f"Error: {e}")
-
-    for _, _, v in cur:
-        if v != None:
+        if v is not None:
             value = int(v)
     return value

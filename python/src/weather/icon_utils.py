@@ -66,6 +66,7 @@ def get_daily_icons(weather):
     for i, epoch in enumerate(sorted(weather['days'])):
         day = weather['days'][epoch]
         condition = day['condition']
+        print(f'epoch: {epoch}, condition:{condition}')
         icon_set = None
 
         now = datetime.datetime.now()
@@ -82,12 +83,20 @@ def get_daily_icons(weather):
     return daily_icons
 
 def rain_icon_logic(weather, epoch):
+    HOUR_IN_MINS = 3600
+
     day = weather['days'][epoch]
     condition = day['condition']
 
-    rise_time = day['rise'] - (day['rise'] % 3600)
-    set_time = day['set'] - (day['set'] % 3600) + 3600
+    # We only want to possibly change rain --> not rain
+    if condition not in PERCIPITATION:
+        return condition
 
+    rise_time = day['rise'] - (day['rise'] % HOUR_IN_MINS)
+    set_time = day['set'] - (day['set'] % HOUR_IN_MINS) + HOUR_IN_MINS
+
+    # Only look at remianing time between sunset & sunrise for today
+    # abort if already after sunset
     start_hour = 0
     end_hour = 0
     hours = sorted(weather['hours'].keys())
@@ -102,21 +111,34 @@ def rain_icon_logic(weather, epoch):
 
     max_pop = 0
     ccs = []
-    for hour_epoch in range(start_hour, end_hour + 3600, 3600):
+    for hour_epoch in range(start_hour, end_hour + HOUR_IN_MINS, HOUR_IN_MINS):
         if str(hour_epoch) not in weather['hours']:
             break
         hour = weather['hours'][str(hour_epoch)]
         max_pop = max(max_pop, hour['pop'])
         ccs.append(hour['cloudCover'])
-    cc = numpy.median(numpy.array(ccs))
+    median_cloud_cover = numpy.median(numpy.array(ccs))
 
-    if max_pop < MIN_POP_FOR_RAIN:
-        if cc > MIN_CC_FOR_CLOUDY:
-            return 'heavy_cloudy'
-        if cc > MIN_CC_FOR_PARTLY_CLOUDY:
-            return 'light_cloud'
+    # We only care about "fixing" off-hour rain or low prob rain
+    if max_pop > MIN_POP_FOR_RAIN:
+        return condition
+
+    # Figure out what to change the rain too
+    if median_cloud_cover > MIN_CC_FOR_HEAVY_CLOUD:
+        return 'heavy_cloud'
+    elif median_cloud_cover > MIN_CC_FOR_MEDIUM_CLOUD:
+        return 'medium_cloud'
+    elif median_cloud_cover > MIN_CC_FOR_LIGHT_CLOUD:
+        return 'light_cloud'
+    else:
         return 'clear'
-    return condition
+
+PERCIPITATION = set(['light_rain', 'heavy_rain', 'snow', 'thunder'])
+
+MIN_POP_FOR_RAIN = 40
+MIN_CC_FOR_LIGHT_CLOUD = 20
+MIN_CC_FOR_MEDIUM_CLOUD = 50
+MIN_CC_FOR_HEAVY_CLOUD = 90
 
 PI_DIR = '/home/mbutki/pi_projects'
 
@@ -144,7 +166,7 @@ FULL_MOON = process_image(WEATHER_DIR + '/imgs/full_moon.gif')
 
 JUST_CLOUDS_NIGHT = process_image(WEATHER_DIR + '/imgs/just_clouds_night.gif')
 
-unknown_icon_set = IconSet([UNKNOWN])
+unknown_icon_set = [UNKNOWN]
 TEXT_TO_ICON_DAY = defaultdict(lambda: unknown_icon_set, {
     'clear': [SUN],
     'light_cloud': [SUN, LIGHT_CLOUD],
@@ -157,8 +179,4 @@ TEXT_TO_ICON_DAY = defaultdict(lambda: unknown_icon_set, {
     'snow': [SNOW]
 })
 
-PERCIPITATION = set(['light_rain', 'heavy_rain', 'snow', 'thunder'])
 
-MIN_POP_FOR_RAIN = 40
-MIN_CC_FOR_PARTLY_CLOUDY = 30
-MIN_CC_FOR_CLOUDY = 70

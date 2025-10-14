@@ -16,7 +16,9 @@ DB_CONFIG = {
 }
 
 MQTT_BROKER = "localhost"
-MQTT_TOPIC = "sensor/data"
+SENSOR_DATA = "sensor/data"
+SENSOR_ERROR = "sensor/error"
+MQTT_TOPICS = [(SENSOR_DATA, 0), (SENSOR_ERROR, 0)]
 
 # --- Data Buffer for Median Calculation ---
 data_buffer = []
@@ -33,6 +35,16 @@ def get_db_connection():
 
 # --- Create tables if not exist ---
 def create_tables():
+    create_errors_sql = """
+    CREATE TABLE IF NOT EXISTS sensor_errors (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        timestamp INT UNSIGNED NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        error VARCHAR(2048),
+        INDEX idx_location (location),
+        INDEX idx_time (timestamp)
+    );
+    """
     create_latest_sql = """
     CREATE TABLE IF NOT EXISTS sensor_latest (
         location VARCHAR(255) PRIMARY KEY,
@@ -61,12 +73,24 @@ def create_tables():
     """
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute(create_errors_sql)
     cursor.execute(create_latest_sql)
     cursor.execute(create_median_sql)
     conn.commit()
     conn.close()
     if args.v:
         print("✅ Tables ensured.")
+
+# --- Insert latest reading ---
+def log_error(cursor, data):
+    cursor.execute("""
+        INSERT INTO sensor_errors (location, timestamp, error)
+        VALUES (?, ?, ?)
+    """, (
+        data.get("location"),
+        data.get("timestamp"),
+        data.get("error")
+    ))
 
 # --- Insert latest reading ---
 def insert_latest(cursor, data):
@@ -136,34 +160,36 @@ def compute_and_store_median():
 # --- MQTT Callbacks ---
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT with result code", rc)
-    client.subscribe(MQTT_TOPIC)
+    client.subscribe(MQTT_TOPICS)
 
 def on_message(client, userdata, msg):
     global buffer_start, data_buffer
-    #try:
+
     data = json.loads(msg.payload)
     if args.v:
         print("Received:", data)
-
     conn = get_db_connection()
     cursor = conn.cursor()
-    insert_latest(cursor, data)
+
+    if msg.topic == SENSOR_DATA:
+        insert_latest(cursor, data)
+
+        ts = int(data["timestamp"])
+        if buffer_start is None:
+            buffer_start = ts
+
+        if ts - buffer_start < BUFFER_DURATION:
+            data_buffer.append(data)
+        else:
+            compute_and_store_median()
+            buffer_start = ts
+            data_buffer = [data]
+    elif msg.topic == SENSOR_ERROR:
+        log_error(cursor, data)
+
     conn.commit()
     conn.close()
 
-    ts = int(data["timestamp"])
-    if buffer_start is None:
-        buffer_start = ts
-
-    if ts - buffer_start < BUFFER_DURATION:
-        data_buffer.append(data)
-    else:
-        compute_and_store_median()
-        buffer_start = ts
-        data_buffer = [data]
-
-    #except Exception as e:
-    #    print("Error processing message:", e)
 
 def delete_old_sensor_data():
     try:
@@ -173,6 +199,10 @@ def delete_old_sensor_data():
         cursor.execute("""
             DELETE FROM sensor_5min_median
             WHERE end_ts < UNIX_TIMESTAMP(NOW()) - 14 * 86400;
+        """)
+        cursor.execute("""
+            DELETE FROM sensor_errors
+            WHERE timestamp < UNIX_TIMESTAMP(NOW()) - 14 * 86400;
         """)
         conn.commit()
         conn.close()

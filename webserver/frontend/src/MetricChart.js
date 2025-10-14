@@ -33,23 +33,30 @@ function combineByTimestamp(locationData) {
   });
 }
 
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  const TOTAL_HOURS = 48;
+
 function MetricChart({ metric, data }) {
   const [hiddenLines, setHiddenLines] = useState(new Set());
 
-  const ONE_HOUR_MS = 60 * 60 * 1000;
-
-  // Use current time, rounded to the nearest hour, for nice grid alignment
   const nowDate = new Date();
-  nowDate.setMinutes(0, 0, 0);
+  nowDate.setMinutes(0, 0, 0); // Round to hour
   const now = nowDate.getTime();
-  const startTime = now - 24 * ONE_HOUR_MS;
+  const startTime = now - TOTAL_HOURS * ONE_HOUR_MS;
 
-  const totalHours = 24;
+  const hourlyTicks = useMemo(
+    () => Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => startTime + i * ONE_HOUR_MS),
+    [startTime]
+  );
 
   const combinedData = useMemo(() => {
     if (!data) return [];
-    return combineByTimestamp(data);
-  }, [data]);
+
+    const all = combineByTimestamp(data);
+
+    // Only include points within the 48-hour window
+    return all.filter(point => point.timestamp >= startTime && point.timestamp <= now);
+  }, [data, startTime, now]);
 
   const handleLegendClick = (e) => {
     const loc = e.dataKey;
@@ -60,14 +67,11 @@ function MetricChart({ metric, data }) {
     });
   };
 
-  const hourlyTicks = useMemo(
-    () => Array.from({ length: totalHours + 1 }, (_, i) => startTime + i * ONE_HOUR_MS),
-    [startTime, totalHours]
-  );
+
 
   return (
     <div style={{ marginBottom: 40 }}>
-      <h3>{metric.charAt(0).toUpperCase() + metric.slice(1)}</h3>
+      <h2>{metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={combinedData}>
           <CartesianGrid strokeDasharray="3 3" />

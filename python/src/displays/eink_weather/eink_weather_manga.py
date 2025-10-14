@@ -326,7 +326,7 @@ def run():
     epd = epd7in5_V2.EPD()
 
     # Drawing on the image
-    font = ImageFont.truetype(f'{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc', 24)
+    font = ImageFont.truetype(f'{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc', 42)
 
     # Drawing on the Vertical image
     black_image = Image.new('L', (epd.height, epd.width), 255)
@@ -347,10 +347,29 @@ def run():
         pop = today['pop']
         condition = day['condition']
         match condition:
-            case 'cloudy':
-                condition = 'cloud'
-            case 'partly-cloudy':
+            case 'clear':
+                condition = 'sun'
+            case 'light_cloud':
                 condition = 'mixed'
+            case 'medium_cloud':
+                condition = 'mixed'
+            case 'heavy_cloud':
+                condition = 'cloud'
+            case 'light_rain':
+                condition = 'rain'
+            case 'heavy_rain':
+                condition = 'rain'
+        '''
+        'clear': [SUN],
+        'light_cloud': [SUN, LIGHT_CLOUD],
+        'medium_cloud': [SUN, MEDIUM_CLOUD],
+        'heavy_cloud': [HEAVY_CLOUD],
+        'light_rain': [LIGHT_RAIN],
+        'heavy_rain': [HEAVY_RAIN],
+        'thunder': [THUNDER],
+        'atmo': [ATMO],
+        'snow': [SNOW]
+        '''
         condition = condition.upper()
 
         pos1 = (429, 20)

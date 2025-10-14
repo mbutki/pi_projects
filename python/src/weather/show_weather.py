@@ -199,8 +199,8 @@ class Display():
 
         global_weather = db_reads.fetch_weather(cur, args)
         global_daily_icons = icon_utils.get_daily_icons(global_weather)
-        global_indoor_temp = db_reads.fetch_indoor_temps(cur, args)
-        global_outdoor_temp = db_reads.fetch_outdoor_temps(cur, args)
+        global_indoor_temp = db_reads.fetch_indoor_temp(cur, args)
+        global_outdoor_temp = db_reads.fetch_outdoor_temp(cur, args)
 
         conn.commit()
         conn.close()
@@ -235,8 +235,8 @@ class Display():
             self.draw_daily_icons(frame, global_daily_icons)
             self.canvas.SetImage(frame.convert('RGB'), 0, 0)
 
-            self.draw_current(global_weather['current'], global_outdoor_temp)
-            self.draw_indoor(global_indoor_temp)
+            self.draw_outdoor_temp(global_outdoor_temp)
+            self.draw_indoor_temp(global_indoor_temp)
             self.graph.draw(self.canvas, global_weather, self.tick)
             self.draw_daily_text(global_weather)
         except Exception:
@@ -285,20 +285,15 @@ class Display():
             y = 6+9+1
             graphics.DrawText(self.canvas, font, offset, y, display_color.led(), number_str)
 
-    def draw_current(self, api_outdoor_temp, local_outdoor_temp):
-        if local_outdoor_temp < 100:
-            font = MEDIUM_FONT
-        else:
-            font = SMALL_FONT
-        temp = str(int(round(local_outdoor_temp))) if local_outdoor_temp != -999 else str(int(round(api_outdoor_temp['temp'])))
-        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR.led(), temp)
+    def draw_outdoor_temp(self, outdoor_temp):
+        font = MEDIUM_FONT if outdoor_temp < 100 else SMALL_FONT
+        temp_str = str(int(round(outdoor_temp))) if outdoor_temp != float('-inf') else '--'
+        graphics.DrawText(self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR.led(), temp_str)
 
-    def draw_indoor(self, indoor_temp):
-        if indoor_temp < 100:
-            font = MEDIUM_FONT
-        else:
-            font = SMALL_FONT
-        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR.led(), str(int(round(indoor_temp))))
+    def draw_indoor_temp(self, indoor_temp):
+        font = MEDIUM_FONT if indoor_temp < 100 else SMALL_FONT
+        temp_str = str(int(round(indoor_temp))) if indoor_temp != float('-inf') else '--'
+        graphics.DrawText(self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR.led(), temp_str)
 
     def create_matrix(self):
         options = RGBMatrixOptions()

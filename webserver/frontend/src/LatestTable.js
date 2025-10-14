@@ -1,11 +1,30 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-function LatestTable({ latestData }) {
+function LatestTable() {
+  const [latestData, setLatestData] = useState([]);
+
+  // Poll for latest values every second
+  useEffect(() => {
+    const fetchLatest = async () => {
+      try {
+        const res = await axios.get('/api/latest', { withCredentials: true });
+        setLatestData(res.data);
+      } catch (err) {
+        console.error('Error fetching latest sensor data:', err);
+      }
+    };
+
+    fetchLatest(); // initial load
+    const interval = setInterval(fetchLatest, 1000); // every second
+    return () => clearInterval(interval);
+  }, []);
+
   if (!latestData || latestData.length === 0) return <p>No current sensor data.</p>;
 
   return (
     <div style={{ marginTop: 40 }}>
-      <h2>Live Sensor Data</h2>
+      <h1>Live Sensor Data</h1>
       <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd' }}>
         <thead>
           <tr>

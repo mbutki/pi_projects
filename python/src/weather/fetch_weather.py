@@ -51,7 +51,7 @@ def iconToCondition(icon):
     conditions = [
         [{'01d', '01n'}, 'clear'],
         [{'02d', '02n'}, 'light_cloud'],
-        [{'03d', '03n'}, 'medium_cloudy'],
+        [{'03d', '03n'}, 'medium_cloud'],
         [{'04d', '04n'}, 'heavy_cloud'],
         [{'09d', '09n'}, 'light_rain'],
         [{'10d', '10n'}, 'heavy_rain'],
@@ -93,7 +93,7 @@ def parseDays(raw_weather):
         days[epoch] = {
             'high': int(KToF(item['temp']['max'])),
             'low': int(KToF(item['temp']['min'])),
-            'condition': 'rain' if pop > 20 else iconToCondition(item['weather'][0]['icon']),
+            'condition': 'light_rain' if pop > 20 else iconToCondition(item['weather'][0]['icon']),
             'pop': pop,
             'pretty': item['weather'][0]['description'],
             'precipIntensity': max(item.get('rain', 0), item.get('snow', 0)), 
