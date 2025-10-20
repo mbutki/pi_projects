@@ -202,7 +202,19 @@ def delete_old_sensor_data():
         """)
         cursor.execute("""
             DELETE FROM sensor_errors
-            WHERE timestamp < UNIX_TIMESTAMP(NOW()) - 14 * 86400;
+            WHERE timestamp < UNIX_TIMESTAMP(NOW()) - 7 * 86400;
+        """)
+        cursor.execute("""
+            DELETE FROM sensor_errors
+            WHERE id NOT IN (
+                SELECT id
+                FROM (
+                    SELECT id
+                    FROM sensor_errors
+                    ORDER BY id DESC
+                    LIMIT 100
+                ) AS subquery_alias
+            );
         """)
         conn.commit()
         conn.close()

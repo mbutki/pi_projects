@@ -14,5 +14,7 @@ python/src/displays/eink_weather/images/
 python/src/displays/hyper/images
 
 webserver/node_modules/
-webserver/frontend/node_modules/
-webserver/frontend/build/
+webserver/frontend/main/node_modules/
+webserver/frontend/tic_tac_toe/node_modules/
+webserver/frontend/main/build/
+webserver/frontend/tic_tac_toe/build/

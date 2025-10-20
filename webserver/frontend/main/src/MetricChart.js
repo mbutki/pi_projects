@@ -14,6 +14,7 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#a83279'
 
 // Combine data across locations into shared timestamped rows (preserving minute-level info)
 function combineByTimestamp(locationData) {
+  debugger;
   const timestamps = new Set();
   Object.values(locationData).forEach(series => {
     series.forEach(point => timestamps.add(point.timestamp));
@@ -40,7 +41,7 @@ function MetricChart({ metric, data }) {
   const [hiddenLines, setHiddenLines] = useState(new Set());
 
   const nowDate = new Date();
-  nowDate.setMinutes(0, 0, 0); // Round to hour
+  nowDate.setHours(nowDate.getHours(), 0, 0, 0); // Round to hour
   const now = nowDate.getTime();
   const startTime = now - TOTAL_HOURS * ONE_HOUR_MS;
 

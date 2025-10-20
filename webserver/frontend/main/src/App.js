@@ -1,4 +1,3 @@
-import React from 'react';
 import LatestTable from './LatestTable';
 import ErrorTable from './ErrorTable';
 import GroupedMetricCharts from './GroupedMetricCharts';

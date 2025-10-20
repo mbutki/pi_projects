@@ -19,7 +19,7 @@ app.use(basicAuth({
 }));
 
 // --- Static Frontend ---
-app.use(express.static(path.join(__dirname, 'frontend', 'main', 'build')));
+app.use(express.static(path.join(__dirname, 'frontend', 'build')));
 
 // --- MariaDB Pool ---
 const pool = mariadb.createPool({
@@ -28,7 +28,7 @@ const pool = mariadb.createPool({
   password: DB_PASSWORD,
   database: DB_NAME,
   connectionLimit: 5,
-})
+});
 
 // --- API: 5-Minute Medians ---
 app.get('/api/5min-median', async (req, res) => {
@@ -39,7 +39,6 @@ app.get('/api/5min-median', async (req, res) => {
       FROM sensor_5min_median
       WHERE end_ts >= UNIX_TIMESTAMP(NOW() - INTERVAL 2 DAY)
       ORDER BY end_ts DESC
-      LIMIT 3000
     `);
     conn.release();
     res.json(rows);
@@ -56,7 +55,6 @@ app.get('/api/latest', async (req, res) => {
     const rows = await conn.query(`
       SELECT location, timestamp, temp, humidity, pressure, lux, aqi
       FROM sensor_latest
-      LIMIT 10
     `);
     conn.release();
     res.json(rows);
@@ -74,7 +72,6 @@ app.get('/api/errors', async (req, res) => {
       SELECT location, timestamp, error
       FROM sensor_errors
       ORDER BY timestamp DESC
-      LIMIT 50
     `);
     conn.release();
     res.json(rows);
@@ -86,7 +83,7 @@ app.get('/api/errors', async (req, res) => {
 
 // --- Fallback: React SPA Routing ---
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'main', 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
 });
 
 // --- HTTPS Setup ---
