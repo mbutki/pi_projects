@@ -78,15 +78,27 @@ function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentPr
     // Hide cursor and scrollbar on body when in fullscreen
     useEffect(() => {
         if (isCssFullscreen) {
-            // Hide scrollbar
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
+            // Use setTimeout to ensure styles are applied after React finishes rendering
+            const timeoutId = setTimeout(() => {
+                // Hide scrollbar
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
 
-            // Hide cursor on all elements
-            const styleElement = document.createElement('style');
-            styleElement.id = 'fullscreen-hide-cursor';
-            styleElement.innerHTML = '* { cursor: none !important; }';
-            document.head.appendChild(styleElement);
+                // Hide cursor on all elements
+                const existingStyle = document.getElementById('fullscreen-hide-cursor');
+                if (existingStyle) {
+                    existingStyle.remove();
+                }
+
+                const styleElement = document.createElement('style');
+                styleElement.id = 'fullscreen-hide-cursor';
+                styleElement.innerHTML = '* { cursor: none !important; }';
+                document.head.appendChild(styleElement);
+            }, 0);
+
+            return () => {
+                clearTimeout(timeoutId);
+            };
         } else {
             // Restore scrollbar
             document.body.style.overflow = '';
