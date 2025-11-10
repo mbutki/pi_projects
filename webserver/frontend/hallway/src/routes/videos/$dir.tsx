@@ -25,10 +25,10 @@ function VideoPage() {
     const { dir, urls } = Route.useLoaderData();
 
     if (!urls.length) return <div>No videos found for {dir}</div>;
-
+    // <div className="video-fullscreen">
     return (
-        <div className="video-fullscreen">
-            <VideoPlayer key={dir} dir={dir} urls={urls} />
+        <div>
+            <VideoPlayer key={dir} dir={dir} urls={urls} autoFullScreen={true} />
         </div>
     );
 }

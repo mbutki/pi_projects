@@ -16,7 +16,7 @@ const LeftNav = () => {
                     </li>
                     <li>
                         <Link
-                            to="/videos"
+                            to="/videos/"
                             activeProps={{ className: "active" }}
                         >
                             Videos

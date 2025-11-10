@@ -3,7 +3,7 @@ import VideoPlayer from '../../VideoPlayer';
 //import VideosGrid from '../../VideosGrid';
 import axios from 'axios';
 
-export const Route = createFileRoute('/videos')({
+/*export const Route = createFileRoute('/videos/')({
     component: Videos,
     loader: async ({ params }) => {
         try {
@@ -30,9 +30,9 @@ function Videos() {
             ))}
         </div>
     );
-}
+}*/
 
-/*export const Route = createFileRoute('/videos')({
+export const Route = createFileRoute('/videos')({
     component: VideosGrid, // reference the component right below
     loader: async () => {
         const res = await axios.get('/api/videos', { withCredentials: true });
@@ -53,10 +53,10 @@ export default function VideosGrid() {
         <div className="video-grid">
             {entries.map(([dir, urls]) => (
                 <Link key={dir} to={`/videos/${dir}`}>
-                    <VideoPlayer key={dir} dir={dir} urls={urls} />
+                    <VideoPlayer key={dir} dir={dir} urls={urls} autoFullScreen={false} />
                 </Link>
             ))}
         </div>
     );
-}*/
+}
 

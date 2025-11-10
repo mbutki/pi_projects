@@ -2,10 +2,10 @@ import { createContext, useState } from "react";
 
 export const ScreenSaverContext = createContext({
     isScreenSaved: false,
-    setIsScreenSaved: () => { },
+    setIsScreenSaved: (value: boolean) => { },
 });
 
-export const ScreenSaverProvider = ({ children }) => {
+export const ScreenSaverProvider = ({ children }: { children: React.ReactNode }) => {
     const [isScreenSaved, setIsScreenSaved] = useState(false);
 
     return (

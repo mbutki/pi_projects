@@ -1,10 +1,18 @@
 import { useEffect, useState, useRef, useContext } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { ScreenSaverContext } from './ScreenSaverContext';
 
-function VideoPlayer({ dir, urls }) {
-    const [curVideoUrl, setCurVideoUrl] = useState();
+interface VideoPlayerProps {
+    dir: string;
+    urls: string[];
+    autoFullScreen: boolean;
+}
 
-    function getRandomElement(arr) {
+function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
+    const [curVideoUrl, setCurVideoUrl] = useState<string>();
+
+    console.log(`Basic video player: autoFullScreen:${autoFullScreen}`)
+    function getRandomElement(arr: string[]) {
         const randomIndex = Math.floor(Math.random() * arr.length);
         return arr[randomIndex];
     }
@@ -27,7 +35,6 @@ function VideoPlayer({ dir, urls }) {
         content = (
             <video
                 src={curVideoUrl}
-                type="video/mp4"
                 autoPlay
                 loop
                 muted
@@ -40,51 +47,99 @@ function VideoPlayer({ dir, urls }) {
     return (
         <div className="video-thumbnail">
             <h1>{dir}</h1>
-            <FullscreenComponent>
+            <FullscreenComponent autoFullScreen={autoFullScreen}>
                 {content}
             </FullscreenComponent>
         </div >
     );
 }
 
-function FullscreenComponent({ children }) {
-    const elementRef = useRef(null);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const { isScreenSaved, setIsScreenSaved } = useContext(ScreenSaverContext);
+interface FullscreenComponentProps {
+    children: React.ReactNode;
+    autoFullScreen: boolean;
+}
+
+function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentProps) {
+    const elementRef = useRef<HTMLDivElement>(null);
+    const [isCssFullscreen, setIsCssFullscreen] = useState(false);
+    const { setIsScreenSaved } = useContext(ScreenSaverContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const handleFullscreenChange = () => {
-            const isFull = document.fullscreenElement === elementRef.current;
-            setIsFullscreen(isFull);
-            setIsScreenSaved(isFull);
-        };
+        console.log(`checking fullscreen from video player`)
+        console.log(`autoFullScreen:${autoFullScreen}`)
+        if (autoFullScreen) {
+            // Use CSS fullscreen for immediate effect without user gesture
+            setIsCssFullscreen(true);
+            setIsScreenSaved(true);
+        }
+    }, [autoFullScreen, setIsScreenSaved]);
 
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
+    // Hide cursor and scrollbar on body when in fullscreen
+    useEffect(() => {
+        if (isCssFullscreen) {
+            // Hide scrollbar
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+
+            // Hide cursor on all elements
+            const styleElement = document.createElement('style');
+            styleElement.id = 'fullscreen-hide-cursor';
+            styleElement.innerHTML = '* { cursor: none !important; }';
+            document.head.appendChild(styleElement);
+        } else {
+            // Restore scrollbar
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+
+            // Restore cursor
+            const styleElement = document.getElementById('fullscreen-hide-cursor');
+            if (styleElement) {
+                styleElement.remove();
+            }
+        }
+
+        // Cleanup on unmount
         return () => {
-            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            const styleElement = document.getElementById('fullscreen-hide-cursor');
+            if (styleElement) {
+                styleElement.remove();
+            }
         };
-    }, []);
+    }, [isCssFullscreen]);
 
-    const toggleFullscreen = async () => {
+    const toggleFullscreen = () => {
         if (!elementRef.current) return;
 
-        if (document.fullscreenElement === elementRef.current) {
-            await document.exitFullscreen();
-        } else {
-            try {
-                await elementRef.current.requestFullscreen();
-            } catch (err) {
-                console.warn('Fullscreen request failed (needs user gesture):', err);
-            }
+        // Toggle CSS fullscreen and navigate back to videos
+        if (isCssFullscreen) {
+            setIsCssFullscreen(false);
+            setIsScreenSaved(false);
+            navigate({ to: '/videos' });
         }
     };
 
     return (
         <div
             ref={elementRef}
-            className={`fullscreen-root ${isFullscreen ? 'fullscreen-active' : 'fullscreen-thumb'}`}
+            className={`fullscreen-root ${isCssFullscreen ? 'css-fullscreen' : 'fullscreen-thumb'}`}
             onClick={toggleFullscreen}
-            style={{ cursor: 'pointer', position: 'relative' }}
+            style={{
+                cursor: isCssFullscreen ? 'none' : 'pointer',
+                position: isCssFullscreen ? 'fixed' : 'relative',
+                top: isCssFullscreen ? 0 : 'auto',
+                left: isCssFullscreen ? 0 : 'auto',
+                width: isCssFullscreen ? '100vw' : 'auto',
+                height: isCssFullscreen ? '100vh' : 'auto',
+                zIndex: isCssFullscreen ? 9999 : 'auto',
+                backgroundColor: isCssFullscreen ? 'black' : 'transparent',
+                display: isCssFullscreen ? 'flex' : 'block',
+                alignItems: isCssFullscreen ? 'center' : 'normal',
+                justifyContent: isCssFullscreen ? 'center' : 'normal',
+                overflow: isCssFullscreen ? 'hidden' : 'visible',
+            }}
         >
             {children}
         </div>
