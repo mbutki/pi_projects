@@ -1,6 +1,7 @@
 const compression = require('compression');
 const https = require("https");
-const fs = require("fs");
+const fs = require("fs").promises;
+const readFileSync = require("fs").readFileSync;
 const express = require('express');
 const mariadb = require('mariadb');
 const path = require('path');
@@ -19,7 +20,9 @@ app.use(basicAuth({
 }));
 
 // --- Static Frontend ---
-app.use(express.static(path.join(__dirname, 'frontend', 'main', 'build')));
+//app.use(express.static(path.join(__dirname, 'frontend', 'main', 'build')));
+app.use(express.static(path.join(__dirname, 'frontend', 'hallway', 'dist')));
+app.use(express.static(path.join(__dirname, 'frontend', 'hallway', 'src', 'assets')));
 
 // --- MariaDB Pool ---
 const pool = mariadb.createPool({
@@ -29,6 +32,41 @@ const pool = mariadb.createPool({
   database: DB_NAME,
   connectionLimit: 5,
 })
+
+async function getDirectoriesInDir(directoryPath) {
+  try {
+    const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+    const directories = entries
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    return directories;
+  } catch (error) {
+    console.error(`Error reading directory: ${error.message}`);
+    return []; // Return an empty array on error
+  }
+}
+
+// --- API: Video List ---
+app.get('/api/videos', async (req, res) => {
+  const videosPath = path.join(__dirname, 'frontend', 'hallway', 'src', 'assets', 'videos');
+  const dir2urls = {}
+  try {
+    const dirNames = await getDirectoriesInDir(videosPath);
+    for (const dirName of dirNames) {
+      const filenames = await fs.readdir(path.join(videosPath, dirName));
+      const videoUrls = filenames.map(filename => {
+        return `videos/${dirName}/${filename}`;
+      })
+      dir2urls[dirName] = videoUrls;
+    }
+    res.json(dir2urls);
+  }
+  catch (error) {
+    console.error('Error reading directory:', err);
+    res.status(500).json({ error: 'Dir read error' });
+    return
+  }
+});
 
 // --- API: 5-Minute Medians ---
 app.get('/api/5min-median', async (req, res) => {
@@ -92,8 +130,8 @@ app.get('*', (req, res) => {
 // --- HTTPS Setup ---
 const SSL_DOMAIN = "mbutki.com";
 const sslOptions = {
-  key: fs.readFileSync(`/etc/letsencrypt/live/${SSL_DOMAIN}/privkey.pem`),
-  cert: fs.readFileSync(`/etc/letsencrypt/live/${SSL_DOMAIN}/fullchain.pem`)
+  key: readFileSync(`/etc/letsencrypt/live/${SSL_DOMAIN}/privkey.pem`),
+  cert: readFileSync(`/etc/letsencrypt/live/${SSL_DOMAIN}/fullchain.pem`)
 };
 
 // Start HTTPS server

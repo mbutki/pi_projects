@@ -45,11 +45,9 @@ function MetricChart({ metric, data }) {
   const now = nowDate.getTime();
   const startTime = now - TOTAL_HOURS * ONE_HOUR_MS;
 
-  const hourlyTicks = useMemo(
-    () => Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => startTime + i * ONE_HOUR_MS),
-    [startTime]
-  );
+  const hourlyTicks = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => startTime + i * ONE_HOUR_MS);
 
+  // useMemo() is not required, it just prevents re-rendering if data-prop changes, but startTime does (i.e. hourly updates only)
   const combinedData = useMemo(() => {
     if (!data) return [];
 
@@ -67,8 +65,6 @@ function MetricChart({ metric, data }) {
       return copy;
     });
   };
-
-
 
   return (
     <div style={{ marginBottom: 40 }}>

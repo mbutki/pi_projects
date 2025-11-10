@@ -1,17 +1,20 @@
-from rgbmatrix import graphics
 import colorsys
+from typing import Any
 
-class Color():
-    def __init__(self, h, s, v):
+from rgbmatrix import graphics
+
+
+class Color:
+    def __init__(self, h: float, s: float, v: float) -> None:
         self.h = h
         self.s = s
         self.v = v
 
-    def hsv(self):
-        return [self.h, self.s, self.v]
+    def hsv(self) -> tuple[float, float, float]:
+        return (self.h, self.s, self.v)
 
-    def rgb(self):
+    def rgb(self) -> tuple[float, float, float]:
         return colorsys.hsv_to_rgb(*self.hsv())
 
-    def led(self):
+    def led(self) -> Any:
         return graphics.Color(*self.rgb())

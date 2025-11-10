@@ -1,0 +1,1 @@
+chromium-browser --kiosk https://USERNAME:PASSWORD@www.mbutki.com/ --disable-translate --no-first-run --disable-infobars --disable-gpu-compositing --disable-software-rasterizer

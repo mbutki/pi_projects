@@ -11,3 +11,5 @@ python/src/mbutki.egg-info
 python/src/weather/matrix.config
 
 webserver/secrets.js
+
+python/src/displays/hallway/systemd/chrome_display.service

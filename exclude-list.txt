@@ -15,6 +15,14 @@ python/src/displays/hyper/images
 
 webserver/node_modules/
 webserver/frontend/main/node_modules/
+
 webserver/frontend/tic_tac_toe/node_modules/
+webserver/frontend/test1/node_modules/
 webserver/frontend/main/build/
 webserver/frontend/tic_tac_toe/build/
+webserver/frontend/test1/build/
+
+webserver/frontend/hallway/node_modules/
+webserver/frontend/hallway/dist/
+webserver/frontend/hallway/src/routeTree.gen.ts
+webserver/frontend/hallway/src/assets/videos

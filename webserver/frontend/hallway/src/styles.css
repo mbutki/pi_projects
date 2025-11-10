@@ -1,0 +1,141 @@
+/* index.css */
+h1 {
+  color: green;
+}
+
+h2 {
+  color: brown;
+}
+
+.leftnav {
+  width: 200px;
+  background-color: #f0f0f0;
+  padding: 20px;
+  height: 100vh;
+  /* Full height */
+}
+
+.leftnav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.leftnav li {
+  margin-bottom: 10px;
+}
+
+.leftnav a {
+  text-decoration: none;
+  background-color: lightgray;
+  color: black;
+  padding: 5px 10px;
+  display: flex;
+  justify-content: center;
+  /* Centers horizontally */
+  align-items: center;
+  /* Centers vertically */
+  padding: 24px 36px;
+  /* larger padding */
+  font-size: 2rem;
+  /* ~3 times the default 16px */
+  border: 1px solid transparent;
+  border-radius: 8px;
+  /* slightly bigger radius */
+  transition: all 0.2s;
+}
+
+.leftnav a.active {
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+}
+
+/* make sure the page/root can expand to the viewport */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 400px);
+  /* fixed 400px per column */
+  justify-content: center;
+  /* center the grid horizontally */
+  gap: 16px;
+  /* space between thumbnails */
+  padding: 10px;
+}
+
+.video-thumbnail {
+  width: 400px;
+  /* fixed thumbnail width */
+  height: 600px;
+  /* fixed thumbnail height */
+  /* for black bars if media is smaller */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.video-thumbnail img,
+.video-thumbnail video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* keep aspect ratio, no cropping */
+  image-rendering: pixelated;
+  /* for pixel art GIFs */
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.video-thumbnail h2 {
+  margin-top: 8px;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* Fullscreen container */
+.fullscreen-root {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Fullscreen thumb mode */
+.fullscreen-thumb {
+  margin: 10px;
+  cursor: pointer;
+  display: block;
+  /* DO NOT set width/height here */
+}
+
+/* Images/videos inside thumbnails inherit size from .video-thumbnail img/video */
+.fullscreen-thumb img,
+.fullscreen-thumb video {
+  width: 100%;
+  /* fill thumbnail width */
+  height: 100%;
+  /* fill thumbnail height */
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* Fullscreen mode */
+.fullscreen-root:fullscreen img,
+.fullscreen-root:fullscreen video,
+.fullscreen-root:-webkit-full-screen img,
+.fullscreen-root:-ms-fullscreen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background-color: black;
+  image-rendering: pixelated;
+  cursor: none;
+}

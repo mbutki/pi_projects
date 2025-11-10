@@ -20,6 +20,7 @@ app.use(basicAuth({
 
 // --- Static Frontend ---
 app.use(express.static(path.join(__dirname, 'frontend', 'build')));
+app.use(express.static(path.join(__dirname, 'frontend', 'src', 'assets')));
 
 // --- MariaDB Pool ---
 const pool = mariadb.createPool({
