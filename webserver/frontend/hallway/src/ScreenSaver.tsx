@@ -1,11 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { ScreenSaverProvider, ScreenSaverContext } from "./ScreenSaverContext";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import axios from "axios";
 
 function ScreenSaverInner() {
-    const { isScreenSaved } = useContext(ScreenSaverContext);
+    const { isScreenSaved, setIsScreenSaved } = useContext(ScreenSaverContext);
     const navigate = useNavigate();
+    const location = useLocation();
     const [videoDirs, setVideoDirs] = useState<string[]>([]);
 
     // Fetch available video directories on mount
@@ -23,6 +24,14 @@ function ScreenSaverInner() {
 
         fetchVideoDirs();
     }, []);
+
+    // Reset isScreenSaved when navigating to non-video-detail routes
+    useEffect(() => {
+        // If we're not on a /videos/xxx route, ensure screensaver state is false
+        if (!location.pathname.match(/^\/videos\/[^/]+$/)) {
+            setIsScreenSaved(false);
+        }
+    }, [location.pathname, setIsScreenSaved]);
 
     // Screensaver logic: navigate to random video if no fullscreen for 10 seconds
     useEffect(() => {
