@@ -23,7 +23,7 @@ function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
         };
 
         pickUrl();
-        const interval = setInterval(pickUrl, 5000); // refresh every 5 seconds
+        const interval = setInterval(pickUrl, 60000); // refresh every 60 seconds
         return () => clearInterval(interval);
     }, [urls]);
 
