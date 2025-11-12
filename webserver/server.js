@@ -55,7 +55,7 @@ app.get('/api/videos', async (req, res) => {
     for (const dirName of dirNames) {
       const filenames = await fs.readdir(path.join(videosPath, dirName));
       const videoUrls = filenames.map(filename => {
-        return `videos/${dirName}/${filename}`;
+        return `/videos/${dirName}/${filename}`;
       })
       dir2urls[dirName] = videoUrls;
     }

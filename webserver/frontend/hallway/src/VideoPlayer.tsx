@@ -11,7 +11,6 @@ interface VideoPlayerProps {
 function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
     const [curVideoUrl, setCurVideoUrl] = useState<string>();
 
-    console.log(`Basic video player: autoFullScreen:${autoFullScreen}`)
     function getRandomElement(arr: string[]) {
         const randomIndex = Math.floor(Math.random() * arr.length);
         return arr[randomIndex];
@@ -66,8 +65,6 @@ function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentPr
     const navigate = useNavigate();
 
     useEffect(() => {
-        console.log(`checking fullscreen from video player`)
-        console.log(`autoFullScreen:${autoFullScreen}`)
         if (autoFullScreen) {
             // Use CSS fullscreen for immediate effect without user gesture
             setIsCssFullscreen(true);

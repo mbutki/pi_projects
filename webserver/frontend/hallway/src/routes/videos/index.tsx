@@ -29,11 +29,8 @@ export const Route = createFileRoute('/videos/')({
     loader: async (): Promise<DirMap> => {
         const res = await axios.get('/api/videos', { withCredentials: true });
         const data = res.data as Record<string, string[]>;
-        const normalizedEntries = Object.entries(data).map(([dir, urls]) => {
-            const fixed = Array.isArray(urls) ? urls.map(u => (u.startsWith('/') ? u : `/${u}`)) : [];
-            return [dir, fixed] as [string, string[]];
-        });
-        return new Map<string, string[]>(normalizedEntries);
+        const entries = Object.entries(data).map(([dir, urls]) => [dir, urls as string[]] as [string, string[]]);
+        return new Map<string, string[]>(entries);
     },
 });
 
