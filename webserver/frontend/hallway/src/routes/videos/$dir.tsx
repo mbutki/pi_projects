@@ -21,11 +21,11 @@ const VideoPage: React.FC = () => {
 
 export const Route = createFileRoute('/videos/$dir')({
     component: VideoPage,
-    loader: async ({ params }: any): Promise<VideoPageLoaderData> => {
+    loader: async ({ params }: { params: { dir: string } }): Promise<VideoPageLoaderData> => {
         // Server returns absolute URLs, so use them directly.
         const res = await axios.get('/api/videos', { withCredentials: true });
         const data = res.data as Record<string, string[]>;
-        const dirParam = params?.dir as string;
+        const dirParam = params?.dir;
         const urls = (data[dirParam] ?? []) as string[];
         return { dir: dirParam, urls };
     },

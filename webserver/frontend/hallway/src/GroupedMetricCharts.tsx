@@ -17,7 +17,17 @@ type LocationSeries = Record<string, SeriesPoint[]>;
 
 type GroupedData = Record<MetricKey, LocationSeries>;
 
-function groupByLocation(data: any[]): GroupedData {
+interface MedianRow {
+  location: string;
+  end_ts: number;
+  temp?: number | null;
+  humidity?: number | null;
+  pressure?: number | null;
+  lux?: number | null;
+  aqi?: number | null;
+}
+
+function groupByLocation(data: MedianRow[]): GroupedData {
   const grouped: Partial<GroupedData> = {};
   for (let metric of METRICS) grouped[metric] = {};
 
@@ -27,7 +37,7 @@ function groupByLocation(data: any[]): GroupedData {
       if (!grouped[metric]![location]) grouped[metric]![location] = [];
       grouped[metric]![location].push({
         timestamp: row.end_ts,
-        value: row[metric],
+        value: (row as unknown as Record<string, number | null>)[metric] ?? null,
       });
     }
   }

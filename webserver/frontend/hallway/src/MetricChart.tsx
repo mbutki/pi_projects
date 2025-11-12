@@ -17,7 +17,10 @@ interface Point { timestamp: number; value: number | null }
 
 type LocationData = Record<string, Point[]>;
 
-function combineByTimestamp(locationData: LocationData) {
+// Combined row used by Recharts: timestamp (ms) plus one column per location with numeric/null values
+type CombinedRow = { timestamp: number } & Record<string, number | null>;
+
+function combineByTimestamp(locationData: LocationData): CombinedRow[] {
   const timestamps = new Set<number>();
   Object.values(locationData).forEach((series) => {
     series.forEach((point) => timestamps.add(point.timestamp));
@@ -26,9 +29,7 @@ function combineByTimestamp(locationData: LocationData) {
   const sorted = Array.from(timestamps).sort((a, b) => a - b);
 
   return sorted.map((ts: number) => {
-    const row: Record<string | 'timestamp', number | null> = {
-      timestamp: ts * 1000, // convert to ms for recharts
-    } as any;
+    const row: CombinedRow = { timestamp: ts * 1000 } as CombinedRow; // ms
     for (const [loc, series] of Object.entries(locationData)) {
       const point = series.find((p) => p.timestamp === ts);
       row[loc] = point?.value ?? null;
@@ -40,7 +41,7 @@ function combineByTimestamp(locationData: LocationData) {
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const TOTAL_HOURS = 48;
 
-interface MetricChartProps { metric: string; data: LocationData }
+interface MetricChartProps { metric: string; data?: LocationData }
 
 function MetricChart({ metric, data }: MetricChartProps) {
   const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set());
@@ -54,22 +55,25 @@ function MetricChart({ metric, data }: MetricChartProps) {
 
   // useMemo() is not required, it just prevents re-rendering if data-prop changes, but startTime does (i.e. hourly updates only)
   const combinedData = useMemo(() => {
-    if (!data) return [] as any[];
+    if (!data) return [] as CombinedRow[];
 
     const all = combineByTimestamp(data);
 
     // Only include points within the 48-hour window
-    return all.filter((point) => (point.timestamp as number) >= startTime && (point.timestamp as number) <= now);
+    return all.filter((point) => point.timestamp >= startTime && point.timestamp <= now);
   }, [data, startTime, now]);
 
-  const handleLegendClick = (e: any) => {
-    const loc = e.dataKey as string;
+  // Legend click handler receives (payload, index, event). The payload has a `dataKey` that may be a string or function.
+  const handleLegendClick = (payload: { dataKey?: unknown }, _index?: number, _event?: React.MouseEvent) => {
+    const loc = String(payload.dataKey ?? '');
     setHiddenLines(prev => {
       const copy = new Set(prev);
       copy.has(loc) ? copy.delete(loc) : copy.add(loc);
       return copy;
     });
   };
+
+
 
   return (
     <div style={{ marginBottom: 40 }}>
