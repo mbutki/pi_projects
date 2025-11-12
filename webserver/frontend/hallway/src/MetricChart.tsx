@@ -64,17 +64,33 @@ function MetricChart({ metric, data }: MetricChartProps) {
   }, [data, startTime, now]);
 
   // Legend click handler receives (payload, index, event). The payload has a `dataKey` that may be a string or function.
-  const handleLegendClick = (payload: { dataKey?: unknown }, _index?: number, _event?: React.MouseEvent) => {
+  const handleLegendClick = (payload: { dataKey?: unknown }) => {
     const loc = String(payload.dataKey ?? '');
     setHiddenLines(prev => {
       const copy = new Set(prev);
-      copy.has(loc) ? copy.delete(loc) : copy.add(loc);
+      if (copy.has(loc)) copy.delete(loc);
+      else copy.add(loc);
       return copy;
     });
   };
 
-
-
+  // Custom tick renderer for angled X axis labels (typed)
+  const CustomTick: React.FC<{ x?: number; y?: number; payload?: { value?: number | string } }> = ({ x, y, payload }) => {
+    if (x == null || y == null || payload == null) return null;
+    const ts = Number(payload.value ?? 0);
+    const label = new Date(ts).toLocaleTimeString([], { hour: 'numeric', hour12: true });
+    return (
+      <text
+        x={x}
+        y={y}
+        transform={`rotate(-45 ${x} ${y})`}
+        textAnchor="end"
+        fontSize={12}
+      >
+        {label}
+      </text>
+    );
+  };
   return (
     <div style={{ marginBottom: 40 }}>
       <h2>{metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>
@@ -89,7 +105,7 @@ function MetricChart({ metric, data }: MetricChartProps) {
             tickFormatter={(ts) =>
               new Date(ts).toLocaleTimeString([], { hour: 'numeric', hour12: true })
             }
-            tick={{ fontSize: 12, angle: -45 as any, textAnchor: 'end' } as any}
+            tick={<CustomTick />}
           />
           <YAxis domain={['auto', 'auto']} />
           <Tooltip

@@ -29,10 +29,10 @@ interface MedianRow {
 
 function groupByLocation(data: MedianRow[]): GroupedData {
   const grouped: Partial<GroupedData> = {};
-  for (let metric of METRICS) grouped[metric] = {};
+  for (const metric of METRICS) grouped[metric] = {};
 
-  for (let row of data) {
-    for (let metric of METRICS) {
+  for (const row of data) {
+    for (const metric of METRICS) {
       const location: string = row.location;
       if (!grouped[metric]![location]) grouped[metric]![location] = [];
       grouped[metric]![location].push({
