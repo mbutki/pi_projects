@@ -48,8 +48,8 @@ function ScreenSaverInner() {
             }
         };
 
-        // Check every 10 seconds
-        const interval = setInterval(saveScreen, 10000);
+        // Check every 60 seconds
+        const interval = setInterval(saveScreen, 60000);
         return () => clearInterval(interval);
     }, [isScreenSaved, navigate, videoDirs]);
 
