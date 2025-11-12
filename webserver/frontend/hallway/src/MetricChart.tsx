@@ -13,20 +13,24 @@ import {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#a83279', '#32a852', '#d83232'];
 
 // Combine data across locations into shared timestamped rows (preserving minute-level info)
-function combineByTimestamp(locationData) {
-  const timestamps = new Set();
-  Object.values(locationData).forEach(series => {
-    series.forEach(point => timestamps.add(point.timestamp));
+interface Point { timestamp: number; value: number | null }
+
+type LocationData = Record<string, Point[]>;
+
+function combineByTimestamp(locationData: LocationData) {
+  const timestamps = new Set<number>();
+  Object.values(locationData).forEach((series) => {
+    series.forEach((point) => timestamps.add(point.timestamp));
   });
 
   const sorted = Array.from(timestamps).sort((a, b) => a - b);
 
-  return sorted.map(ts => {
-    const row = {
+  return sorted.map((ts: number) => {
+    const row: Record<string | 'timestamp', number | null> = {
       timestamp: ts * 1000, // convert to ms for recharts
-    };
+    } as any;
     for (const [loc, series] of Object.entries(locationData)) {
-      const point = series.find(p => p.timestamp === ts);
+      const point = series.find((p) => p.timestamp === ts);
       row[loc] = point?.value ?? null;
     }
     return row;
@@ -36,8 +40,10 @@ function combineByTimestamp(locationData) {
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const TOTAL_HOURS = 48;
 
-function MetricChart({ metric, data }) {
-  const [hiddenLines, setHiddenLines] = useState(new Set());
+interface MetricChartProps { metric: string; data: LocationData }
+
+function MetricChart({ metric, data }: MetricChartProps) {
+  const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set());
 
   const nowDate = new Date();
   nowDate.setHours(nowDate.getHours(), 0, 0, 0); // Round to hour
@@ -48,16 +54,16 @@ function MetricChart({ metric, data }) {
 
   // useMemo() is not required, it just prevents re-rendering if data-prop changes, but startTime does (i.e. hourly updates only)
   const combinedData = useMemo(() => {
-    if (!data) return [];
+    if (!data) return [] as any[];
 
     const all = combineByTimestamp(data);
 
     // Only include points within the 48-hour window
-    return all.filter(point => point.timestamp >= startTime && point.timestamp <= now);
+    return all.filter((point) => (point.timestamp as number) >= startTime && (point.timestamp as number) <= now);
   }, [data, startTime, now]);
 
-  const handleLegendClick = (e) => {
-    const loc = e.dataKey;
+  const handleLegendClick = (e: any) => {
+    const loc = e.dataKey as string;
     setHiddenLines(prev => {
       const copy = new Set(prev);
       copy.has(loc) ? copy.delete(loc) : copy.add(loc);
@@ -79,7 +85,7 @@ function MetricChart({ metric, data }) {
             tickFormatter={(ts) =>
               new Date(ts).toLocaleTimeString([], { hour: 'numeric', hour12: true })
             }
-            tick={{ fontSize: 12, angle: -45, textAnchor: 'end' }}
+            tick={{ fontSize: 12, angle: -45 as any, textAnchor: 'end' } as any}
           />
           <YAxis domain={['auto', 'auto']} />
           <Tooltip

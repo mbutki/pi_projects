@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import React from 'react';
 
-function ErrorTable() {
-  const [errors, setErrors] = useState([]);
+interface ErrorEntry {
+  timestamp?: number | null;
+  location?: string | null;
+  error?: string | null;
+}
+
+function ErrorTable(): React.ReactElement {
+  const [errors, setErrors] = useState<ErrorEntry[]>([]);
 
   useEffect(() => {
     const fetchErrors = async () => {
@@ -34,18 +41,18 @@ function ErrorTable() {
         <tbody>
           {errors.length === 0 ? (
             <tr>
-              <td style={tdStyle} colSpan="3" align="center">
+              <td style={tdStyle} colSpan={3} align="center">
                 No recent errors
               </td>
             </tr>
           ) : (
-            errors.map((err, index) => (
+            errors.map((err: ErrorEntry, index: number) => (
               <tr key={index}>
                 <td style={tdStyle}>
-                  {err.timestamp ? new Date(err.timestamp * 1000).toLocaleString() : '—'}
+                  {err && err.timestamp ? new Date(err.timestamp * 1000).toLocaleString() : '—'}
                 </td>
-                <td style={tdStyle}>{err.location ?? '-'}</td>
-                <td style={tdStyle}>{err.error ?? '-'}</td>
+                <td style={tdStyle}>{err && err.location ? err.location : '-'}</td>
+                <td style={tdStyle}>{err && err.error ? err.error : '-'}</td>
               </tr>
             ))
           )}
@@ -55,13 +62,13 @@ function ErrorTable() {
   );
 }
 
-const thStyle = {
+const thStyle: React.CSSProperties = {
   textAlign: 'left',
   borderBottom: '2px solid #ccc',
   padding: '8px',
 };
 
-const tdStyle = {
+const tdStyle: React.CSSProperties = {
   padding: '8px',
   borderBottom: '1px solid #eee',
   verticalAlign: 'top',

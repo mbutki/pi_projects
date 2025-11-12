@@ -2,29 +2,41 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import MetricChart from './MetricChart';
+import React from 'react';
 
-const METRICS = ["temp", "humidity", "pressure", "lux", "aqi"];
+type MetricKey = 'temp' | 'humidity' | 'pressure' | 'lux' | 'aqi';
 
-function groupByLocation(data) {
-  const grouped = {};
+const METRICS: MetricKey[] = ['temp', 'humidity', 'pressure', 'lux', 'aqi'];
+
+interface SeriesPoint {
+  timestamp: number;
+  value: number | null;
+}
+
+type LocationSeries = Record<string, SeriesPoint[]>;
+
+type GroupedData = Record<MetricKey, LocationSeries>;
+
+function groupByLocation(data: any[]): GroupedData {
+  const grouped: Partial<GroupedData> = {};
   for (let metric of METRICS) grouped[metric] = {};
 
   for (let row of data) {
     for (let metric of METRICS) {
-      const location = row.location;
-      if (!grouped[metric][location]) grouped[metric][location] = [];
-      grouped[metric][location].push({
+      const location: string = row.location;
+      if (!grouped[metric]![location]) grouped[metric]![location] = [];
+      grouped[metric]![location].push({
         timestamp: row.end_ts,
-        value: row[metric]
+        value: row[metric],
       });
     }
   }
-  return grouped;
+  return grouped as GroupedData;
 }
 
-function GroupedMetricCharts() {
-  const [groupedData, setGroupedData] = useState(null);
-  const [error, setError] = useState(null);
+function GroupedMetricCharts(): React.ReactElement | null {
+  const [groupedData, setGroupedData] = useState<GroupedData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMedians = async () => {

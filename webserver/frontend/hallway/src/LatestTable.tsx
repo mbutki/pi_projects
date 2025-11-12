@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import React from 'react';
 
-function LatestTable() {
-  const [latestData, setLatestData] = useState([]);
+interface LatestRow {
+  location: string;
+  temp?: number | null;
+  humidity?: number | null;
+  pressure?: number | null;
+  lux?: number | null;
+  aqi?: number | null;
+  timestamp: number;
+}
+
+function LatestTable(): React.ReactElement | null {
+  const [latestData, setLatestData] = useState<LatestRow[]>([]);
 
   // Poll for latest values every second
   useEffect(() => {
     const fetchLatest = async () => {
       try {
         const res = await axios.get('/api/latest', { withCredentials: true });
-        setLatestData(res.data);
+        setLatestData(res.data as LatestRow[]);
       } catch (err) {
         console.error('Error fetching latest sensor data:', err);
       }
@@ -38,7 +49,7 @@ function LatestTable() {
           </tr>
         </thead>
         <tbody>
-          {latestData.map(row => (
+          {latestData.map((row: LatestRow) => (
             <tr key={row.location}>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.location}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.temp != null ? row.temp.toFixed(1) : '—'}</td>

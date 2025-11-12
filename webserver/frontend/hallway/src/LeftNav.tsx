@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router';
 
-const LeftNav = () => {
+import React from 'react';
+
+const LeftNav: React.FC = () => {
     return (
         <aside className="leftnav">
             <nav>
@@ -16,7 +18,7 @@ const LeftNav = () => {
                     </li>
                     <li>
                         <Link
-                            to="/videos/"
+                            to="/videos"
                             activeProps={{ className: "active" }}
                         >
                             Videos

@@ -2,12 +2,9 @@ import LatestTable from '../LatestTable';
 import ErrorTable from '../ErrorTable';
 import GroupedMetricCharts from '../GroupedMetricCharts';
 import { createFileRoute } from '@tanstack/react-router'
+import React from 'react';
 
-export const Route = createFileRoute('/')({
-    component: Environment,
-})
-
-function Environment() {
+const Environment: React.FC = () => {
     return (
         <div style={{ maxWidth: 1200, margin: 'auto', padding: 20 }}>
             <LatestTable />
@@ -18,3 +15,9 @@ function Environment() {
         </div>
     );
 }
+
+export const Route = createFileRoute('/')({
+    component: Environment,
+})
+
+export default Environment;
