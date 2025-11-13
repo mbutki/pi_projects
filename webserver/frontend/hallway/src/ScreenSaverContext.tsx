@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState, type ReactNode, type FC } from 'react';
 import { ScreenSaverContext } from './ScreenSaverContextValue';
 
-export const ScreenSaverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ScreenSaverProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [isScreenSaved, setIsScreenSaved] = useState(false);
 
     return (

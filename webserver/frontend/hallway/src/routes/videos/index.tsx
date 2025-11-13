@@ -5,8 +5,6 @@ import axios from 'axios';
 
 type DirMap = Map<string, string[]>;
 
-
-
 const VideosGrid: React.FC = () => {
     // Use the module-scoped Route which we will export below. Cast to the expected map type.
     const dir2videoUrls = (Route.useLoaderData as unknown as () => DirMap)();

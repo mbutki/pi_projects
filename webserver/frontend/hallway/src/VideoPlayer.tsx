@@ -75,6 +75,18 @@ function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentPr
 
     // Hide cursor and scrollbar on body when in fullscreen
     useEffect(() => {
+        const cleanup = () => {
+            // Restore scrollbar
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+
+            // Restore cursor
+            const styleElement = document.getElementById('fullscreen-hide-cursor');
+            if (styleElement) {
+                styleElement.remove();
+            }
+        };
+
         if (isCssFullscreen) {
             // Use setTimeout to ensure styles are applied after React finishes rendering
             const timeoutId = setTimeout(() => {
@@ -98,29 +110,14 @@ function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentPr
                 clearTimeout(timeoutId);
             };
         } else {
-            // Restore scrollbar
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-
-            // Restore cursor
-            const styleElement = document.getElementById('fullscreen-hide-cursor');
-            if (styleElement) {
-                styleElement.remove();
-            }
+            cleanup();
         }
 
         // Cleanup on unmount
-        return () => {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-            const styleElement = document.getElementById('fullscreen-hide-cursor');
-            if (styleElement) {
-                styleElement.remove();
-            }
-        };
+        return cleanup();
     }, [isCssFullscreen]);
 
-    const toggleFullscreen = () => {
+    const exitFullscreen = () => {
         if (!elementRef.current) return;
 
         // Toggle CSS fullscreen and navigate back to videos
@@ -135,7 +132,7 @@ function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentPr
         <div
             ref={elementRef}
             className={`fullscreen-root ${isCssFullscreen ? 'css-fullscreen' : 'fullscreen-thumb'}`}
-            onClick={toggleFullscreen}
+            onClick={exitFullscreen}
             style={{
                 cursor: isCssFullscreen ? 'none' : 'pointer',
                 position: isCssFullscreen ? 'fixed' : 'relative',

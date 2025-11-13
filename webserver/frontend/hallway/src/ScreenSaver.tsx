@@ -36,7 +36,7 @@ function ScreenSaverInner() {
         }
     }, [location.pathname, setIsScreenSaved]);
 
-    // Screensaver logic: navigate to random video if no fullscreen for 10 seconds
+    // Screensaver logic: navigate to random video if no fullscreen for 60 seconds
     useEffect(() => {
         if (videoDirs.length === 0) return; // Wait until we have video directories
 
