@@ -2,12 +2,14 @@ import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import VideoPlayer from '../../VideoPlayer';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from '@tanstack/react-router';
 import { getVideosForDir } from '../../api';
 import { queryKeys } from '../../queryKeys';
 
 const VideoPage: React.FC = () => {
-    // Derive the dir param from the current pathname to avoid tight coupling to router internals
-    const dir = typeof window !== 'undefined' ? window.location.pathname.split('/').pop() ?? '' : '';
+    // Use the router location (works with hash history) so we get the route pathname
+    const location = (useLocation as unknown as () => { pathname: string })();
+    const dir = location.pathname.split('/').pop() ?? '';
 
     const { data: urls = [] } = useQuery<string[]>({
         queryKey: queryKeys.videosFor(dir),
