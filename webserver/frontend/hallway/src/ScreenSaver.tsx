@@ -25,7 +25,9 @@ function ScreenSaverInner() {
         }
     }, [location.pathname, setIsScreenSaved]);
 
-    // Screensaver logic: navigate to random video if no fullscreen for 60 seconds
+    const { data: screenSaverSec } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: () => import('./api').then(m => m.getScreenSaverSeconds()), staleTime: 1000 * 60, retry: 1 });
+
+    // Screensaver logic: navigate to random video if no fullscreen after configured seconds
     useEffect(() => {
         if (videoDirs.length === 0) return; // Wait until we have video directories
 
@@ -37,10 +39,11 @@ function ScreenSaverInner() {
             }
         };
 
-        // Check every 60 seconds
-        const interval = setInterval(saveScreen, 60000);
+        // Check every configured seconds (default 60)
+        const ms = (screenSaverSec ?? 60) * 1000;
+        const interval = setInterval(saveScreen, ms);
         return () => clearInterval(interval);
-    }, [isScreenSaved, navigate, videoDirs]);
+    }, [isScreenSaved, navigate, videoDirs, screenSaverSec]);
 
     return null; // doesn't render anything visible
 }

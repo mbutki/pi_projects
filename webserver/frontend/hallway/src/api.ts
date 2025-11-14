@@ -89,6 +89,20 @@ export async function setVideoLoopSeconds(seconds: number): Promise<number> {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : seconds;
 }
 
+export async function getScreenSaverSeconds(): Promise<number> {
+    const settings = await getSettings();
+    const raw = settings.screenSaverSeconds;
+    const n = Number(raw ?? 60);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 60;
+}
+
+export async function setScreenSaverSeconds(seconds: number): Promise<number> {
+    const updated = await setSettings({ screenSaverSeconds: seconds });
+    const raw = updated.screenSaverSeconds;
+    const n = Number(raw ?? seconds);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : seconds;
+}
+
 export default {
     getVideos,
     getVideoDirs,
@@ -100,4 +114,6 @@ export default {
     setSettings,
     getVideoLoopSeconds,
     setVideoLoopSeconds,
+    getScreenSaverSeconds,
+    setScreenSaverSeconds,
 };

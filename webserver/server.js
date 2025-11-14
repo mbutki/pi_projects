@@ -23,7 +23,6 @@ app.use(basicAuth({
 }));
 
 // --- Static Frontend ---
-//app.use(express.static(path.join(__dirname, 'frontend', 'main', 'build')));
 app.use(express.static(path.join(__dirname, 'frontend', 'hallway', 'dist')));
 app.use(express.static(path.join(__dirname, 'frontend', 'hallway', 'src', 'assets')));
 
@@ -49,12 +48,17 @@ async function initSettingsTable() {
       )
     `);
 
-    // Ensure a sensible default for videoLoopSeconds exists (60 seconds)
-    const rows = await conn.query("SELECT value FROM web_settings WHERE name = 'videoLoopSeconds' LIMIT 1");
-    if (!rows || rows.length === 0) {
-      await conn.query("INSERT INTO web_settings (name, value) VALUES ('videoLoopSeconds', ?)", [String(60)]);
-      console.log('Inserted default setting videoLoopSeconds=60');
-    }
+    // Ensure sensible defaults exist
+    const checkAndInsert = async (name, defaultValue) => {
+      const r = await conn.query('SELECT value FROM web_settings WHERE name = ? LIMIT 1', [name]);
+      if (!r || r.length === 0) {
+        await conn.query('INSERT INTO web_settings (name, value) VALUES (?, ?)', [name, String(defaultValue)]);
+        console.log(`Inserted default setting ${name}=${defaultValue}`);
+      }
+    };
+
+    await checkAndInsert('videoLoopSeconds', 60);
+    await checkAndInsert('screenSaverSeconds', 60);
   } catch (err) {
     console.error('Error initializing settings table:', err);
   } finally {
@@ -154,11 +158,6 @@ app.get('/api/errors', async (req, res) => {
   }
 });
 
-// --- Fallback: React SPA Routing ---
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'main', 'build', 'index.html'));
-});
-
 // --- API: Settings (GET/POST) ---
 app.get('/api/settings', async (req, res) => {
   let conn;
@@ -221,6 +220,11 @@ app.post('/api/settings', async (req, res) => {
   } finally {
     if (conn) conn.release();
   }
+});
+
+// --- Fallback: React SPA Routing ---
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'hallway', 'dist', 'index.html'));
 });
 
 // --- HTTPS Setup ---

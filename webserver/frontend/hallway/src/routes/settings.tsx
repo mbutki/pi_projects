@@ -33,31 +33,74 @@ const Settings: React.FC = () => {
         mutation.mutate(seconds);
     };
 
+    // Screensaver setting
+    const { data: screenSec, isLoading: screenLoading } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: api.getScreenSaverSeconds, staleTime: 1000 * 60, retry: 1 });
+    const [isSavingScreen, setIsSavingScreen] = useState(false);
+    const screenMutation = useMutation({
+        mutationFn: (s: number) => api.setScreenSaverSeconds(s),
+        onSuccess: (newSeconds: number) => {
+            queryClient.setQueryData(queryKeys.screenSaver, newSeconds);
+        },
+        onSettled: () => setIsSavingScreen(false),
+    });
+    const handleScreenClick = (seconds: number) => {
+        setIsSavingScreen(true);
+        screenMutation.mutate(seconds);
+    };
+
     return (
         <div className='settings'>
-            <h3>Video Loop Length</h3>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {OPTIONS.map((opt) => {
-                    const active = !isLoading && loopSec === opt.seconds;
-                    return (
-                        <button
-                            key={opt.label}
-                            onClick={() => handleClick(opt.seconds)}
-                            aria-pressed={active}
-                            style={{
-                                padding: '6px 10px',
-                                background: active ? '#2684ff' : undefined,
-                                color: active ? 'white' : undefined,
-                                borderRadius: 4,
-                                border: '1px solid #ccc',
-                            }}
-                        >
-                            {opt.label}
-                        </button>
-                    );
-                })}
-                {isSaving && <span>Saving...</span>}
-            </div>
+            <section style={{ marginBottom: 20 }}>
+                <h3>Video Loop Length</h3>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {OPTIONS.map((opt) => {
+                        const active = !isLoading && loopSec === opt.seconds;
+                        return (
+                            <button
+                                key={opt.label}
+                                onClick={() => handleClick(opt.seconds)}
+                                aria-pressed={active}
+                                style={{
+                                    padding: '6px 10px',
+                                    background: active ? '#2684ff' : undefined,
+                                    color: active ? 'white' : undefined,
+                                    borderRadius: 4,
+                                    border: '1px solid #ccc',
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                    {isSaving && <span>Saving...</span>}
+                </div>
+            </section>
+
+            <section>
+                <h3>Screensaver Delay</h3>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {OPTIONS.map((opt) => {
+                        const active = !screenLoading && screenSec === opt.seconds;
+                        return (
+                            <button
+                                key={opt.label}
+                                onClick={() => handleScreenClick(opt.seconds)}
+                                aria-pressed={active}
+                                style={{
+                                    padding: '6px 10px',
+                                    background: active ? '#2684ff' : undefined,
+                                    color: active ? 'white' : undefined,
+                                    borderRadius: 4,
+                                    border: '1px solid #ccc',
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                    {isSavingScreen && <span>Saving...</span>}
+                </div>
+            </section>
         </div>
     );
 };
