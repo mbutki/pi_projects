@@ -1,8 +1,8 @@
 // GroupedMetricCharts.js
-import { useEffect, useState } from 'react';
 import axios from 'axios';
 import MetricChart from './MetricChart';
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 type MetricKey = 'temp' | 'humidity' | 'pressure' | 'lux' | 'aqi';
 
@@ -45,28 +45,23 @@ function groupByLocation(data: MedianRow[]): GroupedData {
 }
 
 function GroupedMetricCharts(): React.ReactElement | null {
-  const [groupedData, setGroupedData] = useState<GroupedData | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchMedians = async () => {
-      try {
-        const res = await axios.get('/api/5min-median', { withCredentials: true });
-        setGroupedData(groupByLocation(res.data));
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching medians:', err);
-        setError('Failed to fetch sensor data');
-      }
-    };
+  const fetchMedians = async (): Promise<MedianRow[]> => {
+    const res = await axios.get('/api/5min-median', { withCredentials: true });
+    return res.data as MedianRow[];
+  };
 
-    fetchMedians();
-    const interval = setInterval(fetchMedians, 60_000); // Every 60 secs
-    return () => clearInterval(interval);
-  }, []);
+  const { data: medianRows, error } = useQuery<MedianRow[]>({
+    queryKey: ['medians'],
+    queryFn: fetchMedians,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  if (!groupedData) return null;
+  if (error) return <p style={{ color: 'red' }}>Failed to fetch sensor data</p>;
+  if (!medianRows) return null;
+
+  const groupedData = groupByLocation(medianRows);
 
   return (
     <div style={{ marginTop: 40 }}>

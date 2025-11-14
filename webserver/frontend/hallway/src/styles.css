@@ -25,6 +25,7 @@ h2 {
 }
 
 .leftnav a {
+  font-size: 2rem;
   text-decoration: none;
   background-color: lightgray;
   color: black;
@@ -36,8 +37,6 @@ h2 {
   /* Centers vertically */
   padding: 24px 36px;
   /* larger padding */
-  font-size: 2rem;
-  /* ~3 times the default 16px */
   border: 1px solid transparent;
   border-radius: 8px;
   /* slightly bigger radius */
@@ -56,6 +55,35 @@ body,
 #root {
   height: 100%;
   margin: 0;
+}
+
+.settings {
+  font-size: 2rem;
+}
+
+.settings button {
+  font-size: 2rem;
+  text-decoration: none;
+  background-color: lightgray;
+  color: black;
+  padding: 5px 10px;
+  justify-content: center;
+  /* Centers horizontally */
+  align-items: center;
+  /* Centers vertically */
+  padding: 24px 36px;
+  margin-left: 20px;
+  /* larger padding */
+  border: 1px solid transparent;
+  border-radius: 8px;
+  /* slightly bigger radius */
+  transition: all 0.2s;
+}
+
+.settings button.active {
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
 }
 
 .video-grid {
@@ -96,7 +124,6 @@ body,
 
 .video-thumbnail h2 {
   margin-top: 8px;
-  font-size: 16px;
   text-align: center;
 }
 

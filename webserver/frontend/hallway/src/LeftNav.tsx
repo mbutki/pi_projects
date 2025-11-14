@@ -13,7 +13,7 @@ const LeftNav: React.FC = () => {
                             activeProps={{ className: "active" }}
                             activeOptions={{ exact: true }}
                         >
-                            Environment
+                            Sensors
                         </Link>
                     </li>
                     <li>

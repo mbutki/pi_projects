@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 import './styles.css'
 
@@ -25,4 +26,11 @@ const rootElement = document.getElementById('app')!
 if (!rootElement) throw new Error('Root element not found')
 
 const root = ReactDOM.createRoot(rootElement)
-root.render(<RouterProvider router={router} />)
+
+const queryClient = new QueryClient();
+
+root.render(
+  <QueryClientProvider client={queryClient}>
+    <RouterProvider router={router} />
+  </QueryClientProvider>
+)

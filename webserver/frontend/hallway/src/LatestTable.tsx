@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import React from 'react';
+import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 
 interface LatestRow {
   location: string;
@@ -13,23 +13,17 @@ interface LatestRow {
 }
 
 function LatestTable(): React.ReactElement | null {
-  const [latestData, setLatestData] = useState<LatestRow[]>([]);
+  const fetchLatest = async (): Promise<LatestRow[]> => {
+    const res = await axios.get('/api/latest', { withCredentials: true });
+    return res.data as LatestRow[];
+  };
 
-  // Poll for latest values every second
-  useEffect(() => {
-    const fetchLatest = async () => {
-      try {
-        const res = await axios.get('/api/latest', { withCredentials: true });
-        setLatestData(res.data as LatestRow[]);
-      } catch (err) {
-        console.error('Error fetching latest sensor data:', err);
-      }
-    };
-
-    fetchLatest(); // initial load
-    const interval = setInterval(fetchLatest, 1000); // every second
-    return () => clearInterval(interval);
-  }, []);
+  const { data: latestData = [] } = useQuery<LatestRow[]>({
+    queryKey: ['latest'],
+    queryFn: fetchLatest,
+    refetchInterval: 1000,
+    refetchOnWindowFocus: false,
+  });
 
   if (!latestData || latestData.length === 0) return <p>No current sensor data.</p>;
 

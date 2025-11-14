@@ -4,7 +4,7 @@ import GroupedMetricCharts from '../GroupedMetricCharts';
 import { createFileRoute } from '@tanstack/react-router'
 import React from 'react';
 
-const Environment: React.FC = () => {
+const Sensors: React.FC = () => {
     return (
         <div style={{ maxWidth: 1200, margin: 'auto', padding: 20 }}>
             <LatestTable />
@@ -17,7 +17,7 @@ const Environment: React.FC = () => {
 }
 
 export const Route = createFileRoute('/')({
-    component: Environment,
+    component: Sensors,
 })
 
-export default Environment;
+export default Sensors;

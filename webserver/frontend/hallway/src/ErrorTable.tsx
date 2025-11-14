@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import React from 'react';
+import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 
 interface ErrorEntry {
   timestamp?: number | null;
@@ -9,23 +9,17 @@ interface ErrorEntry {
 }
 
 function ErrorTable(): React.ReactElement {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
+  const fetchErrors = async (): Promise<ErrorEntry[]> => {
+    const res = await axios.get('/api/errors', { withCredentials: true });
+    return res.data.slice(0, 10) as ErrorEntry[];
+  };
 
-  useEffect(() => {
-    const fetchErrors = async () => {
-      try {
-        const res = await axios.get('/api/errors', { withCredentials: true });
-        setErrors(res.data.slice(0, 10)); // show only the latest 10
-      } catch (err) {
-        console.error('Error fetching /api/errors:', err);
-        setErrors([]); // optional: clear table on error
-      }
-    };
-
-    fetchErrors();
-    const interval = setInterval(fetchErrors, 5000); // refresh every 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+  const { data: errors = [] } = useQuery<ErrorEntry[]>({
+    queryKey: ['errors'],
+    queryFn: fetchErrors,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+  });
 
   return (
     <div style={{ marginTop: 40 }}>
