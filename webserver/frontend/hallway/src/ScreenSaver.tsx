@@ -1,29 +1,21 @@
 import { useContext, useEffect, useState } from "react";
 import SSContext from './SSContext';
 import { useNavigate, useLocation } from "@tanstack/react-router";
-import axios from "axios";
+import { useQuery } from '@tanstack/react-query';
+import { getVideoDirs } from './api';
+import { queryKeys } from './queryKeys';
 
 function ScreenSaverInner() {
     const [isScreenSaved, setIsScreenSaved] = useContext(SSContext);
     const navigate = useNavigate();
     const location = useLocation();
-    const [videoDirs, setVideoDirs] = useState<string[]>([]);
 
-    // Fetch available video directories on mount
-    useEffect(() => {
-        const fetchVideoDirs = async () => {
-            try {
-                const res = await axios.get('/api/videos', { withCredentials: true });
-                const data = res.data as Record<string, string[]>;
-                const dirs = Object.keys(data);
-                setVideoDirs(dirs);
-            } catch (err) {
-                console.error('Failed to fetch video directories', err);
-            }
-        };
-
-        fetchVideoDirs();
-    }, []);
+    const { data: videoDirs = [] } = useQuery<string[]>({
+        queryKey: queryKeys.videoDirs,
+        queryFn: getVideoDirs,
+        refetchInterval: 60_000,
+        refetchOnWindowFocus: false,
+    });
 
     // Reset isScreenSaved when navigating to non-video-detail routes
     useEffect(() => {

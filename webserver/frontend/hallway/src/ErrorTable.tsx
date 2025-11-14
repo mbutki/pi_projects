@@ -1,22 +1,14 @@
 import React from 'react';
-import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
-
-interface ErrorEntry {
-  timestamp?: number | null;
-  location?: string | null;
-  error?: string | null;
-}
+import { getErrors } from './api';
+import type { ErrorEntry } from './api';
+import { queryKeys } from './queryKeys';
 
 function ErrorTable(): React.ReactElement {
-  const fetchErrors = async (): Promise<ErrorEntry[]> => {
-    const res = await axios.get('/api/errors', { withCredentials: true });
-    return res.data.slice(0, 10) as ErrorEntry[];
-  };
-
   const { data: errors = [] } = useQuery<ErrorEntry[]>({
-    queryKey: ['errors'],
-    queryFn: fetchErrors,
+    queryKey: queryKeys.errors,
+    queryFn: getErrors,
+    select: (rows) => rows.slice(0, 10),
     refetchInterval: 5000,
     refetchOnWindowFocus: false,
   });

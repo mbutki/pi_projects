@@ -1,8 +1,10 @@
 // GroupedMetricCharts.js
-import axios from 'axios';
 import MetricChart from './MetricChart';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { getMedians } from './api';
+import type { MedianRow } from './api';
+import { queryKeys } from './queryKeys';
 
 type MetricKey = 'temp' | 'humidity' | 'pressure' | 'lux' | 'aqi';
 
@@ -16,16 +18,6 @@ interface SeriesPoint {
 type LocationSeries = Record<string, SeriesPoint[]>;
 
 type GroupedData = Record<MetricKey, LocationSeries>;
-
-interface MedianRow {
-  location: string;
-  end_ts: number;
-  temp?: number | null;
-  humidity?: number | null;
-  pressure?: number | null;
-  lux?: number | null;
-  aqi?: number | null;
-}
 
 function groupByLocation(data: MedianRow[]): GroupedData {
   const grouped: Partial<GroupedData> = {};
@@ -46,14 +38,9 @@ function groupByLocation(data: MedianRow[]): GroupedData {
 
 function GroupedMetricCharts(): React.ReactElement | null {
 
-  const fetchMedians = async (): Promise<MedianRow[]> => {
-    const res = await axios.get('/api/5min-median', { withCredentials: true });
-    return res.data as MedianRow[];
-  };
-
   const { data: medianRows, error } = useQuery<MedianRow[]>({
-    queryKey: ['medians'],
-    queryFn: fetchMedians,
+    queryKey: queryKeys.medians,
+    queryFn: getMedians,
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
   });

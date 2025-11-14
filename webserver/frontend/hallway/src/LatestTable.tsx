@@ -1,26 +1,13 @@
 import React from 'react';
-import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
-
-interface LatestRow {
-  location: string;
-  temp?: number | null;
-  humidity?: number | null;
-  pressure?: number | null;
-  lux?: number | null;
-  aqi?: number | null;
-  timestamp: number;
-}
+import { getLatest } from './api';
+import type { LatestRow } from './api';
+import { queryKeys } from './queryKeys';
 
 function LatestTable(): React.ReactElement | null {
-  const fetchLatest = async (): Promise<LatestRow[]> => {
-    const res = await axios.get('/api/latest', { withCredentials: true });
-    return res.data as LatestRow[];
-  };
-
   const { data: latestData = [] } = useQuery<LatestRow[]>({
-    queryKey: ['latest'],
-    queryFn: fetchLatest,
+    queryKey: queryKeys.latest,
+    queryFn: getLatest,
     refetchInterval: 1000,
     refetchOnWindowFocus: false,
   });
