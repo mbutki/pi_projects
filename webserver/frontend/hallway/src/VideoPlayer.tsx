@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useContext, useMemo } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import ScreenSaverContext from './ScreenSaverContextValue';
+import SSContext from './SSContext';
 
 interface VideoPlayerProps {
     dir: string;
@@ -61,8 +61,7 @@ interface FullscreenComponentProps {
 function FullscreenComponent({ children, autoFullScreen }: FullscreenComponentProps) {
     const elementRef = useRef<HTMLDivElement>(null);
     const [isCssFullscreen, setIsCssFullscreen] = useState(false);
-    const ctx = useContext(ScreenSaverContext);
-    const setIsScreenSaved = useMemo(() => (ctx ? ctx.setIsScreenSaved : () => { }), [ctx]);
+    const [, setIsScreenSaved] = useContext(SSContext);
     const navigate = useNavigate();
 
     useEffect(() => {

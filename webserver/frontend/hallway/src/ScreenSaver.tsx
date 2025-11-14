@@ -1,13 +1,10 @@
 import { useContext, useEffect, useState } from "react";
-import { ScreenSaverProvider } from "./ScreenSaverContext";
-import ScreenSaverContext from './ScreenSaverContextValue';
+import SSContext from './SSContext';
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import axios from "axios";
 
 function ScreenSaverInner() {
-    const ctx = useContext(ScreenSaverContext);
-    if (!ctx) throw new Error('ScreenSaverContext must be used within a ScreenSaverProvider');
-    const { isScreenSaved, setIsScreenSaved } = ctx;
+    const [isScreenSaved, setIsScreenSaved] = useContext(SSContext);
     const navigate = useNavigate();
     const location = useLocation();
     const [videoDirs, setVideoDirs] = useState<string[]>([]);
@@ -57,11 +54,13 @@ function ScreenSaverInner() {
 }
 
 function ScreenSaver({ children }: { children: React.ReactNode }) {
+    const [isScreenSaved, setIsScreenSaved] = useState(false);
+
     return (
-        <ScreenSaverProvider>
+        <SSContext value={[isScreenSaved, setIsScreenSaved]}>
             {children}
             <ScreenSaverInner />
-        </ScreenSaverProvider>
+        </SSContext >
     );
 }
 

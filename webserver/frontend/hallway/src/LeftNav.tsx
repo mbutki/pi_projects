@@ -24,6 +24,14 @@ const LeftNav: React.FC = () => {
                             Videos
                         </Link>
                     </li>
+                    <li>
+                        <Link
+                            to="/settings"
+                            activeProps={{ className: "active" }}
+                        >
+                            Settings
+                        </Link>
+                    </li>
                 </ul>
             </nav>
         </aside>
