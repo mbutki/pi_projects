@@ -1,4 +1,7 @@
 import { useEffect, useState, useRef, useContext } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import * as api from './api';
+import { queryKeys } from './queryKeys';
 import { useNavigate } from '@tanstack/react-router';
 import SSContext from './SSContext';
 
@@ -16,15 +19,18 @@ function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
         return arr[randomIndex];
     }
 
+    const { data: loopSec } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60, retry: 1 });
+
     useEffect(() => {
         const pickUrl = async () => {
             setCurVideoUrl(getRandomElement(urls)); // show only the latest 10
         };
 
         pickUrl();
-        const interval = setInterval(pickUrl, 60000); // refresh every 60 seconds
+        const ms = (loopSec ?? 60) * 1000;
+        const interval = setInterval(pickUrl, ms);
         return () => clearInterval(interval);
-    }, [urls]);
+    }, [urls, loopSec]);
 
     const fileType = curVideoUrl ? curVideoUrl.split('.').pop() : 'gif';
     let content = <></>;

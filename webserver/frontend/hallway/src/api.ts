@@ -60,6 +60,35 @@ export async function getMedians(): Promise<MedianRow[]> {
     return res.data as MedianRow[];
 }
 
+// Settings API
+export type Settings = Record<string, unknown>;
+
+export async function getSettings(): Promise<Settings> {
+    const res = await axios.get('/api/settings', { withCredentials: true });
+    return res.data as Settings;
+}
+
+export async function setSettings(newSettings: Settings): Promise<Settings> {
+    const res = await axios.post('/api/settings', newSettings, { withCredentials: true });
+    return res.data as Settings;
+}
+
+export async function getVideoLoopSeconds(): Promise<number> {
+    const settings = await getSettings();
+    // Prefer the explicit `videoLoopSeconds` key from the server.
+    const raw = settings.videoLoopSeconds;
+    const n = Number(raw ?? 60);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 60;
+}
+
+export async function setVideoLoopSeconds(seconds: number): Promise<number> {
+    // Post the canonical key name `videoLoopSeconds` to the server.
+    const updated = await setSettings({ videoLoopSeconds: seconds });
+    const raw = updated.videoLoopSeconds;
+    const n = Number(raw ?? seconds);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : seconds;
+}
+
 export default {
     getVideos,
     getVideoDirs,
@@ -67,4 +96,8 @@ export default {
     getErrors,
     getLatest,
     getMedians,
+    getSettings,
+    setSettings,
+    getVideoLoopSeconds,
+    setVideoLoopSeconds,
 };

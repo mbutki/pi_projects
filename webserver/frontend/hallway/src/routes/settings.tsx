@@ -1,31 +1,68 @@
-import React from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-//import axios from 'axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import * as api from '../api';
+import { queryKeys } from '../queryKeys';
 
-type SettingsData = Map<string, string[]>;
+const OPTIONS: { label: string; seconds: number }[] = [
+    { label: '10 Sec', seconds: 10 },
+    { label: '1 Min', seconds: 60 },
+    { label: '10 Min', seconds: 600 },
+    { label: '30 Min', seconds: 1800 },
+];
 
 const Settings: React.FC = () => {
+    const queryClient = useQueryClient();
+    const { data: loopSec, isLoading } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60, retry: 1 });
+
+    const [isSaving, setIsSaving] = useState(false);
+
+    const mutation = useMutation({
+        mutationFn: (s: number) => api.setVideoLoopSeconds(s),
+        onSuccess: (newSeconds: number) => {
+            // update cached value so VideoPlayer and UI reflect new setting instantly
+            queryClient.setQueryData(queryKeys.videoLoop, newSeconds);
+        },
+        onSettled: () => {
+            setIsSaving(false);
+        },
+    });
+
+    const handleClick = (seconds: number) => {
+        setIsSaving(true);
+        mutation.mutate(seconds);
+    };
+
     return (
-        <>
-            <div className='settings'>
-                Video Loop Length
-                <button>10 Sec</button>
-                <button>1 Min</button>
-                <button>10 Min</button>
-                <button>30 Min</button>
+        <div className='settings'>
+            <h3>Video Loop Length</h3>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {OPTIONS.map((opt) => {
+                    const active = !isLoading && loopSec === opt.seconds;
+                    return (
+                        <button
+                            key={opt.label}
+                            onClick={() => handleClick(opt.seconds)}
+                            aria-pressed={active}
+                            style={{
+                                padding: '6px 10px',
+                                background: active ? '#2684ff' : undefined,
+                                color: active ? 'white' : undefined,
+                                borderRadius: 4,
+                                border: '1px solid #ccc',
+                            }}
+                        >
+                            {opt.label}
+                        </button>
+                    );
+                })}
+                {isSaving && <span>Saving...</span>}
             </div>
-        </>
+        </div>
     );
-}
+};
 
 // Export the file-based Route after the component declaration so Settings is defined.
 export const Route = createFileRoute('/settings')({
     component: Settings,
-    loader: async (): Promise<SettingsData> => {
-        /*const res = await axios.get('/api/settings', {withCredentials: true });
-                    const data = res.data as Record<string, string[]>;
-        const entries = Object.entries(data).map(([dir, urls]) => [dir, urls as string[]] as [string, string[]]);
-                    return new Map<string, string[]>(entries);*/
-        return new Map<string, string[]>();
-    },
 });

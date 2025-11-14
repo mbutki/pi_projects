@@ -7,6 +7,7 @@ export const queryKeys = {
     errors: ['errors'] as const,
     latest: ['latest'] as const,
     medians: ['medians'] as const,
+    videoLoop: ['videoLoop'] as const,
 } as const;
 
 export type QueryKey = readonly unknown[];
