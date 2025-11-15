@@ -8,6 +8,9 @@ ExecStart=yarn start
 User=mbutki
 Group=mbutki
 WorkingDirectory=/home/mbutki/pi_projects/webserver
+Environment=SSH_USER=mbutki
+# Optional: point to a private key file to use for SSH (set to empty to use default agent/keys)
+Environment=SSH_KEY=/home/mbutki/.ssh/id_rsa
 
 [Install]
 WantedBy=multi-user.target
