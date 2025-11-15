@@ -103,6 +103,12 @@ export async function setScreenSaverSeconds(seconds: number): Promise<number> {
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : seconds;
 }
 
+// Triangle remote control
+export async function runTriangleSketch(sketch: string): Promise<{ ok?: boolean; stdout?: string; stderr?: string; error?: string }> {
+    const res = await axios.post('/api/triangle/sketch', { sketch }, { withCredentials: true });
+    return res.data as { ok?: boolean; stdout?: string; stderr?: string; error?: string };
+}
+
 export default {
     getVideos,
     getVideoDirs,
@@ -116,4 +122,5 @@ export default {
     setVideoLoopSeconds,
     getScreenSaverSeconds,
     setScreenSaverSeconds,
+    runTriangleSketch,
 };

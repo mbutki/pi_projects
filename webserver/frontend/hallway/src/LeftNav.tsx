@@ -26,6 +26,22 @@ const LeftNav: React.FC = () => {
                     </li>
                     <li>
                         <Link
+                            to="/weather"
+                            activeProps={{ className: "active" }}
+                        >
+                            Weather
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            to="/devices"
+                            activeProps={{ className: "active" }}
+                        >
+                            Devices
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
                             to="/settings"
                             activeProps={{ className: "active" }}
                         >

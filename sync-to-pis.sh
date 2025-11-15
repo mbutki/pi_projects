@@ -7,5 +7,5 @@ PI_HOSTS=("pi-desk" "pi-weather" "pi-hyper" "pi-triangle" "pi-kateeink" "pi-quin
 
 for HOST in "${PI_HOSTS[@]}"; do
     echo "Syncing to $HOST..."
-    rsync -az --exclude-from='exclude-list.txt' --delete "$SRC_PATH" mbutki@$HOST:"$DEST_PATH"
+    rsync -az --exclude-from='exclude-list.txt' --delete "$SRC_PATH" mbutki@$HOST".local":"$DEST_PATH"
 done

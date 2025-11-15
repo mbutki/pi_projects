@@ -9,14 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WeatherRouteImport } from './routes/weather'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideosIndexRouteImport } from './routes/videos/index'
 import { Route as VideosDirRouteImport } from './routes/videos/$dir'
 
+const WeatherRoute = WeatherRouteImport.update({
+  id: '/weather',
+  path: '/weather',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevicesRoute = DevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,45 +49,80 @@ const VideosDirRoute = VideosDirRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/devices': typeof DevicesRoute
   '/settings': typeof SettingsRoute
+  '/weather': typeof WeatherRoute
   '/videos/$dir': typeof VideosDirRoute
   '/videos': typeof VideosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/devices': typeof DevicesRoute
   '/settings': typeof SettingsRoute
+  '/weather': typeof WeatherRoute
   '/videos/$dir': typeof VideosDirRoute
   '/videos': typeof VideosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/devices': typeof DevicesRoute
   '/settings': typeof SettingsRoute
+  '/weather': typeof WeatherRoute
   '/videos/$dir': typeof VideosDirRoute
   '/videos/': typeof VideosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/videos/$dir' | '/videos'
+  fullPaths:
+    | '/'
+    | '/devices'
+    | '/settings'
+    | '/weather'
+    | '/videos/$dir'
+    | '/videos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/videos/$dir' | '/videos'
-  id: '__root__' | '/' | '/settings' | '/videos/$dir' | '/videos/'
+  to: '/' | '/devices' | '/settings' | '/weather' | '/videos/$dir' | '/videos'
+  id:
+    | '__root__'
+    | '/'
+    | '/devices'
+    | '/settings'
+    | '/weather'
+    | '/videos/$dir'
+    | '/videos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevicesRoute: typeof DevicesRoute
   SettingsRoute: typeof SettingsRoute
+  WeatherRoute: typeof WeatherRoute
   VideosDirRoute: typeof VideosDirRoute
   VideosIndexRoute: typeof VideosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/weather': {
+      id: '/weather'
+      path: '/weather'
+      fullPath: '/weather'
+      preLoaderRoute: typeof WeatherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devices': {
+      id: '/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof DevicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,7 +151,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevicesRoute: DevicesRoute,
   SettingsRoute: SettingsRoute,
+  WeatherRoute: WeatherRoute,
   VideosDirRoute: VideosDirRoute,
   VideosIndexRoute: VideosIndexRoute,
 }

@@ -35,6 +35,18 @@ const pool = mariadb.createPool({
   connectionLimit: 5,
 })
 
+const { exec } = require('child_process');
+
+// Whitelist of allowed triangle sketches — keep this in sync with frontend buttons
+const TRIANGLE_SKETCHES = [
+  'triangle16_attractor',
+  'triangle16_ember',
+  'triangle16_partical_fft',
+  'triangle16_rings',
+  'triangle16_snake',
+  'triangle16_wavefronts',
+];
+
 // Ensure settings table exists and seed default values if necessary
 async function initSettingsTable() {
   let conn;
@@ -220,6 +232,31 @@ app.post('/api/settings', async (req, res) => {
   } finally {
     if (conn) conn.release();
   }
+});
+
+// --- API: Run triangle sketch on pi-triangle ---
+app.post('/api/triangle/sketch', async (req, res) => {
+  const { sketch } = req.body || {};
+  if (!sketch || typeof sketch !== 'string') {
+    return res.status(400).json({ error: 'Missing sketch name' });
+  }
+
+  if (!TRIANGLE_SKETCHES.includes(sketch)) {
+    return res.status(400).json({ error: 'Sketch not allowed' });
+  }
+
+  // Construct command to run on the remote pi. Assumes passwordless SSH is configured from this host.
+  // Use single-quoted remote argument and ensure sketch contains only safe characters per whitelist above.
+  const remoteCmd = `sudo systemctl stop triangle.service && sudo systemctl set-environment SKETCH=${sketch} && sudo systemctl start triangle.service`;
+  const cmd = `ssh pi-triangle '${remoteCmd}'`;
+
+  exec(cmd, { timeout: 30_000 }, (err, stdout, stderr) => {
+    if (err) {
+      console.error('Error running triangle sketch command:', err, stdout, stderr);
+      return res.status(500).json({ error: 'Failed to run remote command', details: String(err), stdout, stderr });
+    }
+    res.json({ ok: true, stdout, stderr });
+  });
 });
 
 // --- Fallback: React SPA Routing ---
