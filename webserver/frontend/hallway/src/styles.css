@@ -61,6 +61,35 @@ body,
   font-size: 2rem;
 }
 
+.devices {
+  font-size: 2rem;
+}
+
+.devices button {
+  font-size: 2rem;
+  text-decoration: none;
+  background-color: lightgray;
+  color: black;
+  padding: 5px 10px;
+  justify-content: center;
+  /* Centers horizontally */
+  align-items: center;
+  /* Centers vertically */
+  padding: 24px 36px;
+  margin-left: 20px;
+  /* larger padding */
+  border: 1px solid transparent;
+  border-radius: 8px;
+  /* slightly bigger radius */
+  transition: all 0.2s;
+}
+
+.devices button.active {
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+}
+
 .settings button {
   font-size: 2rem;
   text-decoration: none;

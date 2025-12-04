@@ -49,9 +49,6 @@ const TRIANGLE_SKETCHES = [
 // SSH user to connect as on pi-triangle. Defaults to the local service user 'mbutki',
 // but can be overridden via the SSH_USER env var if needed.
 const SSH_USER = process.env.SSH_USER || 'mbutki';
-// Optional path to an SSH private key to use for remote connections. If provided,
-// the server will call `ssh -i SSH_KEY ...` so it doesn't rely on an ssh agent.
-const SSH_KEY = process.env.SSH_KEY || '';
 
 // Ensure settings table exists and seed default values if necessary
 async function initSettingsTable() {
@@ -254,11 +251,8 @@ app.post('/api/triangle/sketch', async (req, res) => {
   // Construct command to run on the remote pi. Assumes passwordless SSH is configured from this host.
   // Use single-quoted remote argument and ensure sketch contains only safe characters per whitelist above.
   const remoteCmd = `sudo systemctl stop triangle.service && sudo systemctl set-environment SKETCH=${sketch} && sudo systemctl start triangle.service`;
-  // Build ssh command. If SSH_KEY is set, pass it explicitly so the process doesn't
-  // rely on an SSH agent or system user environment.
-  const keyPart = SSH_KEY ? `-i ${SSH_KEY}` : '';
-  // Use BatchMode to fail fast if key auth fails; keep host-key bypass for now
-  const cmd = `ssh ${keyPart} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_USER}@pi-triangle '${remoteCmd}'`;
+  // insecure — bypasses host key verification
+  const cmd = `sudo -u mbutki ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null mbutki@pi-triangle '${remoteCmd}'`;
 
   exec(cmd, { timeout: 30_000 }, (err, stdout, stderr) => {
     if (err) {

@@ -9,8 +9,7 @@ StartLimitBurst=5
 Type=simple
 User=mbutki
 Environment=DISPLAY=:99
-Environment=SKETCH=triangle16_snake
-ExecStart=/bin/bash -c "/snap/bin/processing cli --sketch=/home/mbutki/pi_projects/fadecandy/fadecandy-original/examples/processing/${SKETCH} --run"
+ExecStart=/bin/bash -c "/snap/bin/processing cli --sketch=/home/mbutki/pi_projects/fadecandy/fadecandy-original/examples/processing/${SKETCH:-triangle16_snake} --run"
 ExecStop=/usr/bin/pkill -f processing
 Restart=always
 RestartSec=10
