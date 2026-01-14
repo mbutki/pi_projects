@@ -25,10 +25,10 @@ const Sensors: FC = () => {
     }
 
     return (
-        <div style={{ maxWidth: 1200, margin: 'auto', padding: 20 }}>
+        <div style={{ maxWidth: 1200, margin: 'auto', padding: 20 }} className='sensors'>
             <SensorHeader tab={tab} onClick={handleClick} />
             {selectTab(tab)}
-        </div>
+        </div >
     );
 }
 

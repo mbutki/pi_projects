@@ -11,6 +11,7 @@ python/src/weather/matrix.config
 python/src/weather/__pycache__
 
 python/src/displays/eink_weather/images/
+python/src/displays/eink_weather/__pycache__/
 python/src/displays/hyper/images
 
 webserver/node_modules/

@@ -51,7 +51,7 @@ function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
 
     return (
         <div className="video-thumbnail">
-            <h1>{dir}</h1>
+            <h3>{dir}</h3>
             <FullscreenComponent autoFullScreen={autoFullScreen}>
                 {content}
             </FullscreenComponent>

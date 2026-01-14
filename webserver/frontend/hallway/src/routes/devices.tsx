@@ -41,7 +41,7 @@ const Devices: React.FC = () => {
     };
 
     return (
-        <div className='devices'>
+        <div className='small-button'>
             <h2>Triangle Sketches</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {TRIANGLE_SKETCHES.map((s) => (

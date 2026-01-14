@@ -1,1 +1,38 @@
-chromium-browser --kiosk https://USERNAME:PASSWORD@www.mbutki.com/ --disable-translate --no-first-run --disable-infobars --disable-gpu-compositing --disable-software-rasterizer
+[Unit]
+Description=Hallway chrome based display
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=chromium-browser --kiosk https://USERNAME:PASSWORD@www.mbutki.com/ --disable-translate --no-first-run --disable-infobars --disable-gpu-compositing --disable-software-rasterizer --force-device-scale-factor=2.0
+WorkingDirectory=/home/mbutki/pi_projects/python/src/displays/hallway
+User=mbutki
+Group=mbutki
+
+# Graceful shutdown settings
+TimeoutStopSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gif-player
+
+# Security and resource limits
+PrivateTmp=true
+NoNewPrivileges=true
+LimitNOFILE=1024
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=multi-user.target

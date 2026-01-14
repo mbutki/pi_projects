@@ -51,88 +51,14 @@ def run():
     ]
 
     epd = epd7in5_V2.EPD()
-    now = datetime.now()
 
-    # Drawing on the image
-    SMALL_FONT_SIZE = 24
-    LARGE_FONT_SIZE = 42
-    IS_EVENING = now.hour >= 17
-    IS_MORNING = now.hour <= 10
-    DRAW_SMALL = not IS_MORNING
-    font_size = SMALL_FONT_SIZE if DRAW_SMALL else LARGE_FONT_SIZE
-    font = ImageFont.truetype(
-        f"{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc", font_size
-    )
-
-    # Drawing on the Vertical image
     black_image = Image.new("L", (epd.height, epd.width), 255)
     draw_black = ImageDraw.Draw(black_image)
     img = random.choice(anime).get_rand_img()
     black_image.paste(img, (0, 0))
 
-    data = fetch_data()
-    if data:
-        weather = fetch_data()
-
-        today = weather["days"][sorted(weather["days"])[0]]
-        tomorrow = weather["days"][sorted(weather["days"])[1]]
-        day = tomorrow if IS_EVENING else today
-
-        high = today["high"]
-        pop = today["pop"]
-        condition = day["condition"]
-        match condition:
-            case "light_cloud":
-                condition = "mixed"
-            case "medium_cloud":
-                condition = "mixed"
-            case "heavy_cloud":
-                condition = "cloud"
-            case "light_rain":
-                condition = "rain"
-            case "heavy_rain":
-                condition = "rain"
-
-        """
-        'clear': [SUN],
-        'light_cloud': [SUN, LIGHT_CLOUD],
-        'medium_cloud': [SUN, MEDIUM_CLOUD],
-        'heavy_cloud': [HEAVY_CLOUD],
-        'light_rain': [LIGHT_RAIN],
-        'heavy_rain': [HEAVY_RAIN],
-        'thunder': [THUNDER],
-        'atmo': [ATMO],
-        'snow': [SNOW]
-        """
-
-        condition = condition.upper()
-
-        pos1 = (429, 20) if DRAW_SMALL else (410, 20)
-        pos2 = (454, 20) if DRAW_SMALL else (445, 20)
-        pos3 = (429, 75) if DRAW_SMALL else (410, 120)
-        text1 = f"{high}"
-        text2 = f"{condition}"
-        text3 = f"{pop}"
-        direction = "ttb"
-
-        bbox = draw_black.textbbox(pos1, text1, font=font, direction=direction)
-        bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 3, bbox[3] + 1)
-        draw_black.rectangle(bbox, fill=255)
-        draw_black.rectangle(bbox)
-        draw_black.text(pos1, text1, font=font, fill=0, direction=direction)
-
-        bbox = draw_black.textbbox(pos2, text2, font=font, direction=direction)
-        bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 1, bbox[3] + 1)
-        draw_black.rectangle(bbox, fill=255)
-        draw_black.rectangle(bbox)
-        draw_black.text(pos2, text2, font=font, fill=0, direction=direction)
-
-        if pop > 20:
-            bbox = draw_black.textbbox(pos3, text3, font=font, direction=direction)
-            bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 1, bbox[3] + 1)
-            draw_black.rectangle(bbox, fill=255)
-            draw_black.rectangle(bbox)
-            draw_black.text(pos3, text3, font=font, fill=0, direction=direction)
+    weather = fetch_data()
+    draw_weather(weather, draw_black)
 
     # clean_refresh(epd) # turn out not needed
     epd.init_4Gray()
@@ -141,6 +67,123 @@ def run():
 
     print("Goto Sleep...")
     epd.sleep()
+
+
+def draw_weather(weather, draw_black):
+    now = datetime.now()
+
+    SMALL_FONT_SIZE = 42
+    LARGE_FONT_SIZE = 96
+
+    font_small = ImageFont.truetype(
+        f"{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc",
+        SMALL_FONT_SIZE,
+    )
+    font_large = ImageFont.truetype(
+        f"{PI_DIR}/python/src/displays/eink_weather/fonts/Helvetica.ttc",
+        LARGE_FONT_SIZE,
+    )
+
+    IS_EVENING = now.hour >= 17
+    IS_MORNING = now.hour <= 10
+
+    today = weather["days"][sorted(weather["days"])[0]]
+    tomorrow = weather["days"][sorted(weather["days"])[1]]
+    day = tomorrow if IS_EVENING else today
+
+    high = today["high"]
+    pop = today["pop"]
+    condition = day["condition"]
+    match condition:
+        case "light_cloud":
+            condition = "mixed"
+        case "medium_cloud":
+            condition = "mixed"
+        case "heavy_cloud":
+            condition = "cloud"
+        case "light_rain":
+            condition = "rain"
+        case "heavy_rain":
+            condition = "rain"
+
+    # pylint: disable=pointless-string-statement
+    """
+    'clear': [SUN],
+    'light_cloud': [SUN, LIGHT_CLOUD],
+    'medium_cloud': [SUN, MEDIUM_CLOUD],
+    'heavy_cloud': [HEAVY_CLOUD],
+    'light_rain': [LIGHT_RAIN],
+    'heavy_rain': [HEAVY_RAIN],
+    'thunder': [THUNDER],
+    'atmo': [ATMO],
+    'snow': [SNOW]
+    """
+
+    if IS_MORNING:
+        draw_morning(high, condition, pop, draw_black, font_large)
+    else:
+        draw_regular(high, condition, pop, draw_black, font_small)
+
+
+def draw_morning(high, condition, pop, draw_black, font):
+    pos1 = (50, 50)
+    pos2 = (50, 150)
+    pos3 = (50, 250)
+    text1 = f"{high}°"
+    text2 = f"{condition.upper()}"
+    text3 = f"{pop}%"
+
+    bbox_top = draw_black.textbbox(pos1, text1, font=font)
+    left = bbox_top[0]
+    up = bbox_top[1]
+    right = bbox_top[2]
+
+    bbox_bottom = draw_black.textbbox(pos2, text2, font=font)
+    right = max(right, bbox_bottom[2])
+    down = bbox_bottom[3]
+
+    if pop > 20:
+        bbox_bottom = draw_black.textbbox(pos3, text3, font=font)
+        right = max(right, bbox_bottom[2])
+        down = bbox_bottom[3]
+
+    bbox = (left - 25, up - 25, right + 25, down + 25)
+    draw_black.rectangle(bbox, fill=255)
+    draw_black.rectangle(bbox)
+
+    draw_black.text(pos1, text1, font=font, fill=0)
+    draw_black.text(pos2, text2, font=font, fill=0)
+    if pop > 20:
+        draw_black.text(pos3, text3, font=font, fill=0)
+
+
+def draw_regular(high, condition, pop, draw_black, font):
+    pos1 = (410, 20)
+    pos2 = (445, 20)
+    pos3 = (410, 120)
+    text1 = f"{high}"
+    text2 = f"{condition.upper()}"
+    text3 = f"{pop}"
+    direction = "ttb"
+
+    bbox = draw_black.textbbox(pos1, text1, font=font, direction=direction)
+    bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 3, bbox[3] + 1)
+    draw_black.rectangle(bbox, fill=255)
+    draw_black.rectangle(bbox)
+    draw_black.text(pos1, text1, font=font, fill=0, direction=direction)
+
+    bbox = draw_black.textbbox(pos2, text2, font=font, direction=direction)
+    bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 1, bbox[3] + 1)
+    draw_black.rectangle(bbox, fill=255)
+    draw_black.rectangle(bbox)
+    draw_black.text(pos2, text2, font=font, fill=0, direction=direction)
+
+    if pop > 20:
+        bbox = draw_black.textbbox(pos3, text3, font=font, direction=direction)
+        bbox = (bbox[0] - 3, bbox[1] - 3, bbox[2] + 1, bbox[3] + 1)
+        draw_black.rectangle(bbox, fill=255)
+        draw_black.rectangle(bbox)
+        draw_black.text(pos3, text3, font=font, fill=0, direction=direction)
 
 
 class Anime:

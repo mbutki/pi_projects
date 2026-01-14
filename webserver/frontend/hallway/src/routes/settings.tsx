@@ -49,9 +49,9 @@ const Settings: React.FC = () => {
     };
 
     return (
-        <div className='settings'>
+        <div className='small-button'>
             <section style={{ marginBottom: 20 }}>
-                <h3>Video Loop Length</h3>
+                <h2>Video Loop Length</h2>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {OPTIONS.map((opt) => {
                         const active = !isLoading && loopSec === opt.seconds;
@@ -59,14 +59,7 @@ const Settings: React.FC = () => {
                             <button
                                 key={opt.label}
                                 onClick={() => handleClick(opt.seconds)}
-                                aria-pressed={active}
-                                style={{
-                                    padding: '6px 10px',
-                                    background: active ? '#2684ff' : undefined,
-                                    color: active ? 'white' : undefined,
-                                    borderRadius: 4,
-                                    border: '1px solid #ccc',
-                                }}
+                                className={active ? 'active' : ''}
                             >
                                 {opt.label}
                             </button>
@@ -77,7 +70,7 @@ const Settings: React.FC = () => {
             </section>
 
             <section>
-                <h3>Screensaver Delay</h3>
+                <h2>Screensaver Delay</h2>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {OPTIONS.map((opt) => {
                         const active = !screenLoading && screenSec === opt.seconds;
@@ -85,14 +78,7 @@ const Settings: React.FC = () => {
                             <button
                                 key={opt.label}
                                 onClick={() => handleScreenClick(opt.seconds)}
-                                aria-pressed={active}
-                                style={{
-                                    padding: '6px 10px',
-                                    background: active ? '#2684ff' : undefined,
-                                    color: active ? 'white' : undefined,
-                                    borderRadius: 4,
-                                    border: '1px solid #ccc',
-                                }}
+                                className={active ? 'active' : ''}
                             >
                                 {opt.label}
                             </button>

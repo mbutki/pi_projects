@@ -8,7 +8,7 @@ h2 {
 }
 
 .leftnav {
-  width: 200px;
+  width: 100px;
   background-color: #f0f0f0;
   padding: 20px;
   height: 100vh;
@@ -25,21 +25,16 @@ h2 {
 }
 
 .leftnav a {
-  font-size: 2rem;
+  font-size: 1rem;
   text-decoration: none;
   background-color: lightgray;
   color: black;
-  padding: 5px 10px;
   display: flex;
   justify-content: center;
-  /* Centers horizontally */
   align-items: center;
-  /* Centers vertically */
-  padding: 24px 36px;
-  /* larger padding */
+  padding: 10px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
-  /* slightly bigger radius */
   transition: all 0.2s;
 }
 
@@ -57,92 +52,43 @@ body,
   margin: 0;
 }
 
-.settings {
-  font-size: 2rem;
-}
-
-.devices {
-  font-size: 2rem;
-}
-
-.devices button {
-  font-size: 2rem;
+.large-button button {
+  font-size: 1rem;
   text-decoration: none;
-  background-color: lightgray;
-  color: black;
-  padding: 5px 10px;
   justify-content: center;
-  /* Centers horizontally */
   align-items: center;
-  /* Centers vertically */
-  padding: 24px 36px;
-  margin-left: 20px;
-  /* larger padding */
-  border: 1px solid transparent;
-  border-radius: 8px;
-  /* slightly bigger radius */
+  margin-right: 20px;
   transition: all 0.2s;
+  padding: 10px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
 }
 
-.sensors button.active {
+.large-button button.active {
   background-color: #007bff;
   color: white;
-  border-radius: 4px;
 }
 
-.sensors button {
-  font-size: 2rem;
+.small-button button {
+  font-size: 1rem;
   text-decoration: none;
-  background-color: lightgray;
-  color: black;
-  padding: 5px 10px;
   justify-content: center;
-  /* Centers horizontally */
   align-items: center;
-  /* Centers vertically */
-  padding: 24px 36px;
-  margin-left: 20px;
-  /* larger padding */
-  border: 1px solid transparent;
-  border-radius: 8px;
-  /* slightly bigger radius */
+  margin-right: 20px;
   transition: all 0.2s;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
 }
 
-.devices button.active {
+.small-button button.active {
   background-color: #007bff;
   color: white;
-  border-radius: 4px;
-}
-
-.settings button {
-  font-size: 2rem;
-  text-decoration: none;
-  background-color: lightgray;
-  color: black;
-  padding: 5px 10px;
-  justify-content: center;
-  /* Centers horizontally */
-  align-items: center;
-  /* Centers vertically */
-  padding: 24px 36px;
-  margin-left: 20px;
-  /* larger padding */
-  border: 1px solid transparent;
-  border-radius: 8px;
-  /* slightly bigger radius */
-  transition: all 0.2s;
-}
-
-.settings button.active {
-  background-color: #007bff;
-  color: white;
-  border-radius: 4px;
 }
 
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, 400px);
+  grid-template-columns: repeat(auto-fit, 200px);
   /* fixed 400px per column */
   justify-content: center;
   /* center the grid horizontally */
@@ -152,9 +98,9 @@ body,
 }
 
 .video-thumbnail {
-  width: 400px;
+  width: 200px;
   /* fixed thumbnail width */
-  height: 600px;
+  height: 300px;
   /* fixed thumbnail height */
   /* for black bars if media is smaller */
   display: flex;
