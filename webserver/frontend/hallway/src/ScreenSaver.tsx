@@ -25,7 +25,7 @@ function ScreenSaverInner() {
         }
     }, [location.pathname, setIsScreenSaved]);
 
-    const { data: screenSaverSec } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: () => import('./api').then(m => m.getScreenSaverSeconds()), staleTime: 1000 * 60, retry: 1 });
+    const { data: screenSaverSec } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: () => import('./api').then(m => m.getScreenSaverSeconds()), staleTime: 1000 * 60 });
 
     // Screensaver logic: navigate to random video if no fullscreen after configured seconds
     useEffect(() => {

@@ -4,8 +4,7 @@ from uuid import uuid4, UUID
 from collections import Counter
 from typing import Any, TypedDict
 
-RgbColor = tuple[int, int, int]
-
+type RgbColor = tuple[int, int, int]
 
 class PerfStats(TypedDict):
     total_generations: int
@@ -17,7 +16,7 @@ class PerfStats(TypedDict):
 
 
 class Cell:
-    def __init__(self, color: RgbColor):
+    def __init__(self, color: RgbColor) -> None:
         self.color = color
         self.id = uuid4()
 
@@ -31,8 +30,8 @@ class Cell:
         return self.id == other.id
 
 
-Coord = tuple[int, int]
-CellLocDict = dict[Coord, Cell]
+type Coord = tuple[int, int]
+type CellLocDict = dict[Coord, Cell]
 
 
 class World:

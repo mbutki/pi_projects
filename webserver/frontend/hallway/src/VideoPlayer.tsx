@@ -19,7 +19,7 @@ function VideoPlayer({ dir, urls, autoFullScreen }: VideoPlayerProps) {
         return arr[randomIndex];
     }
 
-    const { data: loopSec } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60, retry: 1 });
+    const { data: loopSec } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60 });
 
     useEffect(() => {
         const pickUrl = async () => {

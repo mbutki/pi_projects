@@ -14,13 +14,16 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 import board
 import adafruit_veml7700
 
-import conway
-import clock_date
-import line_graph
-import utils
-import icon_utils
-import db_reads
-import led_color
+import src.weather.conway as conway
+import src.weather.clock_date as clock_date
+import src.weather.line_graph as line_graph
+import src.weather.utils as utils
+import src.weather.icon_utils as icon_utils
+import src.weather.db_reads as db_reads
+import src.weather.led_color as led_color
+from global_types import PiConfig, DbConfig
+from weather.weather_types import MatrixConfig
+from weather.icon_utils import IconSet
 
 parser = argparse.ArgumentParser(description="Display Weather")
 parser.add_argument("-v", default=False, action="store_true", help="verbose mode")
@@ -28,9 +31,9 @@ args = parser.parse_args()
 
 PI_DIR = "/home/mbutki/pi_projects"
 
-db_config = json.load(open(f"{PI_DIR}/db.config"))
-pi_config = json.load(open(f"{PI_DIR}/pi.config"))
-matrix_config = json.load(open(f"{PI_DIR}/python/src/weather/matrix.config"))
+db_config: DbConfig = json.load(open(f"{PI_DIR}/db.config"))
+pi_config: PiConfig = json.load(open(f"{PI_DIR}/pi.config"))
+matrix_config: MatrixConfig = json.load(open(f"{PI_DIR}/python/src/weather/matrix.config"))
 
 LOG_NAME = "show_weather.log"
 LOG_DIR = pi_config["log_dir"]
@@ -90,21 +93,21 @@ global_weather = global_daily_icons = global_indoor_temp = global_outdoor_temp =
 
 
 class BrightnessAdjust:
-    def __init__(self, matrix):
+    def __init__(self, matrix) -> None:
         self.value = 0
         self.matrix = matrix
         self.conn = None
 
-    def run(self):
+    def run(self) -> None:
         self.adjust_brightness_threaded()
 
-    def adjust_brightness_threaded(self):
+    def adjust_brightness_threaded(self) -> None:
         if args.v:
             print("about to call threaded lux")
         x = threading.Thread(target=self.adjust_brightness, args=())
         x.start()
 
-    def adjust_brightness(self):
+    def adjust_brightness(self) -> None:
         while True:
             try:
                 lux = veml7700.light
@@ -117,7 +120,7 @@ class BrightnessAdjust:
 
             time.sleep(0.1)
 
-    def set_brightness(self, lux):
+    def set_brightness(self, lux: int) -> None:
         lux = min(MAX_LUX, max(lux, MIN_LUX))
         brightness = utils.translate(
             lux, MIN_LUX, MAX_LUX, MIN_BRIGHTNESS, MAX_BRIGHTNESS
@@ -129,7 +132,7 @@ class BrightnessAdjust:
 
 
 class Display:
-    def __init__(self):
+    def __init__(self) -> None:
         self.matrix = self.create_matrix()
         self.canvas = self.matrix.CreateFrameCanvas()
 
@@ -146,7 +149,7 @@ class Display:
         self.fetch_weather_sync()
         self.tick = 0
 
-    def run(self):
+    def run(self) -> None:
         brightness = BrightnessAdjust(self.matrix)
         brightness.run()
         while True:
@@ -170,17 +173,17 @@ class Display:
             if self.tick == sys.maxsize - 1000:
                 self.tick = 0
 
-    def fetch_weather_sync(self):
+    def fetch_weather_sync(self) -> None:
         try:
             self.fetch_data()
         except Exception:
             log.error(f"fetchWeather() exception: {traceback.format_exc()}")
 
-    def fetch_data_threaded(self):
+    def fetch_data_threaded(self) -> None:
         x = threading.Thread(target=self.fetch_data, args=())
         x.start()
 
-    def fetch_data(self):
+    def fetch_data(self) -> None:
         global global_weather, global_daily_icons, global_indoor_temp, global_outdoor_temp
         if args.v:
             print("Opening DB...")
@@ -210,7 +213,7 @@ class Display:
         if args.v:
             print("DB client closed")
 
-    def draw_conway(self):
+    def draw_conway(self) -> None:
         if utils.should_trigger_ms(self.tick, 100):
             self.world.advance()
             if (
@@ -219,7 +222,7 @@ class Display:
                 self.world.reset()
         self.world.draw(self.canvas)
 
-    def aqi_color(self, aqi):
+    def aqi_color(self, aqi: int):
         color = None
         if aqi < 50:
             color = AQI_GREEN_COLOR
@@ -233,22 +236,26 @@ class Display:
             color = AQI_PURPLE_COLOR
         return color
 
-    def draw_weather(self):
+    def draw_weather(self) -> None:
         try:
             frame = Image.new("RGBA", (64, 32))
-            self.draw_daily_icons(frame, global_daily_icons)
+            if not global_daily_icons is None:
+                self.draw_daily_icons(frame, global_daily_icons)
             self.canvas.SetImage(frame.convert("RGB"), 0, 0)
 
-            self.draw_outdoor_temp(global_outdoor_temp)
-            self.draw_indoor_temp(global_indoor_temp)
-            self.graph.draw(self.canvas, global_weather, self.tick)
-            self.draw_daily_text(global_weather)
+            if not global_outdoor_temp is None:
+                self.draw_outdoor_temp(global_outdoor_temp)
+            if not global_indoor_temp is None:
+                self.draw_indoor_temp(global_indoor_temp)
+            if not global_weather is None:
+                self.graph.draw(self.canvas, global_weather, self.tick)
+                self.draw_daily_text(global_weather)
         except Exception:
             if args.v:
                 print(f"main() exception: {traceback.format_exc()}")
             log.error(f"main() exception: {traceback.format_exc()}")
 
-    def fetch_weather_async(self):
+    def fetch_weather_async(self) -> None:
         if utils.should_trigger_secs(self.tick, READ_WEATHER_SECS):
             try:
                 self.fetch_data_threaded()
@@ -257,7 +264,7 @@ class Display:
                     f"fetchWeather() threaded exception: {traceback.format_exc()}"
                 )
 
-    def draw_daily_icons(self, frame, daily_icons):
+    def draw_daily_icons(self, frame: Image.Image, daily_icons: list[IconSet]) -> None:
         # draw using current icon frame
         for day_index, icon_set in enumerate(daily_icons):
             for icon_frame in icon_set.get_frames():
@@ -268,7 +275,7 @@ class Display:
             if utils.should_trigger_ms(self.tick, ICON_SPEED_MS):
                 icon_set.advance()
 
-    def draw_daily_text(self, weather):
+    def draw_daily_text(self, weather) -> None:
         for j, epoch in enumerate(sorted(weather["days"])[:5]):
             dt = datetime.datetime.fromtimestamp(float(epoch))
             day = weather["days"][epoch]
@@ -295,7 +302,7 @@ class Display:
                 self.canvas, font, offset, y, display_color.led(), number_str
             )
 
-    def draw_outdoor_temp(self, outdoor_temp):
+    def draw_outdoor_temp(self, outdoor_temp: float) -> None:
         font = MEDIUM_FONT if outdoor_temp < 100 else SMALL_FONT
         temp_str = (
             str(int(round(outdoor_temp))) if outdoor_temp != float("-inf") else "--"
@@ -304,7 +311,7 @@ class Display:
             self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR.led(), temp_str
         )
 
-    def draw_indoor_temp(self, indoor_temp):
+    def draw_indoor_temp(self, indoor_temp: float) -> None:
         font = MEDIUM_FONT if indoor_temp < 100 else SMALL_FONT
         temp_str = (
             str(int(round(indoor_temp))) if indoor_temp != float("-inf") else "--"
@@ -323,7 +330,7 @@ class Display:
         return RGBMatrix(options=options)
 
 
-def main():
+def main() -> None:
     display = Display()
     display.run()
 

@@ -1,8 +1,10 @@
 import json
 
 import mariadb
+from src.global_types import PiConfig
+from mariadb import Cursor 
 
-def fetch_weather(cur, args):
+def fetch_weather(cur: Cursor, args):
     if args.v:
         print('Fetching weather...')
     try:
@@ -17,13 +19,13 @@ def fetch_weather(cur, args):
         weather = json.loads(w)
     return weather
 
-def fetch_indoor_temp(cur, args):
+def fetch_indoor_temp(cur: Cursor, args):
     return fetch_local_temp(cur, args, 'living_room')
 
-def fetch_outdoor_temp(cur, args):
+def fetch_outdoor_temp(cur: Cursor, args):
     return fetch_local_temp(cur, args, 'backyard')
 
-def fetch_local_temp(cur, args, location):
+def fetch_local_temp(cur: Cursor, args, location: str):
     value = float('-inf')
 
     if args.v:

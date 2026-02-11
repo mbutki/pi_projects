@@ -1,6 +1,7 @@
+BACKUP_slotcar
 backup
-db_test
 displays
+global_types
 mqtt
 rfm69
 scripts

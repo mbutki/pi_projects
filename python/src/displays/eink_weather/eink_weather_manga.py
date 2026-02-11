@@ -48,6 +48,11 @@ def run():
             color_manga_to_eink_4gray,
             "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/chi",
         ),
+        Anime(
+            "pokemon",
+            color_manga_to_eink_4gray,
+            "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/pokemon",
+        ),
     ]
 
     epd = epd7in5_V2.EPD()

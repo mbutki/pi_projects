@@ -13,7 +13,7 @@ const OPTIONS: { label: string; seconds: number }[] = [
 
 const Settings: React.FC = () => {
     const queryClient = useQueryClient();
-    const { data: loopSec, isLoading } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60, retry: 1 });
+    const { data: loopSec, isLoading } = useQuery({ queryKey: queryKeys.videoLoop, queryFn: api.getVideoLoopSeconds, staleTime: 1000 * 60 });
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -34,7 +34,7 @@ const Settings: React.FC = () => {
     };
 
     // Screensaver setting
-    const { data: screenSec, isLoading: screenLoading } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: api.getScreenSaverSeconds, staleTime: 1000 * 60, retry: 1 });
+    const { data: screenSec, isLoading: screenLoading } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: api.getScreenSaverSeconds, staleTime: 1000 * 60 });
     const [isSavingScreen, setIsSavingScreen] = useState(false);
     const screenMutation = useMutation({
         mutationFn: (s: number) => api.setScreenSaverSeconds(s),

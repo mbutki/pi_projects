@@ -20,3 +20,4 @@ Requires-Dist: bleak>=0.22.3
 Requires-Dist: gpiozero>=2.0.1
 Requires-Dist: adafruit-circuitpython-mcp9808>=3.3.28
 Requires-Dist: paho-mqtt>=2.1.0
+Requires-Dist: termcolor>=3.1.0

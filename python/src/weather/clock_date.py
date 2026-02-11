@@ -1,6 +1,6 @@
 import datetime
 import math
-import led_color
+import weather.led_color as led_color
 
 from rgbmatrix import graphics
 

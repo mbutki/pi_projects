@@ -2,7 +2,7 @@ import datetime
 
 from rgbmatrix import graphics
 
-import utils
+import weather.utils as utils
 
 class Graph:
     # Plot Bar Lines
@@ -32,10 +32,10 @@ class Graph:
     MAX_PERCIP_INTENSITY = 0.3
     BAR_MIN_TEMP = 30
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.dot_loc = 0
 
-    def draw(self, canvas, weather, tick):
+    def draw(self, canvas, weather, tick: int) -> None:
         horizontal_temps = [40, 60, 80, 100]
         epochs = sorted(weather['hours'].keys())[:Graph.CHART_WIDTH]
 
@@ -48,7 +48,7 @@ class Graph:
         Graph.draw_pop_line(canvas, epochs, weather)
 
     @staticmethod
-    def draw_daylight(canvas, epochs, weather):
+    def draw_daylight(canvas, epochs, weather) -> None:
         for i, epoch in enumerate(epochs):
             rise_time = weather['days'][sorted(weather['days'])[0]]['rise']
             set_time = weather['days'][sorted(weather['days'])[0]]['set']
@@ -61,14 +61,14 @@ class Graph:
                 graphics.DrawLine(canvas, column, Graph.BAR_CHART_BOTTOM, column, Graph.BAR_CHART_BOTTOM - 14, Graph.DAYLIGHT_BAR_COLOR)
 
     @staticmethod
-    def draw_hor_bars(canvas, horizontal_temps):
+    def draw_hor_bars(canvas, horizontal_temps) -> None:
         for h_temp in horizontal_temps:
             y = Graph.BAR_CHART_BOTTOM - ((h_temp - Graph.BAR_MIN_TEMP) / Graph.TEMP_DIV)
             y = int(y)
             graphics.DrawLine(canvas, Graph.BAR_LEFT, y, Graph.BAR_LEFT + Graph.CHART_WIDTH - 1, y, Graph.TEMP_INCREMENT_LINE_COLOR)
 
     @staticmethod
-    def draw_vert_bars(canvas, epochs):
+    def draw_vert_bars(canvas, epochs) -> None:
         for i, epoch in enumerate(epochs):
             column = Graph.BAR_LEFT + i
             dt =  datetime.datetime.fromtimestamp(float(epoch))
@@ -78,7 +78,7 @@ class Graph:
             if dt.hour == 0:
                 graphics.DrawLine(canvas, column, Graph.BAR_CHART_BOTTOM, column, Graph.BAR_CHART_BOTTOM - 14, Graph.MIDNIGHT_BAR_COLOR)
 
-    def draw_temp_line(self, canvas, epochs, weather, tick):
+    def draw_temp_line(self, canvas, epochs, weather, tick: int) -> None:
         if utils.should_trigger_ms(tick, 150):
             self.dot_loc = (self.dot_loc + 1) % Graph.CHART_WIDTH
 
@@ -110,7 +110,7 @@ class Graph:
                 canvas.SetPixel(column, temp_y2, color.red, color.green, color.blue)
 
     @staticmethod
-    def draw_cloud_cover_line(canvas, epochs, weather):
+    def draw_cloud_cover_line(canvas, epochs, weather) -> None:
         for i, epoch in enumerate(epochs):
             hour = weather['hours'][epoch]
 
@@ -129,7 +129,7 @@ class Graph:
                 Graph.draw_connecting_line(canvas, prev_pop, pop, prev_pop_y2, pop_y2, column, color)
 
     @staticmethod
-    def draw_pop_line(canvas, epochs, weather):
+    def draw_pop_line(canvas, epochs, weather) -> None:
         for i, epoch in enumerate(epochs):
             hour = weather['hours'][epoch]
 
@@ -148,7 +148,7 @@ class Graph:
                 Graph.draw_connecting_line(canvas, prev_pop, pop, prev_pop_y2, pop_y2, column, color)
 
     @staticmethod
-    def draw_percip_intensity_line(canvas, epochs, weather):
+    def draw_percip_intensity_line(canvas, epochs, weather) -> None:
         for i, epoch in enumerate(epochs):
             hour = weather['hours'][epoch]
 
@@ -170,7 +170,7 @@ class Graph:
                 Graph.draw_connecting_line(canvas, prev_pop, pop, prev_pop_y2, pop_y2, column, color)
 
     @staticmethod
-    def draw_connecting_line(canvas, prev, cur, prev_y2, y2, column, color):
+    def draw_connecting_line(canvas, prev, cur, prev_y2, y2, column, color) -> None:
         if prev > cur + 1:
             graphics.DrawLine(canvas, column - 1, prev_y2 , column - 1, y2 - 1, color)
         elif prev < cur - 1:
