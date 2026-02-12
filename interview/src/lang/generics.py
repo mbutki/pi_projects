@@ -1,6 +1,7 @@
 from typing import TypeVar, Generic
 
 T = TypeVar("T")
+type Banana = int
 
 
 def get_first_item(item: list[T]) -> T:

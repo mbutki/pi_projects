@@ -2,7 +2,7 @@ import datetime
 
 from rgbmatrix import graphics
 
-import weather.utils as utils
+from weather import utils
 
 class Graph:
     # Plot Bar Lines

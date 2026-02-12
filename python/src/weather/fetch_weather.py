@@ -8,8 +8,8 @@ import os
 
 import requests
 import mariadb
-from src.weather.weather_types import MatrixConfig
-from src.global_types import PiConfig
+from weather.weather_types import MatrixConfig
+from global_types import PiConfig
 
 parser = argparse.ArgumentParser(description="Read motion sensors and trigger alert")
 parser.add_argument("-v", default=False, action="store_true", help="verbose mode")

@@ -3,17 +3,15 @@ name = "mbutki"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [
     "adafruit-circuitpython-sht31d>=2.3.26",
     "mariadb>=1.1.12",
     "numpy>=2.2.5",
     "pillow>=11.2.1",
-    "rpi-lgpio>=0.6",
     "requests>=2.32.3",
     "spidev>=3.7",
     "rpi-gpio>=0.7.1",
-    "pygame>=2.6.1",
     "gpiozero>=2.0.1",
     "adafruit-circuitpython-ht16k33>=4.6.12",
     "smbus2>=0.5.0",
@@ -22,6 +20,7 @@ dependencies = [
     "adafruit-circuitpython-mcp9808>=3.3.28",
     "paho-mqtt>=2.1.0",
     "termcolor>=3.1.0",
+    "adafruit-circuitpython-veml7700>=2.2.0",
 ]
 
 [dependency-groups]

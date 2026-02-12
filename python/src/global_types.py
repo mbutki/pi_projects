@@ -7,5 +7,6 @@ class PiConfig(TypedDict):
     log_dir: str  # /home/mbutki/pi_projects/python/logs
     location: str  # kitchen
 
+
 class DbConfig(TypedDict):
-     host: str # pi-desk
+    host: str  # pi-desk

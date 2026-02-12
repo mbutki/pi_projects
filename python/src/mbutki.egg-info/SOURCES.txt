@@ -19,7 +19,9 @@ src/backup/sensorRead/readTemperature_SHT31-D.py
 src/backup/sensorRead/readTemperature_analog.py
 src/displays/7SegClock.py
 src/displays/7SegClock_plain.py
+src/displays/__init__.py
 src/displays/dotstar/test.py
+src/displays/eink_weather/__init__.py
 src/displays/eink_weather/dithers.py
 src/displays/eink_weather/eink_weather_manga.py
 src/displays/eink_weather/epd7in5_V2.py
@@ -122,6 +124,7 @@ src/slotcar/test_sounds.py
 src/slotcar/pico_code/encoder.py
 src/slotcar/pico_code/main.py
 src/slotcar/pico_code/main_OLD.py
+src/weather/__init__.py
 src/weather/clock_date.py
 src/weather/conway.py
 src/weather/db_reads.py

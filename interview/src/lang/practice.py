@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from collections.abc import Iterator
+from typing import Callable
 
 
 class Kingdom(Enum):
@@ -10,6 +11,13 @@ class Kingdom(Enum):
     PROTISTA = 4
     BACTERIA = 5
     ARCHAEA = 6
+
+
+def sayname(funct: Callable[..., str]) -> Callable[..., str]:
+    def inner(*args, **kwargs) -> str:
+        return f"Name: {funct(*args, **kwargs)}"
+
+    return inner
 
 
 class Life(ABC):
@@ -35,6 +43,10 @@ class Life(ABC):
     @staticmethod
     def kingdoms() -> Iterator[Kingdom]:
         return (k for k in Kingdom)
+
+    @sayname
+    def introduce(self):
+        return self.name
 
 
 class Dog(Life):
@@ -70,6 +82,9 @@ def main():
 
     for k in Life.kingdoms():
         print(k)
+
+    print(d.introduce())
+    print(f.introduce())
 
 
 if __name__ == "__main__":

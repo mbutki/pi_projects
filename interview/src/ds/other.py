@@ -33,19 +33,29 @@ def dicts():
 
 def queues():
     a = deque()
+    # Left to right
     a.appendleft(1)
     a.pop()
 
+    # Right to left
     a.append(2)
     a.popleft()
 
 
 def heaps():
+    # Min heap
     a = [i for i in range(6, 0, -1)]
     heapq.heapify(a)
     heapq.heappop(a)
     heapq.heappush(a, -1)
     heapq.heappop(a)
+
+    # Max heap
+    a = [i for i in range(10)]
+    heapq.heapify_max(a)
+    heapq.heappop_max(a)
+    heapq.heappush_max(a, 999)
+    heapq.heappop_max(a)
 
 
 if __name__ == "__main__":

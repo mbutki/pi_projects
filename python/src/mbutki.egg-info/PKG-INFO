@@ -2,17 +2,15 @@ Metadata-Version: 2.4
 Name: mbutki
 Version: 0.1.0
 Summary: Add your description here
-Requires-Python: >=3.11
+Requires-Python: >=3.14
 Description-Content-Type: text/markdown
 Requires-Dist: adafruit-circuitpython-sht31d>=2.3.26
 Requires-Dist: mariadb>=1.1.12
 Requires-Dist: numpy>=2.2.5
 Requires-Dist: pillow>=11.2.1
-Requires-Dist: rpi-lgpio>=0.6
 Requires-Dist: requests>=2.32.3
 Requires-Dist: spidev>=3.7
 Requires-Dist: rpi-gpio>=0.7.1
-Requires-Dist: pygame>=2.6.1
 Requires-Dist: gpiozero>=2.0.1
 Requires-Dist: adafruit-circuitpython-ht16k33>=4.6.12
 Requires-Dist: smbus2>=0.5.0

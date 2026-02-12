@@ -1,10 +1,11 @@
 import random
 import time
-from uuid import uuid4, UUID
+from uuid import uuid4
 from collections import Counter
 from typing import Any, TypedDict
 
-type RgbColor = tuple[int, int, int]
+RgbColor = tuple[int, int, int]
+
 
 class PerfStats(TypedDict):
     total_generations: int
@@ -30,8 +31,8 @@ class Cell:
         return self.id == other.id
 
 
-type Coord = tuple[int, int]
-type CellLocDict = dict[Coord, Cell]
+Coord = tuple[int, int]
+CellLocDict = dict[Coord, Cell]
 
 
 class World:

@@ -5,23 +5,26 @@ import argparse
 import random
 import os
 
-import epd7in5_V2
+from typing import Any, Callable
 from PIL import Image, ImageDraw, ImageFont
 import mariadb
 
+from displays.eink_weather.dithers import enhance_and_dither, color_manga_to_eink_4gray
+import displays.eink_weather.epd7in5_V2 as epd7in5_V2
 from weather import db_reads
-from dithers import enhance_and_dither, color_manga_to_eink_4gray
+from global_types import DbConfig
+
 
 PI_DIR = "/home/mbutki/pi_projects"
 
-db_config = json.load(open(f"{PI_DIR}/db.config"))
+db_config: DbConfig = json.load(open(f"{PI_DIR}/db.config"))
 
 parser = argparse.ArgumentParser(description="Read motion sensors and trigger alert")
 parser.add_argument("-v", default=False, action="store_true", help="verbose mode")
 args = parser.parse_args()
 
 
-def main():
+def main() -> None:
     try:
         run()
     except IOError as e:
@@ -74,7 +77,7 @@ def run():
     epd.sleep()
 
 
-def draw_weather(weather, draw_black):
+def draw_weather(weather, draw_black: ImageDraw.ImageDraw) -> None:
     now = datetime.now()
 
     SMALL_FONT_SIZE = 42
@@ -130,7 +133,13 @@ def draw_weather(weather, draw_black):
         draw_regular(high, condition, pop, draw_black, font_small)
 
 
-def draw_morning(high, condition, pop, draw_black, font):
+def draw_morning(
+    high: int,
+    condition: str,
+    pop: int,
+    draw_black: ImageDraw.ImageDraw,
+    font: ImageFont.FreeTypeFont,
+) -> None:
     pos1 = (50, 50)
     pos2 = (50, 150)
     pos3 = (50, 250)
@@ -162,7 +171,13 @@ def draw_morning(high, condition, pop, draw_black, font):
         draw_black.text(pos3, text3, font=font, fill=0)
 
 
-def draw_regular(high, condition, pop, draw_black, font):
+def draw_regular(
+    high: int,
+    condition: str,
+    pop: int,
+    draw_black: ImageDraw.ImageDraw,
+    font: ImageFont.FreeTypeFont,
+) -> None:
     pos1 = (410, 20)
     pos2 = (445, 20)
     pos3 = (410, 120)
@@ -192,7 +207,12 @@ def draw_regular(high, condition, pop, draw_black, font):
 
 
 class Anime:
-    def __init__(self, name, dither, dir_name):
+    def __init__(
+        self,
+        name: str,
+        dither: Callable[[Image.Image], Image.Image],
+        dir_name: str,
+    ) -> None:
         self.name = name
         self.dither = dither
         self.dir_path = os.path.abspath(dir_name)
@@ -202,7 +222,7 @@ class Anime:
             if os.path.isfile(os.path.join(self.dir_path, f))
         ]
 
-    def get_rand_img(self):
+    def get_rand_img(self) -> Image.Image:
         filename = random.choice(self.filenames)
         img = prepare_manga_page_crop_to_aspect(filename)
         img = stretch_contrast(img)
@@ -210,7 +230,7 @@ class Anime:
         return img
 
 
-def fetch_data():
+def fetch_data() -> Any | None:
     weather = None
     conn = None
 
@@ -238,7 +258,7 @@ def fetch_data():
     return weather
 
 
-def clean_refresh(epd):
+def clean_refresh(epd: epd7in5_V2.EPD) -> None:
     """Flushes the screen with white, resets ghosting, and re-initializes grayscale mode."""
     epd.init_4Gray()
     epd.Clear()
@@ -253,8 +273,19 @@ def clean_refresh(epd):
     epd.init_4Gray()
 
 
-def stretch_contrast(image):
-    min_val, max_val = image.getextrema()
+def stretch_contrast(image: Image.Image) -> Image.Image:
+    extrema = image.getextrema()
+    # For single-band images (like 'L'), getextrema() returns (min, max)
+    # For multi-band, it returns ((min, max), (min, max), ...)
+    if isinstance(extrema[0], tuple):
+        # Multi-band image - take the first band as reference
+        min_val = float(extrema[0][0])
+        max_val = float(extrema[0][1])
+    else:
+        # Single-band image
+        min_val = float(extrema[0])
+        max_val = float(extrema[1])  # type: ignore
+
     if max_val - min_val < 30:
         return image  # Avoid divide-by-zero for low contrast
 
@@ -265,32 +296,59 @@ def stretch_contrast(image):
 
 
 def prepare_manga_page_crop_sides_only(
-    img_path, target_size=(480, 800), brightness_cutoff=240
-):
+    img_path: str,
+    target_size: tuple[int, int] = (480, 800),
+    brightness_cutoff: int = 240,
+) -> Image.Image:
     """
     Crop only the left and right white borders from a manga page,
     then scale to the target resolution, preserving top and bottom.
     """
     img = Image.open(img_path).convert("L")
-    target_h = target_size
+    target_h = target_size[1]
 
-    img = img.resize((img.width, target_h), Image.LANCZOS)  # scale to screen height
+    img = img.resize(
+        (img.width, target_h), Image.Resampling.LANCZOS
+    )  # scale to screen height
 
     # Convert to binary mask for white detection
-    mask = img.point(lambda x: 0 if x > brightness_cutoff else 255, mode="1")
+    def threshold_func(pixel_value: int | float) -> int:
+        return 0 if pixel_value > brightness_cutoff else 255
+
+    mask = img.point(threshold_func).convert("1")
     mask_data = mask.load()
+
+    if mask_data is None:
+        # If mask data cannot be loaded, return the resized image as-is
+        return img.resize(target_size, Image.Resampling.LANCZOS)
 
     # Analyze columns from left and right
     left_crop = 0
     for x in range(img.width // 2):
-        col = [mask_data[x, y] for y in range(img.height)]
+        col = []
+        for y in range(img.height):
+            pixel = mask_data[x, y]
+            if isinstance(pixel, (int, float)):
+                col.append(int(pixel))
+            elif isinstance(pixel, tuple):
+                col.append(int(pixel[0]) if pixel else 0)
+            else:
+                col.append(0)
         if sum(col) < img.height:  # found some dark pixels
             break
         left_crop += 1
 
     right_crop = 0
     for x in range(img.width - 1, img.width // 2, -1):
-        col = [mask_data[x, y] for y in range(img.height)]
+        col = []
+        for y in range(img.height):
+            pixel = mask_data[x, y]
+            if isinstance(pixel, (int, float)):
+                col.append(int(pixel))
+            elif isinstance(pixel, tuple):
+                col.append(int(pixel[0]) if pixel else 0)
+            else:
+                col.append(0)
         if sum(col) < img.height:
             break
         right_crop += 1
@@ -301,13 +359,15 @@ def prepare_manga_page_crop_sides_only(
     img = img.crop((crop_left, 0, crop_right, img.height))
 
     # Resize to exact screen size
-    img = img.resize(target_size, Image.LANCZOS)
+    img = img.resize(target_size, Image.Resampling.LANCZOS)
     return img
 
 
 def prepare_manga_page_crop_to_aspect(
-    img_path, target_size=(480, 800), brightness_cutoff=240
-):
+    img_path: str,
+    target_size: tuple[int, int] = (480, 800),
+    brightness_cutoff: int = 240,
+) -> Image.Image:
     """
     - Auto-crops all white borders.
     - Then center-crops left/right to match target aspect ratio (top/bottom preserved).
@@ -319,7 +379,10 @@ def prepare_manga_page_crop_to_aspect(
 
     # --- Step 1: Auto-crop all white borders ---
     # Create binary mask: white = 0, black = 255
-    mask = img.point(lambda x: 0 if x > brightness_cutoff else 255, mode="1")
+    def threshold_func(pixel_value: int | float) -> int:
+        return 0 if pixel_value > brightness_cutoff else 255
+
+    mask = img.point(threshold_func).convert("1")
     bbox = mask.getbbox()
     if not bbox:
         # If all white, return a blank canvas
@@ -340,7 +403,7 @@ def prepare_manga_page_crop_to_aspect(
     # Else if too narrow, do nothing (will be stretched slightly when resized)
 
     # --- Step 3: Resize to target ---
-    img = img.resize(target_size, Image.LANCZOS)
+    img = img.resize(target_size, Image.Resampling.LANCZOS)
     return img
 
 

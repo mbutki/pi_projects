@@ -23,8 +23,6 @@ def basic():
     # For tuples of variable size, we use one type and ellipsis
     x: tuple[int, ...] = (1, 2, 3)  # Python 3.9+
 
-    from typing import Union, Optional
-
     # On Python 3.10+, use the | operator when something could be one of a few types
     x: list[int | str] = [3, 5, "test", "fun"]  # Python 3.10+
 

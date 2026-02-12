@@ -9,21 +9,25 @@ import json
 import logging as log
 
 import mariadb
-from PIL import Image, ImageDraw
-from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
+from PIL import Image
+from rgbmatrix import (
+    RGBMatrix,
+    RGBMatrixOptions,
+    graphics,
+)
 import board
 import adafruit_veml7700
 
-import src.weather.conway as conway
-import src.weather.clock_date as clock_date
-import src.weather.line_graph as line_graph
-import src.weather.utils as utils
-import src.weather.icon_utils as icon_utils
-import src.weather.db_reads as db_reads
-import src.weather.led_color as led_color
-from global_types import PiConfig, DbConfig
+from weather import conway
+from weather import clock_date
+from weather import line_graph
+from weather import utils
+from weather import icon_utils
+from weather import db_reads
+from weather import led_color
 from weather.weather_types import MatrixConfig
 from weather.icon_utils import IconSet
+from global_types import PiConfig, DbConfig
 
 parser = argparse.ArgumentParser(description="Display Weather")
 parser.add_argument("-v", default=False, action="store_true", help="verbose mode")
@@ -33,7 +37,9 @@ PI_DIR = "/home/mbutki/pi_projects"
 
 db_config: DbConfig = json.load(open(f"{PI_DIR}/db.config"))
 pi_config: PiConfig = json.load(open(f"{PI_DIR}/pi.config"))
-matrix_config: MatrixConfig = json.load(open(f"{PI_DIR}/python/src/weather/matrix.config"))
+matrix_config: MatrixConfig = json.load(
+    open(f"{PI_DIR}/python/src/weather/matrix.config")
+)
 
 LOG_NAME = "show_weather.log"
 LOG_DIR = pi_config["log_dir"]
@@ -87,10 +93,6 @@ SMALL_FONT = graphics.Font()
 MEDIUM_FONT.LoadFont(WEATHER_DIR + "/fonts/5x7_mike.bdf")
 SMALL_FONT.LoadFont(WEATHER_DIR + "/fonts/4x6_mike_bigger.bdf")
 
-#### GLOBALS ####
-global_weather = global_daily_icons = global_indoor_temp = global_outdoor_temp = None
-#################
-
 
 class BrightnessAdjust:
     def __init__(self, matrix) -> None:
@@ -110,7 +112,7 @@ class BrightnessAdjust:
     def adjust_brightness(self) -> None:
         while True:
             try:
-                lux = veml7700.light
+                lux: int = veml7700.light
                 if args.v:
                     print(f"lux={lux}")
 
@@ -135,6 +137,13 @@ class Display:
     def __init__(self) -> None:
         self.matrix = self.create_matrix()
         self.canvas = self.matrix.CreateFrameCanvas()
+
+        # Instance variables to replace globals (thread-safe with lock)
+        self.weather = None
+        self.daily_icons = None
+        self.indoor_temp = None
+        self.outdoor_temp = None
+        self.data_lock = threading.Lock()
 
         self.world = conway.World((139, 32), {3}, {2, 3}, 0.3, CONWAY_X_OFFSET)
         # self.world = conway.World((145,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
@@ -184,7 +193,6 @@ class Display:
         x.start()
 
     def fetch_data(self) -> None:
-        global global_weather, global_daily_icons, global_indoor_temp, global_outdoor_temp
         if args.v:
             print("Opening DB...")
 
@@ -202,13 +210,20 @@ class Display:
             print("Get Cursor")
         cur = conn.cursor()
 
-        global_weather = db_reads.fetch_weather(cur, args)
-        global_daily_icons = icon_utils.get_daily_icons(global_weather)
-        global_indoor_temp = db_reads.fetch_indoor_temp(cur, args)
-        global_outdoor_temp = db_reads.fetch_outdoor_temp(cur, args)
+        weather = db_reads.fetch_weather(cur, args)
+        daily_icons = icon_utils.get_daily_icons(weather)
+        indoor_temp = db_reads.fetch_indoor_temp(cur, args)
+        outdoor_temp = db_reads.fetch_outdoor_temp(cur, args)
 
         conn.commit()
         conn.close()
+
+        # Update instance variables with thread lock
+        with self.data_lock:
+            self.weather = weather
+            self.daily_icons = daily_icons
+            self.indoor_temp = indoor_temp
+            self.outdoor_temp = outdoor_temp
 
         if args.v:
             print("DB client closed")
@@ -238,18 +253,25 @@ class Display:
 
     def draw_weather(self) -> None:
         try:
+            # Read instance variables with thread lock
+            with self.data_lock:
+                daily_icons = self.daily_icons
+                outdoor_temp = self.outdoor_temp
+                indoor_temp = self.indoor_temp
+                weather = self.weather
+
             frame = Image.new("RGBA", (64, 32))
-            if not global_daily_icons is None:
-                self.draw_daily_icons(frame, global_daily_icons)
+            if not daily_icons is None:
+                self.draw_daily_icons(frame, daily_icons)
             self.canvas.SetImage(frame.convert("RGB"), 0, 0)
 
-            if not global_outdoor_temp is None:
-                self.draw_outdoor_temp(global_outdoor_temp)
-            if not global_indoor_temp is None:
-                self.draw_indoor_temp(global_indoor_temp)
-            if not global_weather is None:
-                self.graph.draw(self.canvas, global_weather, self.tick)
-                self.draw_daily_text(global_weather)
+            if not outdoor_temp is None:
+                self.draw_outdoor_temp(outdoor_temp)
+            if not indoor_temp is None:
+                self.draw_indoor_temp(indoor_temp)
+            if not weather is None:
+                self.graph.draw(self.canvas, weather, self.tick)
+                self.draw_daily_text(weather)
         except Exception:
             if args.v:
                 print(f"main() exception: {traceback.format_exc()}")
@@ -304,18 +326,14 @@ class Display:
 
     def draw_outdoor_temp(self, outdoor_temp: float) -> None:
         font = MEDIUM_FONT if outdoor_temp < 100 else SMALL_FONT
-        temp_str = (
-            str(int(round(outdoor_temp))) if outdoor_temp != float("-inf") else "--"
-        )
+        temp_str = str(int(round(outdoor_temp)))
         graphics.DrawText(
             self.canvas, font, 55, CURRENT_BOTTOM, OUTDOOR_TEMP_COLOR.led(), temp_str
         )
 
     def draw_indoor_temp(self, indoor_temp: float) -> None:
         font = MEDIUM_FONT if indoor_temp < 100 else SMALL_FONT
-        temp_str = (
-            str(int(round(indoor_temp))) if indoor_temp != float("-inf") else "--"
-        )
+        temp_str = str(int(round(indoor_temp)))
         graphics.DrawText(
             self.canvas, font, 0, CURRENT_BOTTOM, INDOOR_TEMP_COLOR.led(), temp_str
         )
