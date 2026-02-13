@@ -22,12 +22,9 @@ dependencies = [
     "adafruit-circuitpython-mcp9808>=3.3.28",
     "paho-mqtt>=2.1.0",
     "termcolor>=3.1.0",
-]
-
-[dependency-groups]
-matrix = [
     "rgbmatrix",
+    "adafruit-circuitpython-veml7700>=2.2.0",
 ]
 
 [tool.uv.sources]
-rgbmatrix = { path = "rpi-rgb-led-matrix/bindings/python" }
+rgbmatrix = { git = "https://github.com/hzeller/rpi-rgb-led-matrix" }

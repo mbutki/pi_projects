@@ -1,8 +1,7 @@
 import datetime
 import math
 
-# pylint: disable-next=E0401:import-error
-from rgbmatrix import graphics  # pyright: ignore[reportMissingImports]
+from rgbmatrix import graphics
 
 from weather import led_color
 

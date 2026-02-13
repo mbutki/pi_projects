@@ -11,12 +11,8 @@ import logging as log
 import mariadb
 from PIL import Image
 
-# pylint: disable-next=E0401:import-error
-from rgbmatrix import (  # pyright: ignore[reportMissingImports]
-    RGBMatrix,
-    RGBMatrixOptions,
-    graphics,
-)
+
+from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 import board
 import adafruit_veml7700
 
@@ -30,6 +26,9 @@ from weather import led_color
 from weather.weather_types import MatrixConfig
 from weather.icon_utils import IconSet
 from global_types import PiConfig, DbConfig
+
+# RGBMatrix = rgbmatrix.RGBMatrix
+# RGBMatrixOptions = rgbmatrix.RGBMatrixOptions
 
 parser = argparse.ArgumentParser(description="Display Weather")
 parser.add_argument("-v", default=False, action="store_true", help="verbose mode")
