@@ -1,8 +1,10 @@
 import datetime
 import math
-from weather import led_color
 
-from rgbmatrix import graphics
+# pylint: disable-next=E0401:import-error
+from rgbmatrix import graphics  # pyright: ignore[reportMissingImports]
+
+from weather import led_color
 
 
 class Clock:

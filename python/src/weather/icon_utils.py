@@ -1,6 +1,8 @@
 import random
 import datetime
 from collections import defaultdict
+from zoneinfo import ZoneInfo
+from pprint import pprint
 
 import numpy
 from PIL import Image
@@ -66,13 +68,20 @@ class IconSet:
             icon.advance()
 
 
+def epoch2str(epoch: str | int) -> str:
+    dt_utc = datetime.datetime.fromtimestamp(float(epoch), tz=ZoneInfo("UTC"))
+    dt_pst = dt_utc.astimezone(ZoneInfo("America/Los_Angeles"))
+
+    # Pretty Print
+    return dt_pst.strftime("%Y-%m-%d %I:%M:%S %p %Z")
+
+
 # For each day, returns which icons to render (i.e. party_cloudy = [sun, clouds])
 def get_daily_icons(weather) -> list[IconSet]:
     daily_icons: list[IconSet] = []
     for i, epoch in enumerate(sorted(weather["days"])):
         day = weather["days"][epoch]
         condition = day["condition"]
-        print(f"epoch: {epoch}, condition:{condition}")
         icon_set = None
 
         now = datetime.datetime.now()
@@ -109,20 +118,23 @@ def rain_icon_logic(weather, epoch) -> str:
     start_hour = 0
     end_hour = 0
     hours = sorted(weather["hours"].keys())
-    if int(hours[0]) < rise_time:
+    cur_hour = int(hours[0])
+    if cur_hour < rise_time:  # currently before target day's sunrise
         start_hour = rise_time
         end_hour = set_time
-    elif int(hours[0]) > set_time:
+    elif cur_hour > set_time:  # currently after target day's sunset
         return condition
     else:
-        start_hour = int(hours[0])
+        start_hour = cur_hour  # currently between target day's sunrise/sunset
         end_hour = set_time
 
     max_pop = 0
     ccs = []
     for hour_epoch in range(start_hour, end_hour + HOUR_IN_MINS, HOUR_IN_MINS):
         if str(hour_epoch) not in weather["hours"]:
-            break
+            # mbutki TODO: we seem to only have 3 days of hourly data
+            # So this lookup fails for days after that.
+            return condition
         hour = weather["hours"][str(hour_epoch)]
         max_pop = max(max_pop, hour["pop"])
         ccs.append(hour["cloudCover"])

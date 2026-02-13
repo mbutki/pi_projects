@@ -10,7 +10,9 @@ import logging as log
 
 import mariadb
 from PIL import Image
-from rgbmatrix import (
+
+# pylint: disable-next=E0401:import-error
+from rgbmatrix import (  # pyright: ignore[reportMissingImports]
     RGBMatrix,
     RGBMatrixOptions,
     graphics,
@@ -35,11 +37,12 @@ args = parser.parse_args()
 
 PI_DIR = "/home/mbutki/pi_projects"
 
-db_config: DbConfig = json.load(open(f"{PI_DIR}/db.config"))
-pi_config: PiConfig = json.load(open(f"{PI_DIR}/pi.config"))
-matrix_config: MatrixConfig = json.load(
-    open(f"{PI_DIR}/python/src/weather/matrix.config")
-)
+with open(f"{PI_DIR}/db.config", encoding="utf-8") as f:
+    db_config: DbConfig = json.load(f)
+with open(f"{PI_DIR}/pi.config", encoding="utf-8") as f:
+    pi_config: PiConfig = json.load(f)
+with open(f"{PI_DIR}/python/src/weather/matrix.config", encoding="utf-8") as f:
+    matrix_config: MatrixConfig = json.load(f)
 
 LOG_NAME = "show_weather.log"
 LOG_DIR = pi_config["log_dir"]

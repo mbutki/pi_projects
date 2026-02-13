@@ -19,10 +19,12 @@ args = parser.parse_args()
 PI_DIR = "/home/mbutki/pi_projects"
 LOG_NAME = "fetch_weather.log"
 
-pi_config: PiConfig = json.load(open(f"{PI_DIR}/pi.config"))
-matrix_config: MatrixConfig = json.load(
-    open(f"{PI_DIR}/python/src/weather/matrix.config")
-)
+with open(f"{PI_DIR}/pi.config", encoding="utf-8") as f:
+    pi_config: PiConfig = json.load(f)
+
+with open(f"{PI_DIR}/python/src/weather/matrix.config", encoding="utf-8") as f:
+    matrix_config: MatrixConfig = json.load(f)
+
 LOCATION = pi_config["location"]
 LOG_DIR = pi_config["log_dir"]
 
