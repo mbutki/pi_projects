@@ -10,4 +10,7 @@ module.exports = {
     'example': 'example',
     'anotheruser': 'anotherpassword',
   },
+
+  // Session secret for cookie signing; made using openssl rand -base64 32
+  SESSION_SECRET: 'example',
 };

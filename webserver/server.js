@@ -5,8 +5,8 @@ const readFileSync = require("fs").readFileSync;
 const express = require('express');
 const mariadb = require('mariadb');
 const path = require('path');
-const basicAuth = require('express-basic-auth');
-const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, AUTH_USERS } = require('./secrets');
+const session = require('express-session');
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, AUTH_USERS, SESSION_SECRET } = require('./secrets');
 
 const app = express();
 // Enable gzip compression for all responses
@@ -15,12 +15,61 @@ app.use(compression());
 // Parse JSON bodies for API endpoints
 app.use(express.json());
 
-// --- Basic Auth ---
-app.use(basicAuth({
-  users: AUTH_USERS,
-  challenge: true,
-  realm: 'Sensor Data',
+// --- Session Configuration ---
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+  }
 }));
+
+// --- Authentication Middleware ---
+const requireAuth = (req, res, next) => {
+  if (!req.session || !req.session.authenticated) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+};
+
+// --- Login Endpoint ---
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+
+  if (AUTH_USERS[username] && AUTH_USERS[username] === password) {
+    req.session.authenticated = true;
+    req.session.username = username;
+    res.json({ ok: true, message: 'Login successful' });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+// --- Logout Endpoint ---
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.json({ ok: true, message: 'Logged out' });
+  });
+});
+
+// --- Check Auth Status Endpoint ---
+app.get('/api/auth-status', (req, res) => {
+  if (req.session && req.session.authenticated) {
+    res.json({ authenticated: true, username: req.session.username });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
 
 // --- Static Frontend ---
 app.use(express.static(path.join(__dirname, 'frontend', 'hallway', 'dist')));
@@ -39,12 +88,22 @@ const { exec } = require('child_process');
 
 // Whitelist of allowed triangle sketches — keep this in sync with frontend buttons
 const TRIANGLE_SKETCHES = [
-  'triangle16_attractor',
-  'triangle16_ember',
-  'triangle16_partical_fft',
-  'triangle16_rings',
-  'triangle16_snake',
-  'triangle16_wavefronts',
+  'triangle16_attractor.py',
+  'triangle16_radiance.py --mode spatial',
+  'triangle16_snake.py',
+  'triangle16_cellular_automata.py',
+  'triangle16_perlin.py',
+  'triangle16_reaction_diffusion.py',
+  'triangle16_heat.py',
+  'triangle16_randomwalk.py',
+  'triangle16_kaleidoscope.py',
+  'triangle16_fibonacci.py',
+  'triangle16_lorenz.py',
+  'triangle16_voronoi.py',
+  'triangle16_tessellation.py',
+  'triangle16_traveling_lights.py',
+  'triangle16_flocking.py',
+  'triangle16_christmas.py'
 ];
 // SSH user to connect as on pi-triangle. Defaults to the local service user 'mbutki',
 // but can be overridden via the SSH_USER env var if needed.
@@ -96,6 +155,14 @@ async function getDirectoriesInDir(directoryPath) {
     return []; // Return an empty array on error
   }
 }
+
+// --- Apply authentication to all /api routes (except /api/login, /api/auth-status) ---
+app.use('/api/videos', requireAuth);
+app.use('/api/5min-median', requireAuth);
+app.use('/api/latest', requireAuth);
+app.use('/api/errors', requireAuth);
+app.use('/api/settings', requireAuth);
+app.use('/api/triangle', requireAuth);
 
 // --- API: Video List ---
 app.get('/api/videos', async (req, res) => {
@@ -248,11 +315,8 @@ app.post('/api/triangle/sketch', async (req, res) => {
     return res.status(400).json({ error: 'Sketch not allowed' });
   }
 
-  // Construct command to run on the remote pi. Assumes passwordless SSH is configured from this host.
-  // Use single-quoted remote argument and ensure sketch contains only safe characters per whitelist above.
-  const remoteCmd = `sudo systemctl stop triangle.service && sudo systemctl set-environment SKETCH=${sketch} && sudo systemctl start triangle.service`;
-  // insecure — bypasses host key verification
-  const cmd = `sudo -u mbutki ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null mbutki@pi-triangle '${remoteCmd}'`;
+  const remoteCmd = `systemctl --user stop triangle.service ; systemd-run --user --unit=triangle -d python /home/mbutki/pi_projects/python/src/displays/triangle/${sketch}`;
+  const cmd = `sudo -u mbutki ssh mbutki@pi-triangle '${remoteCmd}'`;
 
   exec(cmd, { timeout: 30_000 }, (err, stdout, stderr) => {
     if (err) {

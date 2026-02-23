@@ -4,12 +4,22 @@ import { useMutation } from '@tanstack/react-query';
 import * as api from '../api';
 
 const TRIANGLE_SKETCHES = [
-    'triangle16_attractor',
-    'triangle16_ember',
-    'triangle16_partical_fft',
-    'triangle16_rings',
-    'triangle16_snake',
-    'triangle16_wavefronts',
+    'triangle16_attractor.py',
+    'triangle16_radiance.py --mode spatial',
+    'triangle16_snake.py',
+    'triangle16_cellular_automata.py',
+    'triangle16_perlin.py',
+    'triangle16_reaction_diffusion.py',
+    'triangle16_heat.py',
+    'triangle16_randomwalk.py',
+    'triangle16_kaleidoscope.py',
+    'triangle16_fibonacci.py',
+    'triangle16_lorenz.py',
+    'triangle16_voronoi.py',
+    'triangle16_tessellation.py',
+    'triangle16_traveling_lights.py',
+    'triangle16_flocking.py',
+    'triangle16_christmas.py'
 ];
 
 const Devices: React.FC = () => {

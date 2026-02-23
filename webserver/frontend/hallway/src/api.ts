@@ -109,6 +109,39 @@ export async function runTriangleSketch(sketch: string): Promise<{ ok?: boolean;
     return res.data as { ok?: boolean; stdout?: string; stderr?: string; error?: string };
 }
 
+export async function checkAuthStatus(): Promise<{ authenticated: boolean; username?: string }> {
+    try {
+        const res = await axios.get('/api/auth-status', { withCredentials: true });
+        return res.data;
+    } catch {
+        return { authenticated: false };
+    }
+}
+
+export async function login(username: string, password: string): Promise<{ ok?: boolean; message?: string; error?: string }> {
+    try {
+        const res = await axios.post('/api/login', { username, password }, { withCredentials: true });
+        return res.data;
+    } catch (e: unknown) {
+        if (axios.isAxiosError(e)) {
+            return e.response?.data || { error: 'Login failed' };
+        }
+        return { error: 'Login failed' };
+    }
+}
+
+export async function logout(): Promise<{ ok?: boolean; message?: string; error?: string }> {
+    try {
+        const res = await axios.post('/api/logout', {}, { withCredentials: true });
+        return res.data;
+    } catch (e: unknown) {
+        if (axios.isAxiosError(e)) {
+            return e.response?.data || { error: 'Logout failed' };
+        }
+        return { error: 'Logout failed' };
+    }
+}
+
 export default {
     getVideos,
     getVideoDirs,

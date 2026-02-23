@@ -48,6 +48,19 @@ const LeftNav: React.FC = () => {
                             Settings
                         </Link>
                     </li>
+                    <li>
+                        <a
+                            href="#"
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                const { logout } = await import('./api');
+                                await logout();
+                                window.location.reload();
+                            }}
+                        >
+                            Logout
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </aside>
