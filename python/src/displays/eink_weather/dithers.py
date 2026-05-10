@@ -64,13 +64,16 @@ def color_manga_to_eink_4gray(img, gray_levels=[0, 85, 170, 255]):
     h, w = arr.shape
     out = np.zeros_like(arr)
 
-    def quantize(val):
-        return min(gray_levels, key=lambda g: abs(g - val))
+    # Optimization: Pre-calculate a lookup table for all 256 possible pixel values
+    lut = np.array(
+        [min(gray_levels, key=lambda x: abs(x - i)) for i in range(256)],
+        dtype=np.float32,
+    )
 
     for y in range(h):
         for x in range(w):
             old = arr[y, x]
-            new = quantize(old)
+            new = lut[int(np.clip(old, 0, 255))]
             out[y, x] = new
             err = old - new
             if x + 1 < w:

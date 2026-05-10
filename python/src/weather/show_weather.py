@@ -201,7 +201,9 @@ class Display:
         if args.v:
             print("Starting db put")
         try:
-            conn = mariadb.connect(user="mbutki", host="pi-desk", database="pidata")
+            conn = mariadb.connect(
+                user="mbutki", host="pi-desk", database="pidata", connect_timeout=5
+            )
         except mariadb.Error as e:
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
