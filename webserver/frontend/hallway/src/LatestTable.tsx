@@ -9,6 +9,7 @@ function LatestTable(): React.ReactElement | null {
     queryKey: queryKeys.latest,
     queryFn: getLatest,
     refetchInterval: 1000,
+    refetchOnReconnect: true,
     refetchOnWindowFocus: false,
   });
 
@@ -48,4 +49,3 @@ function LatestTable(): React.ReactElement | null {
 }
 
 export default LatestTable;
-
