@@ -46,30 +46,27 @@ LON = matrix_config["weather_lon"]
 
 
 def fetch_weather():
-    url = f"https://api.openweathermap.org/data/3.0/onecall?lat={LAT}&lon={LON}&appid={API_KEY}"
+    # Using the Pirate Weather Forecast API (Dark Sky compatible)
+    url = f"https://api.pirateweather.net/forecast/{API_KEY}/{LAT},{LON}?units=us"
     if args.v:
         print("fetching: ", url)
     data = requests.get(url).json()
     return data
 
 
-def ktof(k: float) -> float:
-    return (k - 273.15) * 9 / 5 + 32
-
-
 def icon_to_condition(icon) -> str:
     conditions = [
-        [{"01d", "01n"}, "clear"],
-        [{"02d", "02n"}, "light_cloud"],
-        [{"03d", "03n"}, "medium_cloud"],
-        [{"04d", "04n"}, "heavy_cloud"],
-        [{"09d", "09n"}, "light_rain"],
-        [{"10d", "10n"}, "heavy_rain"],
-        [{"11d", "11n"}, "thunder"],
-        [{"50n", "50d"}, "atmo"],
-        [{"13d", "13n"}, "snow"],
+        [{"clear-day", "clear-night"}, "clear"],
+        [{"partly-cloudy-day", "partly-cloudy-night"}, "light_cloud"],
+        [{"cloudy"}, "heavy_cloud"],
+        [{"rain"}, "light_rain"],
+        [{"thunderstorm"}, "thunder"],
+        [{"fog", "wind"}, "atmo"],
+        [{"snow", "sleet"}, "snow"],
     ]
     for item in conditions:
+        if icon is None:
+            break
         if icon in item[0]:
             return item[1]
     return "unknown"
@@ -77,48 +74,44 @@ def icon_to_condition(icon) -> str:
 
 def parse_hours(raw_weather):
     hours = {}
-    for item in raw_weather["hourly"]:
-        epoch = str(item["dt"])
+    for item in raw_weather["hourly"]["data"]:
+        epoch = str(item["time"])
         hours[epoch] = {
-            "temp": int(ktof(item["temp"])),
-            "condition": icon_to_condition(item["weather"][0]["icon"]),
-            "pop": int(item["pop"] * 100),
-            "precipIntensity": max(
-                item.get("rain", {"1h": 0})["1h"], item.get("snow", {"1h": 0})["1h"]
-            ),
-            "cloudCover": item["clouds"],
+            "temp": int(item["temperature"]),
+            "condition": icon_to_condition(item.get("icon")),
+            "pop": int(item.get("precipProbability", 0) * 100),
+            "precipIntensity": item.get("precipIntensity", 0),
+            "cloudCover": int(item.get("cloudCover", 0) * 100),
         }
     return hours
 
 
 def parse_current(raw_weather):
     current = {
-        "weather": icon_to_condition(raw_weather["current"]["weather"][0]["icon"]),
-        "temp": int(ktof(raw_weather["current"]["temp"])),
-        "relative_humidity": raw_weather["current"]["humidity"],
+        "weather": icon_to_condition(raw_weather["currently"].get("icon")),
+        "temp": int(raw_weather["currently"]["temperature"]),
+        "relative_humidity": int(raw_weather["currently"].get("humidity", 0) * 100),
     }
     return current
 
 
 def parse_days(raw_weather):
     days = {}
-    for item in raw_weather["daily"]:
-        epoch = str(item["dt"])
-        pop = int(round(item["pop"] * 10) * 10)
+    for item in raw_weather["daily"]["data"]:
+        epoch = str(item["time"])
+        pop = int(round(item.get("precipProbability", 0) * 10) * 10)
         days[epoch] = {
-            "high": int(ktof(item["temp"]["max"])),
-            "low": int(ktof(item["temp"]["min"])),
+            "high": int(item["temperatureHigh"]),
+            "low": int(item["temperatureLow"]),
             "condition": (
-                "light_rain"
-                if pop > 20
-                else icon_to_condition(item["weather"][0]["icon"])
+                "light_rain" if pop > 20 else icon_to_condition(item.get("icon"))
             ),
             "pop": pop,
-            "pretty": item["weather"][0]["description"],
-            "precipIntensity": max(item.get("rain", 0), item.get("snow", 0)),
-            "moonPhase": item["moon_phase"],
-            "rise": item["sunrise"],
-            "set": item["sunset"],
+            "pretty": item.get("summary", ""),
+            "precipIntensity": item.get("precipIntensity", 0),
+            "moonPhase": item.get("moonPhase", 0),
+            "rise": item["sunriseTime"],
+            "set": item["sunsetTime"],
         }
     return days
 
