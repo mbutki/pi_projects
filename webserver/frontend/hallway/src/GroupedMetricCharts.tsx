@@ -42,7 +42,6 @@ function GroupedMetricCharts(): React.ReactElement | null {
     queryKey: queryKeys.medians,
     queryFn: getMedians,
     refetchInterval: 60_000,
-    refetchOnWindowFocus: false,
   });
 
   if (error) return <p style={{ color: 'red' }}>Failed to fetch sensor data</p>;

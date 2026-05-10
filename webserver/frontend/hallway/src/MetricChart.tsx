@@ -38,6 +38,24 @@ function combineByTimestamp(locationData: LocationData): CombinedRow[] {
   });
 }
 
+// Custom tick renderer for angled X axis labels
+const CustomTick: React.FC<{ x?: number; y?: number; payload?: { value?: number | string } }> = ({ x, y, payload }) => {
+  if (x == null || y == null || payload == null) return null;
+  const ts = Number(payload.value ?? 0);
+  const label = new Date(ts).toLocaleTimeString([], { hour: 'numeric', hour12: true });
+  return (
+    <text
+      x={x}
+      y={y}
+      transform={`rotate(-45 ${x} ${y})`}
+      textAnchor="end"
+      fontSize={12}
+    >
+      {label}
+    </text>
+  );
+};
+
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const TOTAL_HOURS = 48;
 
@@ -74,23 +92,6 @@ function MetricChart({ metric, data }: MetricChartProps) {
     });
   };
 
-  // Custom tick renderer for angled X axis labels (typed)
-  const CustomTick: React.FC<{ x?: number; y?: number; payload?: { value?: number | string } }> = ({ x, y, payload }) => {
-    if (x == null || y == null || payload == null) return null;
-    const ts = Number(payload.value ?? 0);
-    const label = new Date(ts).toLocaleTimeString([], { hour: 'numeric', hour12: true });
-    return (
-      <text
-        x={x}
-        y={y}
-        transform={`rotate(-45 ${x} ${y})`}
-        textAnchor="end"
-        fontSize={12}
-      >
-        {label}
-      </text>
-    );
-  };
   return (
     <div style={{ marginBottom: 40 }}>
       <h2>{metric.charAt(0).toUpperCase() + metric.slice(1)}</h2>

@@ -10,7 +10,6 @@ function ErrorTable(): React.ReactElement {
     queryFn: getErrors,
     select: (rows) => rows.slice(0, 10),
     refetchInterval: 5000,
-    refetchOnWindowFocus: false,
   });
 
   return (

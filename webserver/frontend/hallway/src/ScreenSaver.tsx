@@ -14,7 +14,6 @@ function ScreenSaverInner() {
         queryKey: queryKeys.videoDirs,
         queryFn: getVideoDirs,
         refetchInterval: 60_000,
-        refetchOnWindowFocus: false,
     });
 
     // Reset isScreenSaved when navigating to non-video-detail routes

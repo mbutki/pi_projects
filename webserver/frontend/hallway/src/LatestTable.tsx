@@ -10,8 +10,9 @@ function LatestTable(): React.ReactElement | null {
     queryFn: getLatest,
     refetchInterval: 1000,
     refetchOnReconnect: true,
-    refetchOnWindowFocus: false,
   });
+
+  const format = (val: number | null | undefined, decimals = 1) => val != null ? val.toFixed(decimals) : '—';
 
   if (!latestData || latestData.length === 0) return <p>No current sensor data.</p>;
 
@@ -34,11 +35,11 @@ function LatestTable(): React.ReactElement | null {
           {latestData.map((row: LatestRow) => (
             <tr key={row.location}>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.location}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.temp != null ? row.temp.toFixed(1) : '—'}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.humidity != null ? row.humidity.toFixed(1) : '—'}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.pressure != null ? row.pressure.toFixed(1) : '—'}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.lux != null ? row.lux.toFixed(1) : '—'}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.aqi != null ? row.aqi : '—'}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.temp)}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.humidity)}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.pressure)}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.lux)}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.aqi ?? '—'}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(row.timestamp * 1000).toLocaleTimeString()}</td>
             </tr>
           ))}
