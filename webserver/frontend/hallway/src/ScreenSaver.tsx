@@ -27,22 +27,33 @@ function ScreenSaverInner() {
 
     const { data: screenSaverSec } = useQuery({ queryKey: queryKeys.screenSaver, queryFn: () => import('./api').then(m => m.getScreenSaverSeconds()), staleTime: 1000 * 60 });
 
-    // Screensaver logic: navigate to random video if no fullscreen after configured seconds
+    // Screensaver logic: navigate to random video if no user interaction after configured seconds
     useEffect(() => {
-        if (videoDirs.length === 0) return; // Wait until we have video directories
+        if (videoDirs.length === 0 || isScreenSaved) return;
 
-        const saveScreen = () => {
-            if (!isScreenSaved) {
-                // Pick a random directory
+        let timeoutId: ReturnType<typeof setTimeout>;
+
+        const resetTimer = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+
+            const ms = (screenSaverSec ?? 60) * 1000;
+            timeoutId = setTimeout(() => {
                 const randomDir = videoDirs[Math.floor(Math.random() * videoDirs.length)];
                 navigate({ to: `/videos/${randomDir}` });
-            }
+            }, ms);
         };
 
-        // Check every configured seconds (default 60)
-        const ms = (screenSaverSec ?? 60) * 1000;
-        const interval = setInterval(saveScreen, ms);
-        return () => clearInterval(interval);
+        // Initialize timer
+        resetTimer();
+
+        // Listen for activity
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(name => document.addEventListener(name, resetTimer, true));
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            events.forEach(name => document.removeEventListener(name, resetTimer, true));
+        };
     }, [isScreenSaved, navigate, videoDirs, screenSaverSec]);
 
     return null; // doesn't render anything visible
