@@ -16,7 +16,8 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 import board
 import adafruit_veml7700
 
-from weather import conway
+from weather.visualizations.conway import conway
+from weather.visualizations.spaceship import spaceship_game
 from weather import clock_date
 from weather import line_graph
 from weather import utils
@@ -147,12 +148,8 @@ class Display:
         self.outdoor_temp = None
         self.data_lock = threading.Lock()
 
-        self.world = conway.World((139, 32), {3}, {2, 3}, 0.3, CONWAY_X_OFFSET)
-        # self.world = conway.World((145,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
-        # self.world = conway.World((81,32), {3}, {2,3}, 0.3, CONWAY_X_OFFSET)
-        # self.world = conway.World((64,32), {3,6}, {2,3}, 0.3, CONWAY_X_OFFSET) # highlife
-        # self.world = conway.World((5,5), {3}, {2,3}, 0.3, CONWAY_X_OFFSET) # debug blinker
-        self.world.reset()
+        # self.simulation = conway.World((139, 32), {3}, {2, 3}, 0.3, CONWAY_X_OFFSET)
+        self.simulation = spaceship_game.SpaceshipGame(CONWAY_X_OFFSET, (139, 32))
 
         self.clock = clock_date.Clock(MEDIUM_FONT, CLOCK_X_OFFSET)
         self.graph = line_graph.Graph()
@@ -171,7 +168,7 @@ class Display:
             self.canvas.Clear()
             self.draw_weather()
             self.clock.draw(self.canvas)
-            self.draw_conway()
+            self.draw_simulation()
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
             end_time = time.perf_counter()
@@ -230,14 +227,26 @@ class Display:
         if args.v:
             print("DB client closed")
 
+    def draw_simulation(self) -> None:
+        # self.draw_conway()
+        self.draw_spaceship()
+
+    def draw_spaceship(self) -> None:
+        if utils.should_trigger_ms(self.tick, 40):
+            self.simulation.step()
+
+        # if utils.should_trigger_secs(self.tick, 600):
+        #    self.simulation.reset()
+
+        self.simulation.draw(self.canvas)
+
     def draw_conway(self) -> None:
         if utils.should_trigger_ms(self.tick, 100):
-            self.world.advance()
-            if (
-                self.world.gen_state() in self.world.history
-            ) or utils.should_trigger_secs(self.tick, 600):
-                self.world.reset()
-        self.world.draw(self.canvas)
+            self.simulation.step()
+        if utils.should_trigger_secs(self.tick, 600):
+            self.simulation.reset()
+
+        self.simulation.draw(self.canvas)
 
     def aqi_color(self, aqi: int):
         color = None

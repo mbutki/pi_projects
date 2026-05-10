@@ -1,10 +1,10 @@
 import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router'
+import { RouterProvider, createRouter, createBrowserHistory } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 import './styles.css'
 
-const history = createHashHistory()
+const history = createBrowserHistory()
 
 // Set up a Router instance
 const router = createRouter({

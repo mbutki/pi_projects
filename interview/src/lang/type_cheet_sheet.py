@@ -39,7 +39,6 @@ def basic():
 
 def funcations():
     from collections.abc import Iterator, Callable
-    from typing import Union, Optional
 
     # This is how you annotate a function definition
     def stringify(num: int) -> str:

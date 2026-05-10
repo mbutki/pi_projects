@@ -5,14 +5,18 @@ import argparse
 import random
 import os
 
+
 from typing import Any, Callable
 from PIL import Image, ImageDraw, ImageFont
 import mariadb
 
-from displays.eink_weather.dithers import enhance_and_dither, color_manga_to_eink_4gray
-import displays.eink_weather.epd7in5_V2 as epd7in5_V2
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 from weather import db_reads
 from global_types import DbConfig
+from displays.eink_weather import rain_logic, dithers, epd7in5_V2
 
 
 PI_DIR = "/home/mbutki/pi_projects"
@@ -38,22 +42,22 @@ def run():
     anime = [
         Anime(
             "sakura",
-            enhance_and_dither,
+            dithers.enhance_and_dither,
             "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/sakura",
         ),
         Anime(
             "yotsuba",
-            color_manga_to_eink_4gray,
+            dithers.color_manga_to_eink_4gray,
             "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/yotsuba",
         ),
         Anime(
             "chi",
-            color_manga_to_eink_4gray,
+            dithers.color_manga_to_eink_4gray,
             "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/chi",
         ),
         Anime(
             "pokemon",
-            color_manga_to_eink_4gray,
+            dithers.color_manga_to_eink_4gray,
             "/home/mbutki/pi_projects/python/src/displays/eink_weather/images/pokemon",
         ),
     ]
@@ -95,13 +99,21 @@ def draw_weather(weather, draw_black: ImageDraw.ImageDraw) -> None:
     IS_EVENING = now.hour >= 17
     IS_MORNING = now.hour <= 10
 
-    today = weather["days"][sorted(weather["days"])[0]]
-    tomorrow = weather["days"][sorted(weather["days"])[1]]
+    today_epoch = sorted(weather["days"])[0]
+    today = weather["days"][today_epoch]
+
+    tomorrow_epoch = sorted(weather["days"])[1]
+    tomorrow = weather["days"][tomorrow_epoch]
+
     day = tomorrow if IS_EVENING else today
+    day_epoch = tomorrow_epoch if IS_EVENING else today_epoch
 
     high = today["high"]
     pop = today["pop"]
     condition = day["condition"]
+
+    condition, pop = rain_logic.adjusted(weather, day_epoch, condition)
+
     match condition:
         case "light_cloud":
             condition = "mixed"

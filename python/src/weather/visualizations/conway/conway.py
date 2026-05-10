@@ -62,18 +62,18 @@ class World:
         self.history_trim_size: int = 50
 
         # Optimization 8: Performance profiling
-        self.last_advance_time: float = 0
-        self.total_advance_time: float = 0
-        self.advance_count: int = 0
+        self.last_step_time: float = 0
+        self.total_step_time: float = 0
+        self.step_count: int = 0
 
     def reset(self) -> None:
         # Optimization 7: Smart history management
         self.history = set()
         self.living_cells = {}
         self.age = 0
-        self.last_advance_time = 0
-        self.total_advance_time = 0
-        self.advance_count = 0
+        self.last_step_time = 0
+        self.total_step_time = 0
+        self.step_count = 0
         self.populate()
 
         # Debug blinker
@@ -141,7 +141,7 @@ class World:
         living_coords = sorted(self.living_cells.keys())
         return tuple(living_coords)
 
-    def advance(self) -> bool:
+    def step_inner(self) -> bool:
         # Optimization 8: Performance profiling
         start_time = time.time()
 
@@ -184,13 +184,13 @@ class World:
             self.history = set(recent_history)
 
         # Optimization 8: Performance profiling
-        self.last_advance_time = time.time() - start_time
-        self.total_advance_time += self.last_advance_time
-        self.advance_count += 1
+        self.last_step_time = time.time() - start_time
+        self.total_step_time += self.last_step_time
+        self.step_count += 1
 
         # if self.age % 100 == 0:  # Log every 100 generations
-        #    avg_time = self.total_advance_time / self.advance_count
-        #    print(f"Generation {self.age}: {self.last_advance_time:.4f}s (avg: {avg_time:.4f}s, living: {len(self.living_cells)})")
+        #    avg_time = self.total_step_time / self.step_count
+        #    print(f"Generation {self.age}: {self.last_step_time:.4f}s (avg: {avg_time:.4f}s, living: {len(self.living_cells)})")
 
         return loop_detected
 
@@ -221,15 +221,15 @@ class World:
 
     def get_performance_stats(self) -> PerfStats | None:
         """Get performance statistics"""
-        if self.advance_count == 0:
+        if self.step_count == 0:
             return
 
-        avg_time = self.total_advance_time / self.advance_count
+        avg_time = self.total_step_time / self.step_count
         return {
             "total_generations": self.age,
-            "total_time": self.total_advance_time,
+            "total_time": self.total_step_time,
             "average_time_per_generation": avg_time,
-            "last_generation_time": self.last_advance_time,
+            "last_generation_time": self.last_step_time,
             "current_living_cells": len(self.living_cells),
             "history_size": len(self.history),
         }
@@ -246,3 +246,8 @@ class World:
                     row.append("None")
             result.append("\t".join(row))
         return "\n".join(result)
+
+    def step(self) -> None:
+        self.step_inner()
+        if self.gen_state() in self.history:
+            self.reset()
