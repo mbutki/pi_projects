@@ -4,6 +4,7 @@ const fs = require("fs").promises;
 const readFileSync = require("fs").readFileSync;
 const express = require('express');
 const mariadb = require('mariadb');
+const EventEmitter = require('events');
 const path = require('path');
 const session = require('express-session');
 const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, AUTH_USERS, SESSION_SECRET } = require('./secrets');
@@ -84,6 +85,34 @@ const pool = mariadb.createPool({
   connectionLimit: 5,
 })
 
+const sensorEvents = new EventEmitter();
+
+// Local cache to deduplicate broadcasts
+let lastLatestData = '';
+
+// Poll the DB and broadcast via SSE if data has changed
+const broadcastLatest = async () => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    const rows = await conn.query(`
+      SELECT location, timestamp, temp, humidity, pressure, lux, aqi
+      FROM sensor_latest
+      LIMIT 10
+    `);
+    const currentData = JSON.stringify(rows);
+    if (currentData !== lastLatestData) {
+      lastLatestData = currentData;
+      sensorEvents.emit('latest_update', rows);
+    }
+  } catch (err) {
+    console.error('SSE broadcast error:', err);
+  } finally {
+    if (conn) conn.release();
+  }
+};
+setInterval(broadcastLatest, 1000);
+
 const { exec } = require('child_process');
 
 // Whitelist of allowed triangle sketches — keep this in sync with frontend buttons
@@ -160,6 +189,7 @@ async function getDirectoriesInDir(directoryPath) {
 app.use('/api/videos', requireAuth);
 app.use('/api/5min-median', requireAuth);
 app.use('/api/latest', requireAuth);
+app.use('/api/latest/sse', requireAuth);
 app.use('/api/errors', requireAuth);
 app.use('/api/settings', requireAuth);
 app.use('/api/triangle', requireAuth);
@@ -220,6 +250,33 @@ app.get('/api/latest', async (req, res) => {
     console.error('Error fetching latest:', err);
     res.status(500).json({ error: 'Database error' });
   }
+});
+
+// --- API: Latest Sensor Data (SSE) ---
+app.get('/api/latest/sse', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+
+  const sendUpdate = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  sensorEvents.on('latest_update', sendUpdate);
+
+  // Keep-alive heartbeat to prevent timeouts from proxies/Nginx
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  req.on('close', () => {
+    sensorEvents.off('latest_update', sendUpdate);
+    clearInterval(heartbeat);
+    res.end();
+  });
 });
 
 // --- API: Sensor Error Data ---

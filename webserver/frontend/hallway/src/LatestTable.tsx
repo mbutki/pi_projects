@@ -1,16 +1,32 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import { getLatest } from './api';
 import type { LatestRow } from './api';
-import { queryKeys } from './queryKeys';
 
 function LatestTable(): React.ReactElement | null {
-  const { data: latestData = [] } = useQuery<LatestRow[]>({
-    queryKey: queryKeys.latest,
-    queryFn: getLatest,
-    refetchInterval: 1000,
-    refetchOnReconnect: true,
-  });
+  const [latestData, setLatestData] = useState<LatestRow[]>([]);
+
+  useEffect(() => {
+    // Initial fetch to populate immediately
+    getLatest().then(setLatestData).catch(err => console.error('Initial fetch failed:', err));
+
+    // Open the Server-Sent Events stream
+    const eventSource = new EventSource('/api/latest/sse');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setLatestData(data);
+      } catch (err) {
+        console.error('Failed to parse SSE data:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE connection error. EventSource will attempt to reconnect automatically.', err);
+    };
+
+    return () => eventSource.close();
+  }, []);
 
   const format = (val: number | null | undefined, decimals = 1) => val != null ? val.toFixed(decimals) : '—';
 
