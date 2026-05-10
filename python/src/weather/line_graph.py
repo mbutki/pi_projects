@@ -50,11 +50,12 @@ class Graph:
 
     @staticmethod
     def draw_daylight(canvas, epochs, weather) -> None:
+        first_day_epoch = sorted(weather["days"])[0]
+        day_info = weather["days"][first_day_epoch]
+        sun_rise = datetime.datetime.fromtimestamp(day_info["rise"]).hour
+        sun_set = datetime.datetime.fromtimestamp(day_info["set"]).hour
+
         for i, epoch in enumerate(epochs):
-            rise_time = weather["days"][sorted(weather["days"])[0]]["rise"]
-            set_time = weather["days"][sorted(weather["days"])[0]]["set"]
-            sun_rise = datetime.datetime.fromtimestamp(rise_time).hour
-            sun_set = datetime.datetime.fromtimestamp(set_time).hour
             dt = datetime.datetime.fromtimestamp(float(epoch))
             column = Graph.BAR_LEFT + i
 

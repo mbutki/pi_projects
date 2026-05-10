@@ -146,6 +146,8 @@ class Display:
         self.daily_icons = None
         self.indoor_temp = None
         self.outdoor_temp = None
+        self.cached_icon_frame = None
+        self.last_icon_tick = -1
         self.data_lock = threading.Lock()
 
         # self.simulation = conway.World((139, 32), {3}, {2, 3}, 0.3, CONWAY_X_OFFSET)
@@ -172,10 +174,10 @@ class Display:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
             end_time = time.perf_counter()
-            elapsed_ms = (end_time - start_time) / 1000
-            sleep_ms = utils.get_tick_dur_ms() - elapsed_ms
-            sleep_sec = sleep_ms / 1000
-            time.sleep(sleep_sec)
+            elapsed_sec = end_time - start_time
+            sleep_sec = (utils.get_tick_dur_ms() / 1000.0) - elapsed_sec
+            if sleep_sec > 0:
+                time.sleep(sleep_sec)
 
             self.tick += 1
             if self.tick == sys.maxsize - 1000:
@@ -222,6 +224,7 @@ class Display:
             self.weather = weather
             self.daily_icons = daily_icons
             self.indoor_temp = indoor_temp
+            self.cached_icon_frame = None  # Invalidate cache on new data
             self.outdoor_temp = outdoor_temp
 
         if args.v:
@@ -271,10 +274,13 @@ class Display:
                 indoor_temp = self.indoor_temp
                 weather = self.weather
 
-            frame = Image.new("RGBA", (64, 32))
-            if not daily_icons is None:
-                self.draw_daily_icons(frame, daily_icons)
-            self.canvas.SetImage(frame.convert("RGB"), 0, 0)
+            # Only rebuild the icon frame if the animation advanced or data is new
+            if self.cached_icon_frame is None or utils.should_trigger_ms(
+                self.tick, ICON_SPEED_MS
+            ):
+                self.cached_icon_frame = self.rebuild_icon_frame(daily_icons)
+
+            self.canvas.SetImage(self.cached_icon_frame, 0, 0)
 
             if not outdoor_temp is None:
                 self.draw_outdoor_temp(outdoor_temp)
@@ -297,16 +303,19 @@ class Display:
                     f"fetchWeather() threaded exception: {traceback.format_exc()}"
                 )
 
-    def draw_daily_icons(self, frame: Image.Image, daily_icons: list[IconSet]) -> None:
-        # draw using current icon frame
+    def rebuild_icon_frame(self, daily_icons: list[IconSet]) -> Image.Image:
+        if daily_icons is None:
+            return Image.new("RGB", (64, 32))
+
+        temp_frame = Image.new("RGBA", (64, 32))
         for day_index, icon_set in enumerate(daily_icons):
             for icon_frame in icon_set.get_frames():
                 x_offset = day_index * 13
-                frame.paste(icon_frame, (x_offset, 0), icon_frame)
+                temp_frame.paste(icon_frame, (x_offset, 0), icon_frame)
 
-            # advance icon frame if needed
-            if utils.should_trigger_ms(self.tick, ICON_SPEED_MS):
-                icon_set.advance()
+            icon_set.advance()
+
+        return temp_frame.convert("RGB")
 
     def draw_daily_text(self, weather) -> None:
         for j, epoch in enumerate(sorted(weather["days"])[:5]):

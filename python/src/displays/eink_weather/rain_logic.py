@@ -33,8 +33,7 @@ def adjusted(weather, epoch, condition) -> tuple[str, int]:
     ccs = []
     for hour_epoch in range(start_hour, end_hour + HOUR_IN_MINS, HOUR_IN_MINS):
         if str(hour_epoch) not in weather["hours"]:
-            # mbutki TODO: we seem to only have 3 days of hourly data
-            # So this lookup fails for days after that.
+            # If we exceed the 7 days of hourly data provided by Pirate Weather
             return (condition, max_pop)
         hour = weather["hours"][str(hour_epoch)]
         max_pop = max(max_pop, hour["pop"])

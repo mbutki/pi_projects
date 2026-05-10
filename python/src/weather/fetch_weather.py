@@ -50,8 +50,9 @@ def fetch_weather():
     url = f"https://api.pirateweather.net/forecast/{API_KEY}/{LAT},{LON}?units=us"
     if args.v:
         print("fetching: ", url)
-    data = requests.get(url).json()
-    return data
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
 
 
 def icon_to_condition(icon) -> str:
@@ -149,7 +150,7 @@ def store_weather(weather) -> None:
     try:
         cur.execute(
             "INSERT INTO weather (time, weather) VALUES (?, ?)",
-            (datetime.datetime.utcnow(), json.dumps(weather)),
+            (datetime.datetime.now(datetime.timezone.utc), json.dumps(weather)),
         )
         if args.v:
             print("Insert Executed")

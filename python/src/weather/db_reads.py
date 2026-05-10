@@ -34,9 +34,8 @@ def fetch_local_temp(cur: Cursor, args, location: str) -> int | None:
     if args.v:
         print(f"Fetching {location} temp...")
     try:
-        cur.execute(
-            f'SELECT timestamp, location, temp FROM sensor_latest WHERE location = "{location}"'
-        )
+        query = "SELECT timestamp, location, temp FROM sensor_latest WHERE location = ?"
+        cur.execute(query, (location,))
         if args.v:
             print(f"SELECT Executed for {location} temp")
     except mariadb.Error as e:

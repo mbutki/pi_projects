@@ -22,14 +22,16 @@ def enhance_and_dither(img, levels=[0, 85, 170, 255]):
     h, w = arr.shape
     quant_arr = np.zeros_like(arr)
 
-    def find_nearest_level(val):
-        # Map brighter values more aggressively to darker gray to preserve linework
-        return min(levels, key=lambda x: abs(x - val))
+    # Optimization: Pre-calculate a lookup table for all 256 possible pixel values
+    # This avoids calling min() and a lambda millions of times in a loop.
+    lut = np.array(
+        [min(levels, key=lambda x: abs(x - i)) for i in range(256)], dtype=np.float32
+    )
 
     for y in range(h):
         for x in range(w):
             old_pixel = arr[y, x]
-            new_pixel = find_nearest_level(old_pixel)
+            new_pixel = lut[int(np.clip(old_pixel, 0, 255))]
             quant_arr[y, x] = new_pixel
             error = old_pixel - new_pixel
             if x + 1 < w:
