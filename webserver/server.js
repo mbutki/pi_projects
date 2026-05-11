@@ -111,7 +111,7 @@ const broadcastLatest = async () => {
     if (conn) conn.release();
   }
 };
-setInterval(broadcastLatest, 1000);
+setInterval(broadcastLatest, 300);
 
 const { exec } = require('child_process');
 
@@ -263,6 +263,7 @@ app.get('/api/latest/sse', (req, res) => {
 
   const sendUpdate = (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
+    if (res.flush) res.flush(); // Push data through compression buffer immediately
   };
 
   sensorEvents.on('latest_update', sendUpdate);
@@ -270,6 +271,7 @@ app.get('/api/latest/sse', (req, res) => {
   // Keep-alive heartbeat to prevent timeouts from proxies/Nginx
   const heartbeat = setInterval(() => {
     res.write(': heartbeat\n\n');
+    if (res.flush) res.flush();
   }, 30000);
 
   req.on('close', () => {
