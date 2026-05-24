@@ -96,7 +96,7 @@ const broadcastLatest = async () => {
   try {
     conn = await pool.getConnection();
     const rows = await conn.query(`
-      SELECT location, timestamp, temp, humidity, pressure, lux, aqi
+      SELECT location, timestamp, temp, humidity, pressure, lux, aqi, wifi
       FROM sensor_latest
       LIMIT 10
     `);
@@ -221,7 +221,7 @@ app.get('/api/5min-median', async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const rows = await conn.query(`
-      SELECT location, start_ts, end_ts, temp, humidity, pressure, lux, aqi
+      SELECT location, start_ts, end_ts, temp, humidity, pressure, lux, aqi, wifi
       FROM sensor_5min_median
       WHERE end_ts >= UNIX_TIMESTAMP(NOW() - INTERVAL 2 DAY)
       ORDER BY end_ts DESC
@@ -240,7 +240,7 @@ app.get('/api/latest', async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const rows = await conn.query(`
-      SELECT location, timestamp, temp, humidity, pressure, lux, aqi
+      SELECT location, timestamp, temp, humidity, pressure, lux, aqi, wifi
       FROM sensor_latest
       LIMIT 10
     `);

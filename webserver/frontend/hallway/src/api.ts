@@ -14,6 +14,7 @@ export interface LatestRow {
     pressure?: number | null;
     lux?: number | null;
     aqi?: number | null;
+    wifi?: number | null;
     timestamp: number;
 }
 
@@ -25,6 +26,7 @@ export interface MedianRow {
     pressure?: number | null;
     lux?: number | null;
     aqi?: number | null;
+    wifi?: number | null;
 }
 
 // Videos endpoint returns a mapping of directory -> array of absolute URLs

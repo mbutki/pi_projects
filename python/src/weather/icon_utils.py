@@ -85,8 +85,9 @@ def get_daily_icons(weather) -> list[IconSet]:
         icon_set = None
 
         now = datetime.datetime.now()
+        sun_rise = datetime.datetime.fromtimestamp(day["rise"])
         sun_set = datetime.datetime.fromtimestamp(day["set"])
-        if i == 0 and (now > sun_set):
+        if i == 0 and (now < sun_rise or now > sun_set):
             # night time
             moon_img = get_moon_phase_icon(day["moonPhase"])
             icon_set = IconSet([moon_img])

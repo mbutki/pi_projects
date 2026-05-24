@@ -44,6 +44,7 @@ function LatestTable(): React.ReactElement | null {
             <th scope="col" style={{ border: '1px solid #ddd', padding: '8px' }}>Pressure (Pa)</th>
             <th scope="col" style={{ border: '1px solid #ddd', padding: '8px' }}>Lux</th>
             <th scope="col" style={{ border: '1px solid #ddd', padding: '8px' }}>AQI</th>
+            <th scope="col" style={{ border: '1px solid #ddd', padding: '8px' }}>Wifi (dBm)</th>
             <th scope="col" style={{ border: '1px solid #ddd', padding: '8px' }}>Timestamp</th>
           </tr>
         </thead>
@@ -56,6 +57,7 @@ function LatestTable(): React.ReactElement | null {
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.pressure)}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{format(row.lux)}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.aqi ?? '—'}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.wifi ?? '—'}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(row.timestamp * 1000).toLocaleTimeString()}</td>
             </tr>
           ))}

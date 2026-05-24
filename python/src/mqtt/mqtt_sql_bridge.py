@@ -12,7 +12,7 @@ DB_CONFIG = {
     "host": "localhost",
     "user": "mbutki",
     "password": "",
-    "database": "pidata"
+    "database": "pidata",
 }
 
 MQTT_BROKER = "localhost"
@@ -25,13 +25,15 @@ data_buffer = []
 buffer_start = None
 BUFFER_DURATION = 300  # 5 minutes in seconds
 
-parser = argparse.ArgumentParser(description='Bridge mqtt and mysql')
-parser.add_argument('-v', default=False, action='store_true', help='verbose mode')
+parser = argparse.ArgumentParser(description="Bridge mqtt and mysql")
+parser.add_argument("-v", default=False, action="store_true", help="verbose mode")
 args = parser.parse_args()
+
 
 # --- Connect to MariaDB ---
 def get_db_connection():
     return mariadb.connect(**DB_CONFIG)
+
 
 # --- Create tables if not exist ---
 def create_tables():
@@ -53,7 +55,8 @@ def create_tables():
         humidity FLOAT NULL,
         pressure FLOAT NULL,
         lux FLOAT NULL,
-        aqi INT NULL
+        aqi INT NULL,
+        wifi INT NULL
     );
     """
     create_median_sql = """
@@ -67,6 +70,7 @@ def create_tables():
         pressure FLOAT NULL,
         lux FLOAT NULL,
         aqi INT NULL,
+        wifi INT NULL,
         INDEX idx_location (location),
         INDEX idx_time (start_ts, end_ts)
     );
@@ -81,31 +85,37 @@ def create_tables():
     if args.v:
         print("✅ Tables ensured.")
 
+
 # --- Insert latest reading ---
 def log_error(cursor, data):
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO sensor_errors (location, timestamp, error)
         VALUES (?, ?, ?)
-    """, (
-        data.get("location"),
-        data.get("timestamp"),
-        data.get("error")
-    ))
+    """,
+        (data.get("location"), data.get("timestamp"), data.get("error")),
+    )
+
 
 # --- Insert latest reading ---
 def insert_latest(cursor, data):
-    cursor.execute("""
-        REPLACE INTO sensor_latest (location, timestamp, temp, humidity, pressure, lux, aqi)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data.get("location"),
-        data.get("timestamp"),
-        data.get("temp"),
-        data.get("humidity"),
-        data.get("pressure"),
-        data.get("lux"),
-        data.get("aqi")
-    ))
+    cursor.execute(
+        """
+        REPLACE INTO sensor_latest (location, timestamp, temp, humidity, pressure, lux, aqi, wifi)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """,
+        (
+            data.get("location"),
+            data.get("timestamp"),
+            data.get("temp"),
+            data.get("humidity"),
+            data.get("pressure"),
+            data.get("lux"),
+            data.get("aqi"),
+            data.get("wifi"),
+        ),
+    )
+
 
 # --- Store 5-minute medians ---
 def compute_and_store_median():
@@ -128,26 +138,39 @@ def compute_and_store_median():
             if not entries:
                 continue
 
-            fields = ["temp", "humidity", "pressure", "lux", "aqi"]
+            fields = ["temp", "humidity", "pressure", "lux", "aqi", "wifi"]
             median_values = {}
             for field in fields:
-                values = [d[field] for d in entries if field in d and d[field] is not None]
+                values = [
+                    d[field] for d in entries if field in d and d[field] is not None
+                ]
                 median_values[field] = median(values) if values else None
 
             start_ts = int(entries[0]["timestamp"])
             end_ts = int(entries[-1]["timestamp"])
 
-            cursor.execute("""
-                INSERT INTO sensor_5min_median (start_ts, end_ts, location, temp, humidity, pressure, lux, aqi)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                start_ts, end_ts, location,
-                median_values["temp"], median_values["humidity"],
-                median_values["pressure"], median_values["lux"], median_values["aqi"]
-            ))
+            cursor.execute(
+                """
+                INSERT INTO sensor_5min_median (start_ts, end_ts, location, temp, humidity, pressure, lux, aqi, wifi)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    start_ts,
+                    end_ts,
+                    location,
+                    median_values["temp"],
+                    median_values["humidity"],
+                    median_values["pressure"],
+                    median_values["lux"],
+                    median_values["aqi"],
+                    median_values["wifi"],
+                ),
+            )
 
             if args.v:
-                print(f"✅  Stored 5min median for {location} from {start_ts} to {end_ts}")
+                print(
+                    f"✅  Stored 5min median for {location} from {start_ts} to {end_ts}"
+                )
 
         conn.commit()
         conn.close()
@@ -157,10 +180,12 @@ def compute_and_store_median():
     # Clear buffer after storing
     data_buffer.clear()
 
+
 # --- MQTT Callbacks ---
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT with result code", rc)
     client.subscribe(MQTT_TOPICS)
+
 
 def on_message(client, userdata, msg):
     global buffer_start, data_buffer
@@ -222,10 +247,12 @@ def delete_old_sensor_data():
     except mariadb.Error as e:
         print("Error deleting old sensor data:", e)
 
+
 def periodic_cleanup():
     while True:
         time.sleep(3600)  # every hour
         delete_old_sensor_data()
+
 
 # --- Main ---
 def main():
@@ -239,6 +266,6 @@ def main():
     client.connect(MQTT_BROKER, 1883, 60)
     client.loop_forever()
 
+
 if __name__ == "__main__":
     main()
-

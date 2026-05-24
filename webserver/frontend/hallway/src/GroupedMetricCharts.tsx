@@ -6,9 +6,9 @@ import { getMedians } from './api';
 import type { MedianRow } from './api';
 import { queryKeys } from './queryKeys';
 
-type MetricKey = 'temp' | 'humidity' | 'pressure' | 'lux' | 'aqi';
+type MetricKey = 'temp' | 'humidity' | 'pressure' | 'lux' | 'aqi' | 'wifi';
 
-const METRICS: MetricKey[] = ['temp', 'humidity', 'pressure', 'lux', 'aqi'];
+const METRICS: MetricKey[] = ['temp', 'humidity', 'pressure', 'lux', 'aqi', 'wifi'];
 
 interface SeriesPoint {
   timestamp: number;
