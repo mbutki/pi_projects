@@ -1,0 +1,9 @@
+[Unit]
+Description=Network Connectivity Watchdog Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/mbutki/pi_projects/webserver/systemd/network_watchdog.sh
+User=root
+Group=root
