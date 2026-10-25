@@ -23,7 +23,9 @@ class FileSystem:
     def add_file(self, file: File):
         self.lookup[file.name] = file
         self.files.add(file)
+        self.files_by_size.add(file)
 
     def remove_largest_file(self):
         largest = self.files.pop()
         del self.lookup[largest.name]
+        
