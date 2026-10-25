@@ -117,6 +117,19 @@ wheels = [
 ]
 
 [[package]]
+name = "adafruit-circuitpython-sht4x"
+version = "1.0.27"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "adafruit-blinka" },
+    { name = "adafruit-circuitpython-busdevice" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/fb/e13a6fa4c1fa2347dd17dd7b89d7fcb41fb1e707ff1f1bbbd535fa31446b/adafruit_circuitpython_sht4x-1.0.27.tar.gz", hash = "sha256:bb8efab6a9e608a02bbc6da40b6df571cdbc2db3c0ec7853f181e26f4618da7c", size = 24667, upload-time = "2026-04-23T21:06:44.876Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/de/af7be04f3a868671355fa17fa00abaa04d35890391ad3a371956db3cf66b/adafruit_circuitpython_sht4x-1.0.27-py3-none-any.whl", hash = "sha256:4021cca3ea2d530c42219ed971d5a891b5bcc220801d010e4250203eb2c492da", size = 6359, upload-time = "2026-04-23T21:06:43.71Z" },
+]
+
+[[package]]
 name = "adafruit-circuitpython-typing"
 version = "1.12.3"
 source = { registry = "https://pypi.org/simple" }
@@ -397,6 +410,7 @@ dependencies = [
     { name = "adafruit-circuitpython-ht16k33" },
     { name = "adafruit-circuitpython-mcp9808" },
     { name = "adafruit-circuitpython-sht31d" },
+    { name = "adafruit-circuitpython-sht4x" },
     { name = "adafruit-circuitpython-veml7700" },
     { name = "astral" },
     { name = "bleak" },
@@ -420,6 +434,7 @@ requires-dist = [
     { name = "adafruit-circuitpython-ht16k33", specifier = ">=4.6.12" },
     { name = "adafruit-circuitpython-mcp9808", specifier = ">=3.3.28" },
     { name = "adafruit-circuitpython-sht31d", specifier = ">=2.3.26" },
+    { name = "adafruit-circuitpython-sht4x", specifier = ">=1.0.27" },
     { name = "adafruit-circuitpython-veml7700", specifier = ">=2.2.0" },
     { name = "astral", specifier = ">=3.2" },
     { name = "bleak", specifier = ">=0.22.3" },

@@ -25,6 +25,7 @@ dependencies = [
     "rgbmatrix",
     "adafruit-circuitpython-veml7700>=2.2.0",
     "astral>=3.2",
+    "adafruit-circuitpython-sht4x>=1.0.27",
 ]
 
 [tool.uv.sources]

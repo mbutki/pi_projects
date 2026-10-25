@@ -9,8 +9,8 @@ from typing import List, Tuple
 DEST_PATH = "/home/mbutki/pi_projects/"
 SRC_PATH = "/home/mbutki/pi_projects/"
 PI_HOSTS = [
-    "pi-desk", "pi-weather", "pi-hyper", "pi-triangle", 
-    "pi-kateeink", "pi-quinneink", "pi-slotcar", "pi-hallway"
+    "pi-desk", "pi-weather", "pi-hyper", "pi-triangle",
+    "pi-kateeink", "pi-quinneink", "pi-slotcar", "pi-hallway", "pi-backyard"
 ]
 
 def sync_to_host(host: str) -> Tuple[str, bool, str]:
